@@ -1,0 +1,34 @@
+package cdti.aidea.earas.controller;
+
+import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
+import cdti.aidea.earas.service.TblBtrDataService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/btr-data")
+@RequiredArgsConstructor
+public class TblBtrDataController {
+    private final TblBtrDataService service;
+
+//    @PostMapping("/save")
+//    public ResponseEntity<TblBtrData> saveData(@RequestBody TblBtrDataDTO dto) {
+//        TblBtrData saved = service.saveData(dto);
+//        return ResponseEntity.ok(saved);
+//    }
+    // ✅ Save multiple records
+    @PostMapping("/saveAll")
+    public ResponseEntity<List<Map<String, Object>>> saveAllData(@RequestBody List<TblBtrDataDTO> dtoList) {
+        List<Map<String, Object>> savedList = service.saveAllData(dtoList);
+        return ResponseEntity.ok(savedList);
+    }
+
+
+}

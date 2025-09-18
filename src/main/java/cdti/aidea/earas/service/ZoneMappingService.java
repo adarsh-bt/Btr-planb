@@ -3,25 +3,12 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.contract.LocalbodyDto;
 import cdti.aidea.earas.contract.RevenueTalukDto;
 import cdti.aidea.earas.contract.RevenueVillageDto;
-import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
-import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
-import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillageBlock;
-import cdti.aidea.earas.model.Btr_models.Masters.TblZoneLocalbodyMapping;
-import cdti.aidea.earas.model.Btr_models.Masters.TblZoneRevenueVillageMapping;
-import cdti.aidea.earas.model.Btr_models.Masters.ZoneRevenueTalukMapping;
-import cdti.aidea.earas.repository.Btr_repo.LocalBodyRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblMasterVillageBlockRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblMasterVillageRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblZoneLocalbodyMappingRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblZoneRevenueVillageMappingRepository;
-import cdti.aidea.earas.repository.Btr_repo.ZoneRevenueTalukMappingRepository;
+import cdti.aidea.earas.model.Btr_models.Masters.*;
+import cdti.aidea.earas.repository.Btr_repo.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +21,17 @@ public class ZoneMappingService {
     private final TblZoneRevenueVillageMappingRepository zoneRevenueVillageMappingRepository;
     private final TblMasterVillageRepository tblMasterVillageRepository;
     private final TblMasterVillageBlockRepository tblMasterVillageBlockRepository;
+    private final TblMasterZoneRepository tblMasterZoneRepository;
+
+    // New Method: Get District ID by Zone ID
+    public Optional<Integer> getDistrictIdByZone(Integer zoneId) {
+        if (zoneId == null) {
+            throw new IllegalArgumentException("zoneId must not be null");
+        }
+        // Use the findById method from JpaRepository
+        return tblMasterZoneRepository.findById(zoneId)
+                .map(TblMasterZone::getDistId);
+    }
 
     // Localbodies by Zone
     public List<LocalbodyDto> getLocalbodiesByZone(Integer zoneId, String lang) {
@@ -109,7 +107,8 @@ public class ZoneMappingService {
                 .map(v -> new RevenueVillageDto(
                         v.getVillageId(),
                         mal ? v.getVillageNameMal() : v.getVillageNameEn(),
-                        villageBlockMap.getOrDefault(v.getVillageId(), List.of())
+                        villageBlockMap.getOrDefault(v.getVillageId(), List.of()),
+                        v.getLsgCode()
                 ))
                 .distinct()
                 .sorted(Comparator.comparing(RevenueVillageDto::getRevenueVillageName, String.CASE_INSENSITIVE_ORDER))

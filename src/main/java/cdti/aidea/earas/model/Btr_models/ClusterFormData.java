@@ -14,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(name = "cluster_details")
-public class  ClusterFormData {
+public class ClusterFormData {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +27,7 @@ public class  ClusterFormData {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "plot_id", nullable = false)
-    private TblBtrDataOld plot;
+    private TblBtrData plot;
 
     @Column(name = "plot_label")
     private String plotLabel;

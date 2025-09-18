@@ -21,7 +21,7 @@ public class TblBtrData {
     private Integer dcode;
     private Integer tcode;
     private Integer vcode;
-    private String bcode;
+    private Integer bcode;
 
     private Integer resvno;
     private String resbdno;
@@ -59,5 +59,6 @@ public class TblBtrData {
 //    private String addonNotes;
 //
 //    private Integer fmp;
+
 
 }

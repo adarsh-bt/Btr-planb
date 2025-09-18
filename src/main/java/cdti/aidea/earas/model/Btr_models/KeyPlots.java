@@ -25,8 +25,8 @@ public class KeyPlots {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "btr_id", nullable = false)
-    private TblBtrDataOld btrDataOld;
-
+   // private TblBtrDataOld btrDataOld;
+    private TblBtrData btrData;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "zone_id", nullable = false)
@@ -59,6 +59,7 @@ public class KeyPlots {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "localbody")
     private TblLocalBody localbody;
+   //private Integer localbody;
 
     @Column(name= "created_by")
     private UUID created_by;

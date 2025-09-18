@@ -2,7 +2,8 @@ CREATE TABLE cluster_limit_log (
                                     id BIGSERIAL PRIMARY KEY,
                                     cluster_min NUMERIC(10, 1) NOT NULL CHECK (cluster_min > 0),
                                     cluster_max NUMERIC(10, 1) NOT NULL CHECK (cluster_max > 0),
-                                    tso_approval_limit NUMERIC(10, 1) NOT NULL CHECK (cluster_max > 0),
+                                    sideplots_min NUMERIC(10, 1) NOT NULL,
+                                    sideplots_max NUMERIC(10, 1) NOT NULL,
 
                                     added_by UUID,
                                     remarks TEXT,

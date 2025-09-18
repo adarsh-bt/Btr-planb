@@ -27,8 +27,11 @@ public class ClusterLimitLog {
     @Column(name = "cluster_max", nullable = false, precision = 10, scale = 1)
     private BigDecimal clusterMax;
 
-    @Column(name = "tso_approval_limit", nullable = false,precision = 10, scale = 1)
-    private BigDecimal tsoApprovalLimit;
+    @Column(name = "sideplots_min", nullable = false, precision = 10, scale = 1)
+    private BigDecimal sideplotsMin;
+
+    @Column(name = "sideplots_max", nullable = false, precision = 10, scale = 1)
+    private BigDecimal sideplotsMax;
 
     @Column(name = "added_by")
     private UUID addedBy;

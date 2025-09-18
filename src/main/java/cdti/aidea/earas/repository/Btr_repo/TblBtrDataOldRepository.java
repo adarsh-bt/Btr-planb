@@ -110,6 +110,4 @@ List<TblBtrDataOld> findByLsgcodeAndBcodeAndLtype(Integer lsgcode, String bcode,
             @Param("filter") String filter,
             Pageable pageable
     );
-
-    List<TblBtrDataOld> findByLbcode(String lbcode);
 }

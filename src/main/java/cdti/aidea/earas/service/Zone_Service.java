@@ -2,7 +2,10 @@ package cdti.aidea.earas.service;
 
 //import cdti.aidea.earas.model.*;
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
-import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.contract.Response.BtrDataListResponse;
+import cdti.aidea.earas.contract.Response.BtrMainResponse;
+import cdti.aidea.earas.contract.Response.KeyPlotResponse;
+import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
@@ -55,7 +58,7 @@ public class Zone_Service {
                 zones = tblMasterZoneRepository.findByDesTalukId(idValue);
             } else if ("District".equalsIgnoreCase(type)) {
                 zones = tblMasterZoneRepository.findByDistId(idValue);
-            } else if ("Directorate".equalsIgnoreCase(type)) {
+            } else if ("DIRECTORATE".equalsIgnoreCase(type)) {
                 // If type is DIRECTORATE, exclude the District logic and only fetch by Taluk
                 zones = tblMasterZoneRepository.findByDistId(idValue);
             } else {
@@ -84,20 +87,6 @@ public class Zone_Service {
         }
     }
 
-    public List<ZoneIdNameResponse> getAssignedZones(UUID userId) {
-        List<UserZoneAssignment> assignments = userZoneAssignmentRepositoty.findAllByUserId(userId);
-
-        if (assignments.isEmpty()) {
-            throw new IllegalArgumentException("User has no assigned zones.");
-        }
-
-        return assignments.stream()
-                .map(a -> new ZoneIdNameResponse(
-                        a.getTblMasterZone().getZoneId(),
-                        a.getTblMasterZone().getZoneNameEn() // Use .getZoneNameMal() if needed
-                ))
-                .collect(Collectors.toList());
-    }
 
     public UserZoneAssignment ZoneAssignedService(ZoneAssignedRequset request) {
         System.out.println("ZoneAssignedService " + request.getAssigner_id() + " " + request.getZoneId() + " " + request.getUser_id());
@@ -152,15 +141,11 @@ public class Zone_Service {
     }
 
 
-
-    public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(Integer zone_id, int page, int size, String filter) {
+    public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(UUID userId, int page, int size, String filter) {
         // Fetch user and zone data
-
-        Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zone_id);
-
-//        var user = userZoneAssignmentRepositoty.findByUserId(userId);
-//        System.out.println("zone id " + user.get().getTblMasterZone().getZoneId());
-        var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(zone.get().getZoneId());
+        var user = userZoneAssignmentRepositoty.findByUserId(userId);
+        System.out.println("zone id " + user.get().getTblMasterZone().getZoneId());
+        var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(user.get().getTblMasterZone().getZoneId());
 
         // Extract village IDs and fetch village data
         List<Integer> villageIds = zoneRevenueList.stream()
@@ -470,9 +455,8 @@ public class Zone_Service {
 //    }
 
 
-public Object ZoneDetails(Integer zone_id) {
-
-    var user = userZoneAssignmentRepositoty.findByTblMasterZone_ZoneId(zone_id);
+public Object ZoneDetails(UUID userId) {
+    var user = userZoneAssignmentRepositoty.findByUserId(userId);
     var zoneRevenueList = tblZoneRevenueVillageMappingRepository
             .findByZone(user.get().getTblMasterZone().getZoneId());
 
@@ -656,6 +640,12 @@ public Object ZoneDetails(Integer zone_id) {
             unclassifiedPanchayaths
     );
 }
+
+
+
+
+
+
 
 }
 

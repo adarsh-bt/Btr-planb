@@ -6,7 +6,7 @@ CREATE TABLE keyplots_limit_log (
                                     remarks TEXT,
                                     agri_start_year DATE NOT NULL,
                                     agri_end_year DATE NOT NULL,
-                                    is_active BOOLEAN DEFAULT FALSE,
+                                    is_active BOOLEAN DEFAULT TRUE,
                                     edit_permitter UUID,
                                     is_edited BOOLEAN DEFAULT FALSE,
                                     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,

@@ -13,4 +13,5 @@ public class RevenueVillageDto {
     private Integer revenueVillageId;
     private String revenueVillageName;
     private List<String> blockCodes;
+    private Integer lsgCode;
 }

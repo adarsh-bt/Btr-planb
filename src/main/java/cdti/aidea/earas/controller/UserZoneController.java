@@ -5,7 +5,6 @@ package cdti.aidea.earas.controller;
 import cdti.aidea.earas.common.exception.Response;
 
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
-import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
 
@@ -21,7 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,24 +54,21 @@ public class UserZoneController {
                 .body(excelFile);
     }
     @GetMapping("/zones/{type}/{id}")
-    public ResponseEntity<List<ZoneListResponse>> getById(@PathVariable("type") String type,
-                                                          @PathVariable("id") String id) {
+    public ResponseEntity<Response> getById(@PathVariable("type") String type,
+                                            @PathVariable("id") String id){
+//                                            @RequestHeader("X-Username") String username,    for apigateway
+//                                            @RequestHeader("X-Roles") String role) {
+
         try {
             Integer idValue = Integer.parseInt(id); // Parse the ID
 
             // Call the unified service method
             List<ZoneListResponse> zoneList = zoneService.UserZonesByType(type, idValue);
 
-            return new ResponseEntity<>(zoneList, HttpStatus.OK);
+            return new ResponseEntity<>(Response.builder().payload(zoneList).message("User details fetched successfully.").build(), HttpStatus.OK);
 
         } catch (NumberFormatException e) {
-            // You can still return an error response if the ID is invalid
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (IllegalArgumentException e) {
-            // Optional: log or return a specific error message
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(Response.builder().message("Invalid ID. Please provide a valid integer value.").build(), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -97,46 +92,35 @@ public class UserZoneController {
         }
     }
 
-    @GetMapping("/btr-data/{ZoneId}")
+    @GetMapping("/btr-data/{UserId}")
     public ResponseEntity<Response> getByLandData(
-            @PathVariable("ZoneId") Integer zoneId,
+            @PathVariable("UserId") UUID userId,
             @RequestParam("page") int page,
             @RequestParam("size") int size,
             @RequestParam(value = "filter", required = false) String filter
     ) {
+        System.out.println("UserId: " + userId);
+
         return new ResponseEntity<>(Response.builder()
-                .payload(zoneService.UserAssignedLand(zoneId, page, size, filter))
+                .payload(zoneService.UserAssignedLand(userId, page, size, filter))
                 .message("User details fetched successfully.")
                 .build(),
                 HttpStatus.OK);
     }
 
 
-
-    @GetMapping("/zone-details/{ZoneId}")
+    @GetMapping("/zone-details/{UserId}")
     public ResponseEntity<Response> getKeyPlots(
-            @PathVariable("ZoneId") Integer ZoneId
+            @PathVariable("UserId") UUID userId
 
     ) {
+
         return new ResponseEntity<>(Response.builder()
-                .payload(zoneService.ZoneDetails(ZoneId))
+                .payload(zoneService.ZoneDetails(userId))
                 .message("Zone details fetched successfully.")
                 .build(),
                 HttpStatus.OK);
     }
-
-    @GetMapping("/zones/assigned/{userId}")
-    public ResponseEntity<?> getUserAssignedZones(@PathVariable("userId") UUID userId) {
-        try {
-            List<ZoneIdNameResponse> zones = zoneService.getAssignedZones(userId);
-            return new ResponseEntity<>(zones, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
 
 
 }

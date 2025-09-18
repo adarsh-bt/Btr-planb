@@ -22,31 +22,30 @@ public interface KeyPlotsRepository  extends JpaRepository<KeyPlots, UUID> {
 //            "AND k.selectedDate >= :cutoffDate")
 //    List<KeyPlots> findValidKeyPlots(@Param("zoneId") Long zoneId, @Param("cutoffDate") LocalDate cutoffDate);
 
-    @Query("SELECT kp FROM KeyPlots kp " +
-            "WHERE kp.zone.zoneId = :zoneId " +
-            "AND kp.isRejected = false " +
-            "AND EXTRACT(YEAR FROM kp.agriStartYear) = :currentYear " +
-            "AND kp.agriEndYear >= :today")
-    List<KeyPlots> findValidKeyPlots(
-            @Param("zoneId") Integer zoneId,
-            @Param("currentYear") int currentYear,
-            @Param("today") LocalDate today
-    );
-
-
-
-
-
-    @Query("SELECT k.btrDataOld.id FROM KeyPlots k " +
-            "WHERE k.selectedDate >= :cutoffDate")
-    List<Long> findRecentlyUsedBtrIds(@Param("cutoffDate") LocalDate cutoffDate);
-//    List<KeyPlots> findByUserZoneAssignment_TblMasterZone_ZoneId(Long zoneId);
-    Optional<KeyPlots> findByBtrDataOld(TblBtrDataOld btrDataOld);
-
-    List<KeyPlots> findByBtrDataOld_IdIn(List<Long> btrDataOldIds);
-
-
-    List<KeyPlots> findByZone(TblMasterZone zoneId);
-
+//    @Query("SELECT kp FROM KeyPlots kp " +
+//            "WHERE kp.zone.zoneId = :zoneId " +
+//            "AND kp.isRejected = false " +
+//            "AND EXTRACT(YEAR FROM kp.agriStartYear) = :currentYear " +
+//            "AND kp.agriEndYear >= :today")
+//    List<KeyPlots> findValidKeyPlots(
+//            @Param("zoneId") Integer zoneId,
+//            @Param("currentYear") int currentYear,
+//            @Param("today") LocalDate today
+//    );
+//
+//
+//
+//
+//
+//    @Query("SELECT k.btrDataOld.id FROM KeyPlots k " +
+//            "WHERE k.selectedDate >= :cutoffDate")
+//    List<Long> findRecentlyUsedBtrIds(@Param("cutoffDate") LocalDate cutoffDate);
+////    List<KeyPlots> findByUserZoneAssignment_TblMasterZone_ZoneId(Long zoneId);
+//    Optional<KeyPlots> findByBtrDataOld(TblBtrDataOld btrDataOld);
+//
+//    List<KeyPlots> findByBtrDataOld_IdIn(List<Long> btrDataOldIds);
+//
+//
+//    List<KeyPlots> findByZone(TblMasterZone zoneId);
 
 }

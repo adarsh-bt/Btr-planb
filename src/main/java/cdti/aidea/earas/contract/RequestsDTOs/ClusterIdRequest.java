@@ -1,5 +1,6 @@
 package cdti.aidea.earas.contract.RequestsDTOs;
 
+
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/localbodies")
@@ -16,6 +17,14 @@ import java.util.List;
 public class ZoneMappingController {
 
     private final ZoneMappingService zoneMappingService;
+
+    // Modified Endpoint: Returns a JSON object
+    @GetMapping("/district/{zoneId}")
+    public ResponseEntity<Map<String, Integer>> getDistrictIdByZone(@PathVariable Integer zoneId) {
+        return zoneMappingService.getDistrictIdByZone(zoneId)
+                .map(distId -> ResponseEntity.ok(Map.of("distId", distId))) // Wrap the ID in a Map
+                .orElse(ResponseEntity.notFound().build());
+    }
 
     // Get Local Bodies by Zone
     @GetMapping("/by-zone/{zoneId}")

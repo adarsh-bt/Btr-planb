@@ -33,7 +33,7 @@ CREATE TABLE public.cluster_details (
 
                                         CONSTRAINT cluster_details_plot_id_fkey
                                             FOREIGN KEY (plot_id)
-                                                REFERENCES public.tbl_btr_dataskilliold(id)
+                                                REFERENCES public.tbl_btr_data(id)
                                                 ON DELETE CASCADE
 );
 

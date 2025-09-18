@@ -12,23 +12,20 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "tbl_btr_dataskilli")
+@Table(name = "tbl_btr_data")
 public class TblBtrData {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String status;
-    private String description;
     private Integer dcode;
     private Integer tcode;
     private Integer vcode;
-    private Integer bcode;
-    private String slno;
-    private String subno;
+    private String bcode;
+
     private Integer resvno;
     private String resbdno;
-    private String oldsvno;
+
     private String lbtype;
     private String lbcode;
     private String govpriv;
@@ -62,6 +59,5 @@ public class TblBtrData {
 //    private String addonNotes;
 //
 //    private Integer fmp;
-
 
 }

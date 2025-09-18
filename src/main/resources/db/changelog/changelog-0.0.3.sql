@@ -26,7 +26,7 @@ CREATE TABLE keyplot_selections (
                                     geocoordinate VARCHAR(255),
 
 
-                                    CONSTRAINT fk_btr FOREIGN KEY (btr_id) REFERENCES tbl_btr_dataskilliold(id),
+                                    CONSTRAINT fk_btr FOREIGN KEY (btr_id) REFERENCES tbl_btr_data(id),
                                     CONSTRAINT fk_localbody FOREIGN KEY (localbody) REFERENCES tbl_master_localbody(localbody_id)
 
 );

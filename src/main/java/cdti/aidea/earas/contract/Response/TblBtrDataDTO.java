@@ -14,7 +14,7 @@ public class TblBtrDataDTO {
     private Integer dcode;
     private Integer tcode;
     private Integer vcode;
-    private Integer bcode;
+    private String bcode;
     private String lbcode;
     //private String lbtype;
     private String ltype;

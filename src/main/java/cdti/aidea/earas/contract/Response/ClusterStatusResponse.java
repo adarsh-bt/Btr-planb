@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -22,4 +23,5 @@ public class ClusterStatusResponse {
     private Long clusterId;
     private String clusterType;
     private String status;
+    List<String> cceCrops;
 }

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ResbdnoAreaResponse {
     private Integer resvno;
-    private Integer resbdno;
+    private String resbdno;
     private Double area;
     private Double balance;
     private Long plotId;

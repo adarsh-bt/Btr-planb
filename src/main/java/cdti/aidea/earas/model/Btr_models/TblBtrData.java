@@ -21,7 +21,7 @@ public class TblBtrData {
     private Integer dcode;
     private Integer tcode;
     private Integer vcode;
-    private Integer bcode;
+    private String bcode;
 
     private Integer resvno;
     private String resbdno;
@@ -43,7 +43,7 @@ public class TblBtrData {
     private Double north;
     private Double south;
     private Integer lsgcode;
-
+    private Double area;
 //    private LocalDateTime insertionTime;
 //    private LocalDateTime updationTime;
 //

@@ -1,49 +1,49 @@
-//package cdti.aidea.earas.controller;
-//
-//import cdti.aidea.earas.common.exception.Response;
-//import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-//import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
-//import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
-//import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
-//import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsFetchUserIdReq;
-//import cdti.aidea.earas.model.Btr_models.KeyPlots;
-////import cdti.aidea.earas.service.KeyPlots_Service;
-//import io.swagger.v3.oas.annotations.Operation;
-//import jakarta.persistence.EntityNotFoundException;
-//import jakarta.validation.Valid;
-//import lombok.RequiredArgsConstructor;
-//import lombok.extern.slf4j.Slf4j;
-//import org.springframework.http.HttpStatus;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.validation.annotation.Validated;
-//import org.springframework.web.bind.annotation.*;
-//
-//import java.util.Map;
-//import java.util.NoSuchElementException;
-//import java.util.UUID;
-//
-//
-//@Validated
-//@RestController
-//@RequestMapping("/key-plots")
-//@RequiredArgsConstructor
-//@Slf4j
-//
-//public class KeyPlotsController {
-//
-//    private final KeyPlots_Service keyPlots_Service;
-//
-//
-////    @GetMapping("/fetch-existing-keyplots/{userId}")
-////    public ResponseEntity<Response> getExistingKeyPlots(@PathVariable("userId") UUID userId) {
-////        return new ResponseEntity<>(Response.builder()
-////                .payload(keyPlots_Service.getExistingKeyPlots(userId))
-////                .message("Existing key plots fetched successfully.")
-////                .build(),
-////                HttpStatus.OK);
-////    }
-//
-//
+package cdti.aidea.earas.controller;
+
+import cdti.aidea.earas.common.exception.Response;
+import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
+import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
+import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
+import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
+import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsFetchUserIdReq;
+import cdti.aidea.earas.model.Btr_models.KeyPlots;
+import cdti.aidea.earas.service.KeyPlots_Service;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+
+
+@Validated
+@RestController
+@RequestMapping("/key-plots")
+@RequiredArgsConstructor
+@Slf4j
+
+public class KeyPlotsController {
+
+    private final KeyPlots_Service keyPlots_Service;
+
+
+//    @GetMapping("/fetch-existing-keyplots/{userId}")
+//    public ResponseEntity<Response> getExistingKeyPlots(@PathVariable("userId") UUID userId) {
+//        return new ResponseEntity<>(Response.builder()
+//                .payload(keyPlots_Service.getExistingKeyPlots(userId))
+//                .message("Existing key plots fetched successfully.")
+//                .build(),
+//                HttpStatus.OK);
+//    }
+
+
 //    @GetMapping("/generate-keyplots/{userId}")
 //    public ResponseEntity<Response> generateKeyPlots(@PathVariable("userId") UUID userId) {
 //        return new ResponseEntity<>(Response.builder()
@@ -52,16 +52,16 @@
 //                .build(),
 //                HttpStatus.OK);
 //    }
-//
-//    @GetMapping("/fetch-by-id/{kpId}")
-//    public ResponseEntity<Response> getById(@PathVariable("kpId") UUID kpId) {
-//        return new ResponseEntity<>(
-//                Response.builder()
-//                        .payload(keyPlots_Service.getByKpId(kpId))
-//                        .message("Key plot details fetched successfully.")
-//                        .build(),
-//                HttpStatus.OK);
-//    }
+
+    @GetMapping("/fetch-by-id/{kpId}")
+    public ResponseEntity<Response> getById(@PathVariable("kpId") UUID kpId) {
+        return new ResponseEntity<>(
+                Response.builder()
+                        .payload(keyPlots_Service.getByKpId(kpId))
+                        .message("Key plot details fetched successfully.")
+                        .build(),
+                HttpStatus.OK);
+    }
 //@PostMapping("/fetch-existing-keyplots")
 //public ResponseEntity<Response> getExistingKeyPlots(@Valid @RequestBody KeyplotsFetchUserIdReq request) {
 //    UUID userId = request.getUserId();
@@ -73,29 +73,29 @@
 //            .build(),
 //            HttpStatus.OK);
 //}
-//
-//    @Operation(summary = "Save key plot details")
-//    @PostMapping("/save")
-//    public ResponseEntity<Response> saveOrUpdateKeyPlotDetails(
-//            @RequestBody @Valid KeyPlotDetailsRequest request) {
-//
-//        KeyPlots plotDetails = keyPlots_Service.keyplotsOwnersaveOrUpdate(request);
-//
-//        KeyPlotOwnerDetailsResponse response =
-//                KeyPlotOwnerDetailsResponse.builder()
-//                        .id(plotDetails.getId())
-//                        .owner_name(plotDetails.getOwner_name()) // Set owner name
-//                        .address(plotDetails.getAddress()) // Set address
-//                        .phone_number(plotDetails.getPhone_number()) // Set mobile number
-//                        .build();
-//
-//        String message = request.getKpId() == null ? "Successfully saved" : "Successfully updated";
-//
-//        return new ResponseEntity<>(
-//                Response.builder().payload(response).message(message).build(), HttpStatus.CREATED);
-//    }
-//
-//
+
+    @Operation(summary = "Save key plot details")
+    @PostMapping("/save")
+    public ResponseEntity<Response> saveOrUpdateKeyPlotDetails(
+            @RequestBody @Valid KeyPlotDetailsRequest request) {
+
+        KeyPlots plotDetails = keyPlots_Service.keyplotsOwnersaveOrUpdate(request);
+
+        KeyPlotOwnerDetailsResponse response =
+                KeyPlotOwnerDetailsResponse.builder()
+                        .id(plotDetails.getId())
+                        .owner_name(plotDetails.getOwner_name()) // Set owner name
+                        .address(plotDetails.getAddress()) // Set address
+                        .phone_number(plotDetails.getPhone_number()) // Set mobile number
+                        .build();
+
+        String message = request.getKpId() == null ? "Successfully saved" : "Successfully updated";
+
+        return new ResponseEntity<>(
+                Response.builder().payload(response).message(message).build(), HttpStatus.CREATED);
+    }
+
+
 //    @PostMapping("/reject-and-replace/{keyPlotId}")
 //    public ResponseEntity<?> rejectAndReplaceKeyplot(
 //            @PathVariable Long keyPlotId,
@@ -113,36 +113,36 @@
 //                    .body("Error rejecting and replacing keyplot: " + e.getMessage());
 //        }
 //    }
-//
-//
-//    @GetMapping("/get-keyplot/{plotId}")
-//    public ResponseEntity<Response> getKeyPlotById(@PathVariable("plotId") UUID plotId) {
-//        try {
-//            KeyPlotDetailsResponse details = keyPlots_Service.getKeyPlotDetails(plotId);
-//
-//            return ResponseEntity.ok(
-//                    Response.builder()
-//                            .payload(details)
-//                            .message("KeyPlot details fetched successfully.")
-//                            .build()
-//            );
-//
-//        } catch (NoSuchElementException e) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-//                    .body(Response.builder().message(e.getMessage()).build());
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body(Response.builder().message("An unexpected error occurred").build());
-//        }
-//    }
-//
-//    @GetMapping("/fetch-by-keyplotsdetails/{kpId}")
-//    public ResponseEntity<Response> getByPlotsDetails(@PathVariable("kpId") UUID kpId) {
-//        return new ResponseEntity<>(
-//                Response.builder()
-//                        .payload(keyPlots_Service.getByKpId(kpId))
-//                        .message("Key plot details fetched successfully.")
-//                        .build(),
-//                HttpStatus.OK);
-//    }
-//}
+
+
+    @GetMapping("/get-keyplot/{plotId}")
+    public ResponseEntity<Response> getKeyPlotById(@PathVariable("plotId") UUID plotId) {
+        try {
+            KeyPlotDetailsResponse details = keyPlots_Service.getKeyPlotDetails(plotId);
+
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .payload(details)
+                            .message("KeyPlot details fetched successfully.")
+                            .build()
+            );
+
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Response.builder().message(e.getMessage()).build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Response.builder().message("An unexpected error occurred").build());
+        }
+    }
+
+    @GetMapping("/fetch-by-keyplotsdetails/{kpId}")
+    public ResponseEntity<Response> getByPlotsDetails(@PathVariable("kpId") UUID kpId) {
+        return new ResponseEntity<>(
+                Response.builder()
+                        .payload(keyPlots_Service.getByKpId(kpId))
+                        .message("Key plot details fetched successfully.")
+                        .build(),
+                HttpStatus.OK);
+    }
+}

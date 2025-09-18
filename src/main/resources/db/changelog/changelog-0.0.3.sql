@@ -2,7 +2,7 @@
 CREATE TABLE keyplot_selections (
                                     kp_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-                                    btr_id INTEGER NOT NULL,
+                                    btr_id BIGINT NOT NULL,
                                     zone_id INTEGER NOT NULL REFERENCES tbl_master_zone(zone_id) ON DELETE CASCADE,
 
                                     intervals INTEGER,

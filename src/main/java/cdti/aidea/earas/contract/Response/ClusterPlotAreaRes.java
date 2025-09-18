@@ -15,7 +15,7 @@ public class ClusterPlotAreaRes {
     private UUID keyPlotId;
     private String lbcode;
     private Integer resvno;
-    private Integer resbdno;
+    private String resbdno;
     private Double area;
     private String bcode;
     private Long plot_id;

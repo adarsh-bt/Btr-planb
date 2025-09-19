@@ -102,8 +102,8 @@ public class TblBtrDataService {
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
-    // ---------------- NEW: Get Clusters By Zone (manual fetch like getExistingKeyPlots) ----------------
-    public List<Map<String, Object>> getDataClustersByZone(Integer zoneId) {
+
+  //  public List<Map<String, Object>> getDataClustersByZone(Integer zoneId) {
         List<TblBtrData> btrDataList = tblBtrDataRepository.findAll().stream()
                 .filter(btr -> btr.getZoneId() != null && btr.getZoneId().equals(zoneId))
                 .collect(Collectors.toList());

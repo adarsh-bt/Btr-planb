@@ -27,6 +27,11 @@ public class TblBtrDataService {
     // ---------------- Single Save ----------------
     @Transactional
     public Map<String, Object> saveData(TblBtrDataDTO dto) {
+        // 🔎 Validation: check if resvno already exists
+        tblBtrDataRepository.findByResvno(dto.getResvno())
+                .ifPresent(existing -> {
+                    throw new RuntimeException("Duplicate resvno not allowed: " + dto.getResvno());
+                });
         // 1️⃣ Save TblBtrData
         TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
 
@@ -82,6 +87,13 @@ public class TblBtrDataService {
                 .map(this::saveData)
                 .collect(Collectors.toList());
     }
+    // ---------------- Get All ----------------
+    public List<TblBtrDataDTO> getAllData() {
+        return tblBtrDataRepository.findAll()
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
 
     // ---------------- DTO -> Entity Mapper ----------------
     private TblBtrData mapToEntity(TblBtrDataDTO dto) {
@@ -96,5 +108,22 @@ public class TblBtrDataService {
         entity.setResbdno(dto.getResbdno());
         entity.setLsgcode(dto.getLsgcode());
         return entity;
+    }
+    // ---------------- Entity -> DTO Mapper ----------------
+    private TblBtrDataDTO mapToDto(TblBtrData entity) {
+        TblBtrDataDTO dto = new TblBtrDataDTO();
+        dto.setDcode(entity.getDcode());
+        dto.setTcode(entity.getTcode());
+        dto.setVcode(entity.getVcode());
+        dto.setBcode(entity.getBcode());
+        dto.setLbcode(entity.getLbcode());
+        dto.setLtype(entity.getLtype());
+        dto.setResvno(entity.getResvno());
+        dto.setResbdno(entity.getResbdno());
+        dto.setLsgcode(entity.getLsgcode());
+        // zoneId and user_id are not directly in entity, setting null
+        dto.setZoneId(null);
+        dto.setUser_id(null);
+        return dto;
     }
 }

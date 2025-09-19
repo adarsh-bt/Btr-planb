@@ -112,4 +112,6 @@ Page<TblBtrData> findByLsgcodeIn(List<Integer> lsgcodes, Pageable pageable);
     );
 
     List<TblBtrData> findByLbcode(String lbcode);
+
+    Optional<Object> findByResvno(Integer resvno);
 }

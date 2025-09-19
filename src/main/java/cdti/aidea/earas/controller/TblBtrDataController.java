@@ -4,10 +4,7 @@ import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.service.TblBtrDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -30,5 +27,8 @@ public class TblBtrDataController {
         return ResponseEntity.ok(savedList);
     }
 
-
+    @GetMapping("/getAll")
+    public ResponseEntity<List<TblBtrDataDTO>> getAllData() {
+        return ResponseEntity.ok(service.getAllData());
+    }
 }

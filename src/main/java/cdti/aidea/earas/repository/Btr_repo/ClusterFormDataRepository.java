@@ -13,5 +13,4 @@ import java.util.List;
 public interface ClusterFormDataRepository extends JpaRepository<ClusterFormData, Long> {
     List<ClusterFormData> findByClusterMaster(ClusterMaster clusterMaster);
     List<ClusterFormData> findByPlotIdIn(List<Long> plotIds);
-
 }

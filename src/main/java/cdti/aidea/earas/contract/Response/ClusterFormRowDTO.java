@@ -12,7 +12,7 @@ public class ClusterFormRowDTO {
     private Long plot_id;
     private Double actual;
     private Integer svNo;    // resvno
-    private Integer subNo;   // resbdno
+    private String subNo;   // resbdno
     private Double area;
     private String bcode;
     private String village;

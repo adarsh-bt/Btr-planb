@@ -54,7 +54,7 @@ public class ZoneMappingService {
                 .map(lb -> new LocalbodyDto(
                         lb.getLocalbodyId(),
                         mal ? lb.getLocalbodyNameMal() : lb.getLocalbodyNameEn(),
-                        lb.getLocalbodyCode()))
+                        lb.getCodeApi()))
                 .toList();
     }
 

@@ -27,4 +27,5 @@ public interface ClusterLimitLogRepository extends JpaRepository<ClusterLimitLog
             "AND EXTRACT(YEAR FROM agri_end_year) = :endYear", nativeQuery = true)
     boolean existsByAgriStartAndEndYear(@Param("startYear") int startYear, @Param("endYear") int endYear);
 
+
 }

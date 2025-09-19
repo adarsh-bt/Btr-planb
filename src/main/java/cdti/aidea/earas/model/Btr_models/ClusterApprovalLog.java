@@ -1,5 +1,4 @@
 package cdti.aidea.earas.model.Btr_models;
-
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,7 +16,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "cluster_approval_log")
 public class ClusterApprovalLog {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

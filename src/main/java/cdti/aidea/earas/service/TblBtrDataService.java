@@ -62,8 +62,8 @@ public class TblBtrDataService {
         ClusterFormData clusterFormData = new ClusterFormData();
         clusterFormData.setClusterMaster(clusterMaster);
         clusterFormData.setPlot(btrData);
-        clusterFormData.setPlotLabel("Plot-" + btrData.getId());
-        clusterFormData.setEnumeratedArea(btrData.getNare() != null ? btrData.getNare() : 0.0);
+        clusterFormData.setPlotLabel("K");
+        clusterFormData.setEnumeratedArea(btrData.getTotCent());
         clusterFormData.setCreatedBy(UUID.randomUUID());
         clusterFormData.setStatus(true);
         clusterFormDataRepository.save(clusterFormData);
@@ -95,6 +95,7 @@ public class TblBtrDataService {
         entity.setResvno(dto.getResvno());
         entity.setResbdno(dto.getResbdno());
         entity.setLsgcode(dto.getLsgcode());
+        entity.setTotCent(dto.getTotCent());
         return entity;
     }
 }

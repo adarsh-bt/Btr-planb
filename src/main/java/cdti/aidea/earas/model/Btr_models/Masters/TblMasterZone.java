@@ -45,4 +45,6 @@ public class TblMasterZone {
     @Column(name = "dist_id")
     private Integer distId;
 
+
+
 }

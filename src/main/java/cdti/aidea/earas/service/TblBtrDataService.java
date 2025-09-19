@@ -67,8 +67,8 @@ public class TblBtrDataService {
         ClusterFormData clusterFormData = new ClusterFormData();
         clusterFormData.setClusterMaster(clusterMaster);
         clusterFormData.setPlot(btrData);
-        clusterFormData.setPlotLabel("Plot-" + btrData.getId());
-        clusterFormData.setEnumeratedArea(btrData.getNare() != null ? btrData.getNare() : 0.0);
+        clusterFormData.setPlotLabel("K");
+        clusterFormData.setEnumeratedArea(btrData.getTotCent());
         clusterFormData.setCreatedBy(UUID.randomUUID());
         clusterFormData.setStatus(true);
         clusterFormDataRepository.save(clusterFormData);
@@ -93,6 +93,69 @@ public class TblBtrDataService {
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+
+    }
+    // ---------------- Get By Zone ----------------
+    public List<TblBtrDataDTO> getDataByZoneId(Integer zoneId) {
+        return tblBtrDataRepository.findByZoneId(zoneId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+    // ---------------- NEW: Get Clusters By Zone (manual fetch like getExistingKeyPlots) ----------------
+    public List<Map<String, Object>> getDataClustersByZone(Integer zoneId) {
+        List<TblBtrData> btrDataList = tblBtrDataRepository.findAll().stream()
+                .filter(btr -> btr.getZoneId() != null && btr.getZoneId().equals(zoneId))
+                .collect(Collectors.toList());
+
+        if (btrDataList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<String, List<TblBtrData>> groupedByPanchayat = btrDataList.stream()
+                .collect(Collectors.groupingBy(TblBtrData::getLbcode));
+
+        List<Map<String, Object>> clusterList = new ArrayList<>();
+        int globalSlNo = 1;
+
+        for (Map.Entry<String, List<TblBtrData>> entry : groupedByPanchayat.entrySet()) {
+            String panchayath = entry.getKey();
+            List<TblBtrData> plots = entry.getValue();
+
+            List<Map<String, Object>> wetSamples = new ArrayList<>();
+            List<Map<String, Object>> drySamples = new ArrayList<>();
+            double wetArea = 0, dryArea = 0;
+
+            for (TblBtrData plot : plots) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("id", plot.getId());
+                row.put("no", globalSlNo++);
+                row.put("panchayath", panchayath);
+                row.put("Sy. No", plot.getResvno() + "/" + plot.getResbdno());
+                row.put("Area (Cents)", plot.getTotCent());
+                row.put("Village/Block", plot.getBcode());
+
+                if ("Wet".equalsIgnoreCase(plot.getLtype())) {
+                    wetSamples.add(row);
+                    wetArea += plot.getTotCent();
+                } else if ("Dry".equalsIgnoreCase(plot.getLtype())) {
+                    drySamples.add(row);
+                    dryArea += plot.getTotCent();
+                }
+            }
+
+            Map<String, Object> clusterData = new HashMap<>();
+            clusterData.put("panchayath", panchayath);
+            clusterData.put("wetSamples", wetSamples);
+            clusterData.put("drySamples", drySamples);
+            clusterData.put("wetarea", Math.round(wetArea));
+            clusterData.put("dryarea", Math.round(dryArea));
+            clusterData.put("totalarea", Math.round(wetArea + dryArea));
+
+            clusterList.add(clusterData);
+        }
+
+        return clusterList;
     }
 
     // ---------------- DTO -> Entity Mapper ----------------
@@ -107,6 +170,7 @@ public class TblBtrDataService {
         entity.setResvno(dto.getResvno());
         entity.setResbdno(dto.getResbdno());
         entity.setLsgcode(dto.getLsgcode());
+        entity.setTotCent(dto.getTotCent());
         return entity;
     }
     // ---------------- Entity -> DTO Mapper ----------------

@@ -123,7 +123,7 @@ public class ClusterService {
             String keyplot_svno = cluster.getKeyPlot().getBtrData().getResvno() + "/" + cluster.getKeyPlot().getBtrData().getResbdno();
             String keyplot_lbcode = cluster.getKeyPlot().getBtrData().getBcode();
             String local_body_code = cluster.getKeyPlot().getBtrData().getLbcode();
-            Double keyplot_area = cluster.getKeyPlot().getBtrData().getArea();
+            Double keyplot_area = cluster.getKeyPlot().getBtrData().getTotCent();
             //code by k:
 //            String keyplot_svno = cluster.getKeyPlot().getBtrData().getResvno() + "/" + cluster.getKeyPlot().getBtrData().getResbdno();
 //            Integer keyplot_bcode = cluster.getKeyPlot().getBtrData().getBcode();   // use Integer
@@ -382,7 +382,7 @@ public class ClusterService {
                         Objects.equals(p.getResbdno(), excludedResbdno)))
                 .map(p -> {
 
-                    Double originalArea = BigDecimal.valueOf(p.getArea())
+                    Double originalArea = BigDecimal.valueOf(p.getTotCent())
                             .setScale(2, RoundingMode.HALF_UP)
                             .doubleValue();
 
@@ -500,7 +500,7 @@ public class ClusterService {
         TblBtrData plot = tblBtrDataRepository
                 .findByLbcodeAndResvnoAndResbdnoAndLtype(lbcode, resvno, resbdno, ltype)
                 .orElseThrow(() -> new EntityNotFoundException("Plot not found for given parameters"));
-        return new ClusterPlotAreaRes(kpId, lbcode, resvno, resbdno, plot.getArea(), plot.getBcode(),plot.getId());
+        return new ClusterPlotAreaRes(kpId, lbcode, resvno, resbdno, plot.getTotCent(), plot.getBcode(),plot.getId());
     }
 
     @Transactional
@@ -831,4 +831,6 @@ public class ClusterService {
 //        // You can also save wardNumber, wetDry, keyplotType, reserveKeyplot if you extend KeyPlots or create a new Cluster entity.
 //        // For now, these are not mapped to the provided entities.
 //    }
+
+
 }

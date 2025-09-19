@@ -13,4 +13,6 @@ public interface TblMasterVillageBlockRepository extends JpaRepository<TblMaster
     // Custom query methods if needed
     // Example:
     // List<VillageBlock> findByVillageId(Integer villageId);
+    // ✅ Fetch blocks for multiple villages at once
+    List<TblMasterVillageBlock> findByVillageIdIn(List<Integer> villageIds);
 }

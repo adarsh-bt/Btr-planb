@@ -87,6 +87,12 @@ public class ClusterController {
 //        return ResponseEntity.ok(response);
 //    }
 
+    @GetMapping("/{lbcode}/villages")
+    public ResponseEntity<List<VillagesListResponse>> getVillagessByKeyPlot(@PathVariable String lbcode) {
+        List<VillagesListResponse> response = clusterService.getVillagesListByLbCode(lbcode);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{kpId}/resvnos")
     public ResponseEntity<List<Integer>> getResvnos(
             @PathVariable UUID kpId,

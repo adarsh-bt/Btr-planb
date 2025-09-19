@@ -10,5 +10,6 @@
     <include file="/db/changelog/changelog-0.0.5.sql"/>
     <include file="/db/changelog/changelog-0.0.6.sql"/>
     <include file="/db/changelog/changelog-0.0.7.sql"/>
+    <include file="/db/changelog/changelog-0.0.8.sql"/>
 
 </databaseChangeLog>

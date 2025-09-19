@@ -21,5 +21,8 @@ public interface UserZoneAssignmentRepositoty extends JpaRepository<UserZoneAssi
 
     Optional<UserZoneAssignment> findByUserIdAndTblMasterZone_ZoneId(UUID userId, Long zoneId);
 
+    List<UserZoneAssignment> findAllByUserId(UUID userId);
+
+
 
 }

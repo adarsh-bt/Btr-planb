@@ -43,13 +43,16 @@ public class TblBtrData {
     private Double north;
     private Double south;
     private Integer lsgcode;
-    private Double area;
+//    private Double area;
 //    private LocalDateTime insertionTime;
 //    private LocalDateTime updationTime;
 //
 //    private LocalDate agreStartYear;
 //    private LocalDate agreEndYear;
-//    private Double totCent;
+    private Double totCent;
+    @Column(name = "zone_id")
+    private Integer zoneId;
+
 //    private Boolean reject;
 //
 //    private String reson;

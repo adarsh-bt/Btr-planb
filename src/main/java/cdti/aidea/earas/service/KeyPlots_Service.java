@@ -67,7 +67,7 @@ public class KeyPlots_Service {
 //        int currentYear = LocalDate.now().getYear();
 //        LocalDate today = LocalDate.now();
 //
-//        List<KeyPlots> existingKeyPlots = keyPlotsRepository.findValidKeyPlots(
+//         List<KeyPlots> existingKeyPlots = keyPlotsRepository.findValidKeyPlots(
 //                user.get().getTblMasterZone().getZoneId(),
 //                currentYear,
 //                today
@@ -640,7 +640,7 @@ public class KeyPlots_Service {
             clusterFormData.setClusterMaster(cluster);
             clusterFormData.setPlotLabel("K");
             clusterFormData.setStatus(true);
-            clusterFormData.setEnumeratedArea(kp.getBtrData().getArea());
+            clusterFormData.setEnumeratedArea(kp.getBtrData().getTotCent());
             clusterFormData.setCreatedBy(kp.getCreated_by());
 
             clusterFormDataList.add(clusterFormData);
@@ -678,7 +678,7 @@ public class KeyPlots_Service {
             row.put("panchayth",plot.getLbcode());
             row.put("Random No", index);  // Original starting point for random
             row.put("Sy. No", plot.getResvno() + "/" + plot.getResbdno());
-            row.put("Area (Cents)", plot.getArea());
+            row.put("Area (Cents)", plot.getTotCent());
             row.put("Village/Block", plot.getBcode()); // Adjust this as per your model
             row.put("panchayth", localBodyNameMap.getOrDefault(plot.getLbcode(), plot.getLbcode()));
 
@@ -914,7 +914,7 @@ public class KeyPlots_Service {
 
         String syNo = plot.getResvno() + "/" + plot.getResbdno();
         String villageBlock = plot.getBcode();
-        double area = plot.getArea();
+        double area = plot.getTotCent();
 
         String lbcode = plot.getLbcode();
         String panchayath = localBodyRepository.findByCodeApi(lbcode)
@@ -971,7 +971,7 @@ public class KeyPlots_Service {
                                     Double.valueOf(data.getEnumeratedArea()),
                                     plot.getResvno(),
                                     plot.getResbdno(),
-                                    BigDecimal.valueOf(plot.getArea())
+                                    BigDecimal.valueOf(plot.getTotCent())
                                             .setScale(2, RoundingMode.HALF_UP)
                                             .doubleValue(),
                                     plot.getBcode(),

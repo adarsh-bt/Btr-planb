@@ -23,4 +23,5 @@ public class TblBtrDataDTO {
     private Integer lsgcode;
     private Integer zoneId; // new field for zone
     private UUID user_id;
+    private double totCent;
 }

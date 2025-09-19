@@ -588,7 +588,43 @@ public class ClusterService {
                 submittedKeys.add(uniqueKey); // Add to submitted keys set
 
                 TblBtrData plot = tblBtrDataRepository.findById(currentPlotId)
-                        .orElseThrow(() -> new RuntimeException("Plot not found for ID: " + currentPlotId));
+//                        .orElseThrow(() -> new RuntimeException("Plot not found for ID: " + currentPlotId));
+                        .orElseGet(() -> {
+                            // Create new TblBtrData if not found
+                            TblBtrData newPlot = new TblBtrData();
+
+                            // Set basic properties from the row data
+                            newPlot.setResvno(row.getSvNo());
+                            newPlot.setResbdno(row.getSubNo());
+                            newPlot.setBcode(row.getBcode());
+                            newPlot.setTotCent(row.getArea());
+
+                            // Get additional properties from keyPlot for consistency
+                            TblBtrData keyPlotBtrData = keyPlot.getBtrData();
+                            newPlot.setDcode(keyPlotBtrData.getDcode());
+                            newPlot.setTcode(keyPlotBtrData.getTcode());
+                            newPlot.setVcode(keyPlotBtrData.getVcode());
+                            newPlot.setLbtype(keyPlotBtrData.getLbtype());
+                            newPlot.setLbcode(keyPlotBtrData.getLbcode());
+                            newPlot.setGovpriv(keyPlotBtrData.getGovpriv());
+                            newPlot.setLtype(keyPlotBtrData.getLtype());
+                            newPlot.setLanduse(keyPlotBtrData.getLanduse());
+                            newPlot.setLsgcode(keyPlotBtrData.getLsgcode());
+
+                            // Set default values for optional fields
+//                            newPlot.setNhect(0.0);
+//                            newPlot.setNare(0.0);
+//                            newPlot.setNsqm(0.0);
+//                            newPlot.setEast(0.0);
+//                            newPlot.setWest(0.0);
+//                            newPlot.setNorth(0.0);
+//                            newPlot.setSouth(0.0);
+
+                            log.info("Creating new TblBtrData for plot_id: {} with svNo: {} and subNo: {}",
+                                    currentPlotId, row.getSvNo(), row.getSubNo());
+
+                            return tblBtrDataRepository.save(newPlot);
+                        });
 
                 Double enumeratedArea = row.getActual();
                 if (enumeratedArea == null) {

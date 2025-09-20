@@ -59,6 +59,50 @@ public class KeyPlots_Service {
     @PersistenceContext
     private EntityManager entityManager;
 
+    public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails() {
+        List<KeyPlots> allKeyPlots = keyPlotsRepository.findAll();
+
+        return allKeyPlots.stream()
+                .map(this::mapToKeyPlotDetailsResponse)
+                .collect(Collectors.toList());
+    }
+
+    private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(KeyPlots keyPlot) {
+        TblBtrData plot = keyPlot.getBtrData();
+        String syNo = plot.getResvno() + "/" + plot.getResbdno();
+        String villageBlock = plot.getBcode();
+        double area = plot.getTotCent();
+        String lbcode = plot.getLbcode();
+
+        String panchayath = localBodyRepository.findByCodeApi(lbcode)
+                .map(TblLocalBody::getLocalbodyNameEn)
+                .orElse(lbcode); // fallback if name not found
+
+        String landType = keyPlot.getLandType();
+
+        Optional<TblMasterVillage> village = tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+
+        // Fetch related SidePlotDTOs
+        List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
+
+        String villageName = village.map(TblMasterVillage::getVillageNameEn).orElse("Unknown");
+        Integer villageId = village.map(TblMasterVillage::getVillageId).orElse(null);
+
+        return new KeyPlotDetailsResponse(
+                keyPlot.getId(),
+                villageName,
+                villageId,
+                villageBlock,
+                panchayath,
+                lbcode,
+                syNo,
+                area,
+                landType,
+                sidePlots
+        );
+    }
+
+
 
 //    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
 //        var user = userZoneAssignmentRepositoty.findByUserId(userId);

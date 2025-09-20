@@ -1,6 +1,7 @@
 package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
+import cdti.aidea.earas.contract.Response.TblBtrDataResponseDTO;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.repository.Btr_repo.*;
@@ -97,5 +98,53 @@ public class TblBtrDataService {
         entity.setLsgcode(dto.getLsgcode());
         entity.setTotCent(dto.getTotCent());
         return entity;
+    }
+
+    /**
+     * Fetch all BTR data records as DTOs
+     */
+    public List<TblBtrDataResponseDTO> getAllBtrData() {
+        List<TblBtrData> entities = tblBtrDataRepository.findAll();
+        return entities.stream()
+                .map(entity -> {
+                    TblBtrDataResponseDTO dto = new TblBtrDataResponseDTO();
+                    dto.setId(entity.getId());
+                    dto.setBcode(entity.getBcode());
+                    dto.setResvno(entity.getResvno());
+                    dto.setResbdno(entity.getResbdno());
+                    dto.setLbcode(entity.getLbcode());
+                    dto.setLtype(entity.getLtype());
+                    dto.setLsgcode(entity.getLsgcode());
+                    dto.setTotCent(entity.getTotCent());
+                    dto.setLanduse(entity.getLanduse());
+                    dto.setNhect(entity.getNhect());
+                    dto.setNare(entity.getNare());
+                    dto.setNsqm(entity.getNsqm());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Fetch BTR data by ID as DTO
+     */
+    public Optional<TblBtrDataResponseDTO> getBtrDataById(Long id) {
+        return tblBtrDataRepository.findById(id)
+                .map(entity -> {
+                    TblBtrDataResponseDTO dto = new TblBtrDataResponseDTO();
+                    dto.setId(entity.getId());
+                    dto.setBcode(entity.getBcode());
+                    dto.setResvno(entity.getResvno());
+                    dto.setResbdno(entity.getResbdno());
+                    dto.setLbcode(entity.getLbcode());
+                    dto.setLtype(entity.getLtype());
+                    dto.setLsgcode(entity.getLsgcode());
+                    dto.setTotCent(entity.getTotCent());
+                    dto.setLanduse(entity.getLanduse());
+                    dto.setNhect(entity.getNhect());
+                    dto.setNare(entity.getNare());
+                    dto.setNsqm(entity.getNsqm());
+                    return dto;
+                });
     }
 }

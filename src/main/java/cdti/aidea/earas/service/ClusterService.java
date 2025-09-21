@@ -505,6 +505,8 @@ public class ClusterService {
 
     @Transactional
     public void saveClusterData(UUID userid,UUID keyplotId, Integer clusterNo, List<SidePlotDTO> sidePlots) {
+
+        System.out.println(">>>>>>>>>>>>> "+sidePlots);
         KeyPlots keyPlot = keyPlotsRepository.findById(keyplotId)
                 .orElseThrow(() -> new RuntimeException("KeyPlot not found with ID: " + keyplotId));
 
@@ -592,7 +594,7 @@ public class ClusterService {
                         .orElseGet(() -> {
                             // Create new TblBtrData if not found
                             TblBtrData newPlot = new TblBtrData();
-
+                            System.out.println("villages"+row.getVillage());
                             // Set basic properties from the row data
                             newPlot.setResvno(row.getSvNo());
                             newPlot.setResbdno(row.getSubNo());
@@ -603,13 +605,14 @@ public class ClusterService {
                             TblBtrData keyPlotBtrData = keyPlot.getBtrData();
                             newPlot.setDcode(keyPlotBtrData.getDcode());
                             newPlot.setTcode(keyPlotBtrData.getTcode());
-                            newPlot.setVcode(keyPlotBtrData.getVcode());
-                            newPlot.setLbtype(keyPlotBtrData.getLbtype());
+                            newPlot.setVcode(Integer.valueOf(row.getVillage())); //m
+//                            newPlot.setLbtype(keyPlotBtrData.getLbtype());//venda
                             newPlot.setLbcode(keyPlotBtrData.getLbcode());
-                            newPlot.setGovpriv(keyPlotBtrData.getGovpriv());
-                            newPlot.setLtype(keyPlotBtrData.getLtype());
-                            newPlot.setLanduse(keyPlotBtrData.getLanduse());
-                            newPlot.setLsgcode(keyPlotBtrData.getLsgcode());
+//                            newPlot.setGovpriv(keyPlotBtrData.getGovpriv());//venda
+                            newPlot.setLtype(keyPlotBtrData.getLtype());// done
+//                            newPlot.setLanduse(keyPlotBtrData.getLanduse()); //venda
+                            Optional<TblMasterVillage> lsg = tblMasterVillageRepository.findById(Integer.valueOf(row.getVillage()));
+                            newPlot.setLsgcode(lsg.get().getLsgCode()); //m
 
                             // Set default values for optional fields
 //                            newPlot.setNhect(0.0);

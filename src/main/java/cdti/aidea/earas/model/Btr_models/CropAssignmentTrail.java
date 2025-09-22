@@ -29,7 +29,9 @@ public class CropAssignmentTrail {
     @JoinColumn(name = "keyplot_id")
     private KeyPlots keyPlot;
 
-    private Long zone_id;
+
+    @Column(name = "zone_id")
+    private Long zoneId;
 
     @Column(name = "land_type")
     private String landType;

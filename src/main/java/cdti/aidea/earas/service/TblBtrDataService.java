@@ -27,11 +27,11 @@ public class TblBtrDataService {
     // ---------------- Single Save ----------------
     @Transactional
     public Map<String, Object> saveData(TblBtrDataDTO dto) {
-        // 🔎 Validation: check if resvno already exists
-        tblBtrDataRepository.findByResvno(dto.getResvno())
-                .ifPresent(existing -> {
-                    throw new RuntimeException("Duplicate resvno not allowed: " + dto.getResvno());
-                });
+        // ✅ Validate required fields
+        validateRequiredFields(dto);
+
+        // ✅ Validate duplicates
+        validateDuplicate(dto);
         // 1️⃣ Save TblBtrData
         TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
 
@@ -76,86 +76,22 @@ public class TblBtrDataService {
         // ✅ Return saved entities
         Map<String, Object> response = new HashMap<>();
         response.put("btrData", btrData);
-        response.put("keyPlot", keyPlot);
+
         return response;
     }
 
     // ---------------- Bulk Save ----------------
     @Transactional
     public List<Map<String, Object>> saveAllData(List<TblBtrDataDTO> dtoList) {
+        // 🔍 Validate ALL first (fail fast)
+        for (TblBtrDataDTO dto : dtoList) {
+            validateRequiredFields(dto); // ✅ required field check
+            validateDuplicate(dto);      // ✅ duplicate check
+        }
+        // If no duplicates or missing fields found → save all
         return dtoList.stream()
                 .map(this::saveData)
                 .collect(Collectors.toList());
-    }
-    // ---------------- Get All ----------------
-    public List<TblBtrDataDTO> getAllData() {
-        return tblBtrDataRepository.findAll()
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-
-    }
-    // ---------------- Get By Zone ----------------
-    public List<TblBtrDataDTO> getDataByZoneId(Integer zoneId) {
-        return tblBtrDataRepository.findByZoneId(zoneId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-    }
-
-  //  public List<Map<String, Object>> getDataClustersByZone(Integer zoneId) {
-        List<TblBtrData> btrDataList = tblBtrDataRepository.findAll().stream()
-                .filter(btr -> btr.getZoneId() != null && btr.getZoneId().equals(zoneId))
-                .collect(Collectors.toList());
-
-        if (btrDataList.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        Map<String, List<TblBtrData>> groupedByPanchayat = btrDataList.stream()
-                .collect(Collectors.groupingBy(TblBtrData::getLbcode));
-
-        List<Map<String, Object>> clusterList = new ArrayList<>();
-        int globalSlNo = 1;
-
-        for (Map.Entry<String, List<TblBtrData>> entry : groupedByPanchayat.entrySet()) {
-            String panchayath = entry.getKey();
-            List<TblBtrData> plots = entry.getValue();
-
-            List<Map<String, Object>> wetSamples = new ArrayList<>();
-            List<Map<String, Object>> drySamples = new ArrayList<>();
-            double wetArea = 0, dryArea = 0;
-
-            for (TblBtrData plot : plots) {
-                Map<String, Object> row = new HashMap<>();
-                row.put("id", plot.getId());
-                row.put("no", globalSlNo++);
-                row.put("panchayath", panchayath);
-                row.put("Sy. No", plot.getResvno() + "/" + plot.getResbdno());
-                row.put("Area (Cents)", plot.getTotCent());
-                row.put("Village/Block", plot.getBcode());
-
-                if ("Wet".equalsIgnoreCase(plot.getLtype())) {
-                    wetSamples.add(row);
-                    wetArea += plot.getTotCent();
-                } else if ("Dry".equalsIgnoreCase(plot.getLtype())) {
-                    drySamples.add(row);
-                    dryArea += plot.getTotCent();
-                }
-            }
-
-            Map<String, Object> clusterData = new HashMap<>();
-            clusterData.put("panchayath", panchayath);
-            clusterData.put("wetSamples", wetSamples);
-            clusterData.put("drySamples", drySamples);
-            clusterData.put("wetarea", Math.round(wetArea));
-            clusterData.put("dryarea", Math.round(dryArea));
-            clusterData.put("totalarea", Math.round(wetArea + dryArea));
-
-            clusterList.add(clusterData);
-        }
-
-        return clusterList;
     }
 
     // ---------------- DTO -> Entity Mapper ----------------
@@ -173,21 +109,42 @@ public class TblBtrDataService {
         entity.setTotCent(dto.getTotCent());
         return entity;
     }
-    // ---------------- Entity -> DTO Mapper ----------------
-    private TblBtrDataDTO mapToDto(TblBtrData entity) {
-        TblBtrDataDTO dto = new TblBtrDataDTO();
-        dto.setDcode(entity.getDcode());
-        dto.setTcode(entity.getTcode());
-        dto.setVcode(entity.getVcode());
-        dto.setBcode(entity.getBcode());
-        dto.setLbcode(entity.getLbcode());
-        dto.setLtype(entity.getLtype());
-        dto.setResvno(entity.getResvno());
-        dto.setResbdno(entity.getResbdno());
-        dto.setLsgcode(entity.getLsgcode());
-        // zoneId and user_id are not directly in entity, setting null
-        dto.setZoneId(null);
-        dto.setUser_id(null);
-        return dto;
+    // ---------------- Duplicate Validation ----------------
+    private void validateDuplicate(TblBtrDataDTO dto) {
+        boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+                dto.getDcode(),
+                dto.getTcode(),
+                dto.getVcode(),
+                dto.getBcode(),
+                dto.getResvno(),
+                dto.getResbdno()
+        );
+
+        if (exists) {
+            throw new RuntimeException(
+                    "Duplicate entry detected! Record already exists for: " +
+                            "dcode=" + dto.getDcode() +
+                            ", tcode=" + dto.getTcode() +
+                            ", vcode=" + dto.getVcode() +
+                            ", bcode=" + dto.getBcode() +
+                            ", resvno=" + dto.getResvno()+
+                            ", resbdno=" + dto.getResbdno()
+            );
+        }
+    }
+      // ---------------- Required Fields Validation ----------------
+    private void validateRequiredFields(TblBtrDataDTO dto) {
+        List<String> errors = new ArrayList<>();
+
+        if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
+        if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
+        if (dto.getVcode() == null) errors.add("Village code (vcode) is required.");
+        if (dto.getBcode() == null || dto.getBcode().trim().isEmpty()) errors.add("Block code (bcode) is required.");
+        if (dto.getResvno() == null) errors.add("Reservation number (resvno) is required.");
+        if (dto.getResbdno() == null || dto.getResbdno().trim().isEmpty()) errors.add("Reservation boundary number (resbdno) is required.");
+
+        if (!errors.isEmpty()) {
+            throw new RuntimeException("Validation failed: " + String.join(" ", errors));
+        }
     }
 }

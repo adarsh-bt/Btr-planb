@@ -50,8 +50,7 @@ public class TblBtrData {
 //    private LocalDate agreStartYear;
 //    private LocalDate agreEndYear;
     private Double totCent;
-    @Column(name = "zone_id")
-    private Integer zoneId;
+
 
 //    private Boolean reject;
 //

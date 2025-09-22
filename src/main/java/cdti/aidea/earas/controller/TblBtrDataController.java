@@ -27,15 +27,16 @@ public class TblBtrDataController {
         return ResponseEntity.ok(savedList);
     }
 
-    @GetMapping("/getAll")
-    public ResponseEntity<List<TblBtrDataDTO>> getAllData() {
-        return ResponseEntity.ok(service.getAllData());
-    }
+
+//    @GetMapping("/getAll")
+//    public ResponseEntity<List<TblBtrDataDTO>> getAllData() {
+//        return ResponseEntity.ok(service.getAllData());
+//    }
     // ✅ Get by ZoneId (manual fetch without relation)
-    @GetMapping("/getByZone/{zoneId}")
-    public ResponseEntity<List<TblBtrDataDTO>> getDataByZone(@PathVariable Integer zoneId) {
-        return ResponseEntity.ok(service.getDataByZoneId(zoneId));
-    }
+//    @GetMapping("/getByZone/{zoneId}")
+//    public ResponseEntity<List<TblBtrDataDTO>> getDataByZone(@PathVariable Integer zoneId) {
+//        return ResponseEntity.ok(service.getDataByZoneId(zoneId));
+//    }
 //    // ✅ NEW: Get grouped clusters by ZoneId (manual fetch with wet/dry grouping)
 //    @GetMapping("/getClustersByZone/{zoneId}")
 //    public ResponseEntity<List<Map<String, Object>>> getClustersByZone(@PathVariable Integer zoneId) {

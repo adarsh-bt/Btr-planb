@@ -11,6 +11,6 @@ import org.springframework.validation.annotation.Validated;
 @AllArgsConstructor
 @Validated
 public class AvailableCcePlotFetchRequest {
-    @NotNull(message = "Zone id cannot be null")
-    private Long zoneId;
+  @NotNull(message = "Zone id cannot be null")
+  private Long zoneId;
 }

@@ -11,11 +11,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ZoneListResponse  {
+public class ZoneListResponse {
 
-    private Integer zoneId;
-    private Integer zoneCode;
-    private String zoneNameEn;
-    private String zoneNameMal;
-   
+  private Integer zoneId;
+  private Integer zoneCode;
+  private String zoneNameEn;
+  private String zoneNameMal;
 }

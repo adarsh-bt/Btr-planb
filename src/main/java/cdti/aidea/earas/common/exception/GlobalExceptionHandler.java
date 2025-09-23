@@ -1,6 +1,5 @@
 package cdti.aidea.earas.common.exception;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +21,11 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-    String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+  public ResponseEntity<Map<String, String>> handleValidationExceptions(
+      MethodArgumentNotValidException ex) {
+    String errorMessage =
+        ex.getBindingResult().getFieldErrors().stream()
             .findFirst()
             .map(FieldError::getDefaultMessage)
             .orElse("Validation error");
@@ -38,7 +38,8 @@ public class GlobalExceptionHandler {
 
   // Handle invalid argument exceptions
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+  public ResponseEntity<Map<String, String>> handleIllegalArgumentException(
+      IllegalArgumentException ex) {
     Map<String, String> response = new HashMap<>();
     response.put("message", ex.getMessage());
     return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -53,14 +54,17 @@ public class GlobalExceptionHandler {
     Map<String, Object> errorDetails = new HashMap<>();
     errorDetails.put("response", ex.getMessage());
     errorDetails.put("error", "An unexpected error occurred");
-    errorDetails.put("message", "We apologize for the inconvenience. Please try again later or contact support if the issue persists.");
+    errorDetails.put(
+        "message",
+        "We apologize for the inconvenience. Please try again later or contact support if the issue persists.");
 
     return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   // Handle invalid JSON parse for Integer/UUID errors
   @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ResponseEntity<Map<String, String>> handleInvalidJsonFormat(HttpMessageNotReadableException ex) {
+  public ResponseEntity<Map<String, String>> handleInvalidJsonFormat(
+      HttpMessageNotReadableException ex) {
     Map<String, String> response = new HashMap<>();
 
     // Check if the error is related to UUID or Integer parsing issue
@@ -78,7 +82,8 @@ public class GlobalExceptionHandler {
   // Handle general response status exception (e.g., wrong endpoint or other unexpected cases)
   @ExceptionHandler(ResponseStatusException.class)
   @ResponseBody
-  public ResponseEntity<Map<String, String>> handleResponseStatusException(ResponseStatusException ex) {
+  public ResponseEntity<Map<String, String>> handleResponseStatusException(
+      ResponseStatusException ex) {
     Map<String, String> response = new HashMap<>();
     response.put("message", ex.getMessage());
     return new ResponseEntity<>(response, ex.getStatusCode());

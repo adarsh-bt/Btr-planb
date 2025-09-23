@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Response {
-    private Object payload;
-    private String message;
+  private Object payload;
+  private String message;
 }

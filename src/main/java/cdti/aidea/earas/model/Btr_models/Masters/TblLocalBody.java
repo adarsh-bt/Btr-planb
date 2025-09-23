@@ -1,6 +1,5 @@
 package cdti.aidea.earas.model.Btr_models.Masters;
 
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -15,22 +14,21 @@ import lombok.NoArgsConstructor;
 @Table(name = "tbl_master_localbody")
 public class TblLocalBody {
 
-        @Id
-        private Integer localbodyId;
+  @Id private Integer localbodyId;
 
-        private String localbodyCode;
+  private String localbodyCode;
 
-        private Short distId;
+  private Short distId;
 
-        private String localbodyNameEn;
+  private String localbodyNameEn;
 
-        private String localbodyNameMal;
+  private String localbodyNameMal;
 
-        private Short localbodyType;
+  private Short localbodyType;
 
-        private String codeApi;
+  private String codeApi;
 
-        private Boolean isActive;
+  private Boolean isActive;
 
-        private String lsgCode;
+  private String lsgCode;
 }

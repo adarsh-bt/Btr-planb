@@ -6,7 +6,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableFeignClients
-public class  EarasApplication {
+public class EarasApplication {
   public static void main(String[] args) {
     SpringApplication.run(EarasApplication.class, args);
   }

@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BlockCodeResponse {
-    private String blockCode;
+  private String blockCode;
 }

@@ -11,6 +11,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
+  //  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvno(Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+          Integer dcode,
+          Integer tcode,
+          Integer vcode,
+          String bcode,
+          Integer resvno,
+          String resbdno
+  );
 
     // Find records by a list of lsgcodes (pageable)
     Page<TblBtrData> findByLsgcodeIn(List<Integer> lsgcodes, Pageable pageable);
@@ -32,7 +41,7 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
     List<TblBtrData> findAllByLbcode(String lbcode);
     List<TblBtrData> findAllByLbcodeAndResvnoAndLtype(String lbcode, Integer resvno, String ltype);
     List<TblBtrData> findAllByLbcodeAndResvno(String lbcode, Integer resvno);
-
+    //    Optional<TblBtrDataOld> findByLbcodeAndResvnoAndResbdno(String lbcode, Integer resvno, Integer resbdno);
     Optional<TblBtrData> findByLbcodeAndResvnoAndResbdnoAndLtype(
             String lbcode,
             Integer resvno,
@@ -83,4 +92,8 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
     );
 
     List<TblBtrData> findByLbcode(String lbcode);
+
+    Optional<Object> findByResvno(Integer resvno);
+    // 👇 new method
+//    List<TblBtrData> findByZoneId(Integer zoneId);
 }

@@ -28,6 +28,11 @@ public class TblBtrDataService {
     // ---------------- Single Save ----------------
     @Transactional
     public Map<String, Object> saveData(TblBtrDataDTO dto) {
+        // ✅ Validate required fields
+        validateRequiredFields(dto);
+
+        // ✅ Validate duplicates
+        validateDuplicate(dto);
         // 1️⃣ Save TblBtrData
         TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
 
@@ -79,6 +84,12 @@ public class TblBtrDataService {
     // ---------------- Bulk Save ----------------
     @Transactional
     public List<Map<String, Object>> saveAllData(List<TblBtrDataDTO> dtoList) {
+        // 🔍 Validate ALL first (fail fast)
+        for (TblBtrDataDTO dto : dtoList) {
+            validateRequiredFields(dto); // ✅ required field check
+            validateDuplicate(dto);      // ✅ duplicate check
+        }
+        // If no duplicates or missing fields found → save all
         return dtoList.stream()
                 .map(this::saveData)
                 .collect(Collectors.toList());
@@ -99,52 +110,42 @@ public class TblBtrDataService {
         entity.setTotCent(dto.getTotCent());
         return entity;
     }
+    // ---------------- Duplicate Validation ----------------
+    private void validateDuplicate(TblBtrDataDTO dto) {
+        boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+                dto.getDcode(),
+                dto.getTcode(),
+                dto.getVcode(),
+                dto.getBcode(),
+                dto.getResvno(),
+                dto.getResbdno()
+        );
 
-    /**
-     * Fetch all BTR data records as DTOs
-     */
-    public List<TblBtrDataResponseDTO> getAllBtrData() {
-        List<TblBtrData> entities = tblBtrDataRepository.findAll();
-        return entities.stream()
-                .map(entity -> {
-                    TblBtrDataResponseDTO dto = new TblBtrDataResponseDTO();
-                    dto.setId(entity.getId());
-                    dto.setBcode(entity.getBcode());
-                    dto.setResvno(entity.getResvno());
-                    dto.setResbdno(entity.getResbdno());
-                    dto.setLbcode(entity.getLbcode());
-                    dto.setLtype(entity.getLtype());
-                    dto.setLsgcode(entity.getLsgcode());
-                    dto.setTotCent(entity.getTotCent());
-                    dto.setLanduse(entity.getLanduse());
-                    dto.setNhect(entity.getNhect());
-                    dto.setNare(entity.getNare());
-                    dto.setNsqm(entity.getNsqm());
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        if (exists) {
+            throw new RuntimeException(
+                    "Duplicate entry detected! Record already exists for: " +
+                            "dcode=" + dto.getDcode() +
+                            ", tcode=" + dto.getTcode() +
+                            ", vcode=" + dto.getVcode() +
+                            ", bcode=" + dto.getBcode() +
+                            ", resvno=" + dto.getResvno()+
+                            ", resbdno=" + dto.getResbdno()
+            );
+        }
     }
+      // ---------------- Required Fields Validation ----------------
+    private void validateRequiredFields(TblBtrDataDTO dto) {
+        List<String> errors = new ArrayList<>();
 
-    /**
-     * Fetch BTR data by ID as DTO
-     */
-    public Optional<TblBtrDataResponseDTO> getBtrDataById(Long id) {
-        return tblBtrDataRepository.findById(id)
-                .map(entity -> {
-                    TblBtrDataResponseDTO dto = new TblBtrDataResponseDTO();
-                    dto.setId(entity.getId());
-                    dto.setBcode(entity.getBcode());
-                    dto.setResvno(entity.getResvno());
-                    dto.setResbdno(entity.getResbdno());
-                    dto.setLbcode(entity.getLbcode());
-                    dto.setLtype(entity.getLtype());
-                    dto.setLsgcode(entity.getLsgcode());
-                    dto.setTotCent(entity.getTotCent());
-                    dto.setLanduse(entity.getLanduse());
-                    dto.setNhect(entity.getNhect());
-                    dto.setNare(entity.getNare());
-                    dto.setNsqm(entity.getNsqm());
-                    return dto;
-                });
+        if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
+        if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
+        if (dto.getVcode() == null) errors.add("Village code (vcode) is required.");
+        if (dto.getBcode() == null || dto.getBcode().trim().isEmpty()) errors.add("Block code (bcode) is required.");
+        if (dto.getResvno() == null) errors.add("Reservation number (resvno) is required.");
+        if (dto.getResbdno() == null || dto.getResbdno().trim().isEmpty()) errors.add("Reservation boundary number (resbdno) is required.");
+
+        if (!errors.isEmpty()) {
+            throw new RuntimeException("Validation failed: " + String.join(" ", errors));
+        }
     }
 }

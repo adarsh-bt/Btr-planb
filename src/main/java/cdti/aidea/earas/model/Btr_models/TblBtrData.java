@@ -50,6 +50,8 @@ public class TblBtrData {
 //    private LocalDate agreStartYear;
 //    private LocalDate agreEndYear;
     private Double totCent;
+
+
 //    private Boolean reject;
 //
 //    private String reson;

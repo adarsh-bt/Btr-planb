@@ -34,15 +34,16 @@ public class TblBtrData {
     private Double nhect;
     private Double nare;
     private Double nsqm;
-
-//    @Column(length = 500)
-//    private String remarks;
-
     private Double east;
     private Double west;
     private Double north;
     private Double south;
     private Integer lsgcode;
+
+//    @Column(length = 500)
+//    private String remarks;
+
+
 //    private Double area;
 //    private LocalDateTime insertionTime;
 //    private LocalDateTime updationTime;

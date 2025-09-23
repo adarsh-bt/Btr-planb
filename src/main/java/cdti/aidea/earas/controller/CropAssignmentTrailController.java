@@ -5,14 +5,12 @@ import cdti.aidea.earas.service.CropAssignmentTrailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/crop-assignment-trail")
@@ -21,51 +19,58 @@ import java.util.Map;
 @Tag(name = "Crop Assignment Trail", description = "APIs for managing crop assignment trails")
 public class CropAssignmentTrailController {
 
-    private final CropAssignmentTrailService cropAssignmentTrailService;
+  private final CropAssignmentTrailService cropAssignmentTrailService;
 
-    @PostMapping("/save")
-    @Operation(summary = "Save crop assignment trail", description = "Save a new crop assignment trail entry and sync with external service")
-    public ResponseEntity<Map<String, Object>> saveCropAssignmentTrail(
-            @Valid @RequestBody CropAssignmentTrailSaveDto saveDto) {
+  @PostMapping("/save")
+  @Operation(
+      summary = "Save crop assignment trail",
+      description = "Save a new crop assignment trail entry and sync with external service")
+  public ResponseEntity<Map<String, Object>> saveCropAssignmentTrail(
+      @Valid @RequestBody CropAssignmentTrailSaveDto saveDto) {
 
-        log.info("Request to save crop assignment trail for crop ID: {}", saveDto.getCropId());
+    log.info("Request to save crop assignment trail for crop ID: {}", saveDto.getCropId());
 
-        try {
-            Long savedId = cropAssignmentTrailService.saveCropAssignmentTrail(saveDto);
+    try {
+      Long savedId = cropAssignmentTrailService.saveCropAssignmentTrail(saveDto);
 
-            Map<String, Object> response = Map.of(
-                    "success", true,
-                    "message", "Crop assignment trail saved and synced successfully",
-                    "id", savedId
-            );
+      Map<String, Object> response =
+          Map.of(
+              "success",
+              true,
+              "message",
+              "Crop assignment trail saved and synced successfully",
+              "id",
+              savedId);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+      return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-        } catch (IllegalStateException e) {
-            log.warn("Invalid crop assignment trail save request: {}", e.getMessage());
-            Map<String, Object> errorResponse = Map.of(
-                    "success", false,
-                    "message", e.getMessage()
-            );
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    } catch (IllegalStateException e) {
+      log.warn("Invalid crop assignment trail save request: {}", e.getMessage());
+      Map<String, Object> errorResponse = Map.of("success", false, "message", e.getMessage());
+      return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
 
-        } catch (RuntimeException e) {
-            log.error("Error saving crop assignment trail: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      log.error("Error saving crop assignment trail: {}", e.getMessage());
 
-            // Check if it's a Feign/external service error
-            if (e.getMessage().contains("External service") || e.getMessage().contains("Feign")) {
-                Map<String, Object> errorResponse = Map.of(
-                        "success", false,
-                        "message", "Data saved locally but external service synchronization failed: " + e.getMessage()
-                );
-                return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(errorResponse);
-            }
+      // Check if it's a Feign/external service error
+      if (e.getMessage().contains("External service") || e.getMessage().contains("Feign")) {
+        Map<String, Object> errorResponse =
+            Map.of(
+                "success",
+                false,
+                "message",
+                "Data saved locally but external service synchronization failed: "
+                    + e.getMessage());
+        return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(errorResponse);
+      }
 
-            Map<String, Object> errorResponse = Map.of(
-                    "success", false,
-                    "message", "Failed to save crop assignment trail: " + e.getMessage()
-            );
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
+      Map<String, Object> errorResponse =
+          Map.of(
+              "success",
+              false,
+              "message",
+              "Failed to save crop assignment trail: " + e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
+  }
 }

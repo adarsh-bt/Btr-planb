@@ -11,39 +11,37 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/api/village-localbody")
 @RequiredArgsConstructor
 public class VillageLocalBodyMapController {
-        private final VillageLocalBodyMapService villageLocalBodyMapService;
+  private final VillageLocalBodyMapService villageLocalBodyMapService;
 
-        @PostMapping("/link")
-        public ResponseEntity<VillageLocalBodyMap> linkVillageToLocalbody(@RequestBody LinkRequest request) {
-            VillageLocalBodyMap map = villageLocalBodyMapService.linkVillageToLocalbody(request.getVillageId(), request.getLocalbodyId());
-            return ResponseEntity.ok(map);
-        }
+  @PostMapping("/link")
+  public ResponseEntity<VillageLocalBodyMap> linkVillageToLocalbody(
+      @RequestBody LinkRequest request) {
+    VillageLocalBodyMap map =
+        villageLocalBodyMapService.linkVillageToLocalbody(
+            request.getVillageId(), request.getLocalbodyId());
+    return ResponseEntity.ok(map);
+  }
 
+  // @PostMapping("/link")
+  // public ResponseEntity<List<VillageLocalBodyMap>> linkVillageToLocalbody(@RequestBody
+  // List<LinkRequest> requests) {
+  //    List<VillageLocalBodyMap> maps = requests.stream()
+  //            .map(r -> villageLocalBodyMapService.linkVillageToLocalbody(r.getVillageId(),
+  // r.getLocalbodyId()))
+  //            .collect(Collectors.toList());
+  //    return ResponseEntity.ok(maps);
+  // }
 
-//@PostMapping("/link")
-//public ResponseEntity<List<VillageLocalBodyMap>> linkVillageToLocalbody(@RequestBody List<LinkRequest> requests) {
-//    List<VillageLocalBodyMap> maps = requests.stream()
-//            .map(r -> villageLocalBodyMapService.linkVillageToLocalbody(r.getVillageId(), r.getLocalbodyId()))
-//            .collect(Collectors.toList());
-//    return ResponseEntity.ok(maps);
-//}
+  @Data
+  public static class LinkRequest {
+    @NotNull(message = "Village ID must not be null")
+    private Integer villageId;
 
-
-    @Data
-        public static class LinkRequest {
-        @NotNull(message = "Village ID must not be null")
-            private Integer villageId;
-        @NotNull(message = "LocalBody ID must not be null")
-            private Integer localbodyId;
-        }
-    }
-
-
-
+    @NotNull(message = "LocalBody ID must not be null")
+    private Integer localbodyId;
+  }
+}

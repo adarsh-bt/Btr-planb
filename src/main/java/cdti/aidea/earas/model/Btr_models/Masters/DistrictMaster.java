@@ -11,8 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @Entity(name = "tbl_master_district")
 public class DistrictMaster {
-  @Id
-  private Integer dist_id;
+  @Id private Integer dist_id;
   private String dist_name_en;
   private String dist_name_mal;
   private boolean is_active;

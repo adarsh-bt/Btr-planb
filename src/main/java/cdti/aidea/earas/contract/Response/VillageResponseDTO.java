@@ -8,10 +8,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VillageResponseDTO {
-    private Integer villageId;
-    private String villageNameEn;
-    private Integer localBodyId;
-    private String localBodyNameEn;
-    private Integer zoneId;
-    private String zoneNameEn;
+  private Integer villageId;
+  private String villageNameEn;
+  private Integer localBodyId;
+  private String localBodyNameEn;
+  private Integer zoneId;
+  private String zoneNameEn;
 }

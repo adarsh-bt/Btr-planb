@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class KeyPlotDetailsResponse {
   private UUID keyplotId;
+  private Long clusterId;
   private String kvillageName;
   private Integer kvillageId;
   private String villageBlock;

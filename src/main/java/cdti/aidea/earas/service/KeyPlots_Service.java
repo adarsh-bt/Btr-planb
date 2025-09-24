@@ -78,9 +78,10 @@ public class KeyPlots_Service {
 
     String villageName = village.map(TblMasterVillage::getVillageNameEn).orElse("Unknown");
     Integer villageId = village.map(TblMasterVillage::getVillageId).orElse(null);
-
+    Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
     return new KeyPlotDetailsResponse(
         keyPlot.getId(),
+        cluster.get().getCluMasterId(),
         villageName,
         villageId,
         villageBlock,
@@ -1007,8 +1008,10 @@ public class KeyPlots_Service {
     List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
     String villageName = village.get().getVillageNameEn();
     Integer villageId = village.get().getVillageId();
+    Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
     return new KeyPlotDetailsResponse(
         keyPlot.getId(),
+        cluster.get().getCluMasterId(),
         villageName,
         villageId,
         villageBlock,

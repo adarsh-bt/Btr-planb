@@ -34,22 +34,14 @@ CREATE TABLE tbl_btr_data (
     fmp INTEGER,
     -- New fields
     land_owner_address VARCHAR(500), -- Address of the land owner
-    non_btr_type_id INT           -- Foreign Key reference to TblBtrType
-    -- Foreign Key Constraint
+    house_number INTEGER,
+    main_number INTEGER,
+    sub_main_number VARCHAR(400),
+    non_btr_type_id INT,          -- Foreign Key reference to TblNonBtr
+        -- Foreign Key Constraint
+        CONSTRAINT fk_non_btr_type_id FOREIGN KEY (non_btr_type_id)
+            REFERENCES tbl_master_non_btr(b_type_id)
+            ON DELETE SET NULL
+
 
 );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

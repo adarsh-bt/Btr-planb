@@ -25,18 +25,26 @@ public class TblBtrDataService {
   private final TblMasterZoneRepository tblMasterZoneRepository;
 
   // ---------------- Single Save ----------------
+  // ---------------- Single Save ----------------
   @Transactional
   public Map<String, Object> saveData(TblBtrDataDTO dto) {
     // ✅ Validate required fields
-    validateRequiredFields(dto);
+    List<String> requiredErrors = validateRequiredFields(dto);
+    if (!requiredErrors.isEmpty()) {
+      throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
+    }
 
     // ✅ Validate duplicates
-    validateDuplicate(dto);
+    ValidationErrorResponse duplicateError = validateDuplicate(dto);
+    if (duplicateError != null) {
+      throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
+    }
+
     // 1️⃣ Save TblBtrData
     TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
 
     // 2️⃣ Fetch zone by UUID
-    Integer zoneUuid = dto.getZoneId(); // ensure dto.getZoneId() is String
+    Integer zoneUuid = dto.getZoneId();
     TblMasterZone zone =
         tblMasterZoneRepository
             .findById(zoneUuid)
@@ -75,85 +83,50 @@ public class TblBtrDataService {
     clusterFormData.setStatus(true);
     clusterFormDataRepository.save(clusterFormData);
 
-    // ✅ Return saved entities
+    // ✅ Return saved entity id
     Map<String, Object> response = new HashMap<>();
-    //        response.put("btrData", btrData);
-    //        response.put("keyPlot", keyPlot);
     response.put("id", btrData.getId());
     return response;
   }
 
+  // ---------------- Save All ----------------
   @Transactional
   public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
     List<ValidationErrorResponse> allErrors = new ArrayList<>();
 
     for (TblBtrDataDTO dto : dtoList) {
-      if (dto.getResvno() == null
-          || dto.getResbdno() == null
-          || dto.getResbdno().trim().isEmpty()) {
+      // Required validation
+      List<String> requiredErrors = validateRequiredFields(dto);
+      if (!requiredErrors.isEmpty()) {
         allErrors.add(
             new ValidationErrorResponse(
-                dto.getResvno(),
-                dto.getResbdno(),
-                "Required fields missing: resvno and/or resbdno"));
+                dto.getResvno(), dto.getResbdno(), String.join(", ", requiredErrors)));
       }
 
+      // Duplicate validation
       ValidationErrorResponse duplicateError = validateDuplicate(dto);
       if (duplicateError != null) {
         allErrors.add(duplicateError);
       }
     }
 
+    // ❌ If any errors → return list of errors
     if (!allErrors.isEmpty()) {
       Map<String, Object> response = new HashMap<>();
       response.put("status", "Validation Failed");
       response.put("errors", allErrors);
       return response;
     }
-    // Save all and collect IDs only
+
+    // ✅ Save all and collect IDs
     List<Long> savedIds =
         dtoList.stream().map(dto -> (Long) saveData(dto).get("id")).collect(Collectors.toList());
-
-    List<Map<String, Object>> savedData =
-        dtoList.stream().map(this::saveData).collect(Collectors.toList());
 
     Map<String, Object> successResponse = new HashMap<>();
     successResponse.put("status", "Success");
     successResponse.put("message", "All records saved successfully");
     successResponse.put("ids", savedIds);
     return successResponse;
-  }
-
-  private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
-    if (dto.getResvno() != null && dto.getResbdno() != null) {
-      boolean exists =
-          tblBtrDataRepository.existsByResvnoAndResbdno(dto.getResvno(), dto.getResbdno());
-      if (exists) {
-        return new ValidationErrorResponse(
-            dto.getResvno(),
-            dto.getResbdno(),
-            "Duplicate entry already exists for resvno="
-                + dto.getResvno()
-                + " and resbdno="
-                + dto.getResbdno());
-      }
-    }
-    return null; // no error
-  }
-
-  private void validateRequiredFields(TblBtrDataDTO dto) {
-    List<String> errors = new ArrayList<>();
-    if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
-    if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
-    if (dto.getVcode() == null) errors.add("Village code (vcode) is required.");
-    if (dto.getBcode() == null || dto.getBcode().trim().isEmpty())
-      errors.add("Block code (bcode) is required.");
-    if (dto.getResvno() == null) errors.add("Reservation number (resvno) is required.");
-    if (dto.getResbdno() == null || dto.getResbdno().trim().isEmpty())
-      errors.add("Reservation boundary number (resbdno) is required.");
-    if (!errors.isEmpty()) {
-      throw new RuntimeException("Validation failed: " + String.join(" ", errors));
-    }
   }
 
   // ---------------- DTO -> Entity Mapper ----------------
@@ -170,5 +143,45 @@ public class TblBtrDataService {
     entity.setLsgcode(dto.getLsgcode());
     entity.setTotCent(dto.getTotCent());
     return entity;
+  }
+
+  // ---------------- Duplicate Validation ----------------
+  private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
+    boolean exists =
+        tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+            dto.getDcode(),
+            dto.getTcode(),
+            dto.getVcode(),
+            dto.getBcode(),
+            dto.getResvno(),
+            dto.getResbdno());
+
+    if (exists) {
+      return new ValidationErrorResponse(
+          dto.getResvno(),
+          dto.getResbdno(),
+          "Duplicate entry already exists for resvno="
+              + dto.getResvno()
+              + " and resbdno="
+              + dto.getResbdno());
+    }
+    return null;
+  }
+
+  // ---------------- Required Fields Validation ----------------
+  private List<String> validateRequiredFields(TblBtrDataDTO dto) {
+    List<String> errors = new ArrayList<>();
+
+    if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
+    if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
+    if (dto.getVcode() == null) errors.add("Village code (vcode) is required.");
+    if (dto.getBcode() == null || dto.getBcode().trim().isEmpty())
+      errors.add("Block code (bcode) is required.");
+    if (dto.getResvno() == null) errors.add("Reservation number (resvno) is required.");
+    if (dto.getResbdno() == null || dto.getResbdno().trim().isEmpty())
+      errors.add("Reservation boundary number (resbdno) is required.");
+    if (dto.getZoneId() == null) errors.add("Zone Id (zoneId) is required.");
+
+    return errors;
   }
 }

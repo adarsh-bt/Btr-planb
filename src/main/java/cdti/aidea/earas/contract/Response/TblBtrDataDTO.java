@@ -16,7 +16,6 @@ public class TblBtrDataDTO {
     private Integer vcode;
     private String bcode;
     private String lbcode;
-    //private String lbtype;
     private String ltype;
     private Integer resvno;
     private String resbdno;
@@ -24,4 +23,9 @@ public class TblBtrDataDTO {
     private Integer zoneId; // new field for zone
     private UUID user_id;
     private double totCent;
+    private String address;
+    private Integer houseno;
+    private Integer mainno;
+    private String subno;
+    private Integer btrtype;
 }

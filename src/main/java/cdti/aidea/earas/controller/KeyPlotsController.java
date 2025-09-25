@@ -63,7 +63,7 @@ public class KeyPlotsController {
                 HttpStatus.OK);
     }
 //@PostMapping("/fetch-existing-keyplots")
-//public ResponseEntity<Response> getExistingKeyPlots(@Valid @RequestBody KeyplotsFetchUserIdReq request) {
+//public ResponseEntity<Respons  e> getExistingKeyPlots(@Valid @RequestBody KeyplotsFetchUserIdReq request) {
 //    UUID userId = request.getUserId();
 //    Long zoneId = request.getZone_id();
 //    System.out.println("iossss");
@@ -145,4 +145,13 @@ public class KeyPlotsController {
                         .build(),
                 HttpStatus.OK);
     }
+    @PostMapping("/reject-keyplot/{keyPlotId}")
+    public ResponseEntity<Map<String, Object>> rejectAndReplaceKeyplot(
+            @PathVariable UUID keyPlotId,
+            @RequestBody KeyPlotRejectRequest request) {
+
+        Map<String, Object> response = keyPlots_Service.rejectAndReplaceKeyplot(keyPlotId, request);
+        return ResponseEntity.ok(response);
+    }
+
 }

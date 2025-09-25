@@ -5,7 +5,7 @@ import cdti.aidea.earas.contract.FormEntryDto.AvailableCcePlotRejectionRequest;
 import cdti.aidea.earas.contract.FormEntryDto.CceCropDetailsResponse;
 import cdti.aidea.earas.contract.FormEntryDto.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
+import cdti.aidea.earas.contract.RequestsDTOs. KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.Response.ClusterFormRowDTO;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
@@ -36,6 +36,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
+//import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+
 
 
 @Service
@@ -901,6 +904,38 @@ public class KeyPlots_Service {
 //        return newPlotMap;
 //    }
 
+    @Transactional
+    public Map<String, Object> rejectAndReplaceKeyplot(UUID keyPlotId, KeyPlotRejectRequest request) {
+        // 1. Find the keyplot
+        KeyPlots rejectedKeyPlot = keyPlotsRepository.findById(keyPlotId)
+                .orElseThrow(() -> new EntityNotFoundException("Keyplot not found with ID: " + keyPlotId));
+
+        // 2. Update keyplot fields
+        rejectedKeyPlot.setIsRejected(true);
+        rejectedKeyPlot.setReason(request.getReason());
+        rejectedKeyPlot.setRejectDate(LocalDate.now());
+        rejectedKeyPlot.setCreated_by(request.getUserid());
+        rejectedKeyPlot.setStatus(false);
+        keyPlotsRepository.save(rejectedKeyPlot);
+
+        // 3. Find and reject cluster linked to this keyplot
+        ClusterMaster cluster = clusterMasterRepository.findByKeyPlotId(rejectedKeyPlot.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Cluster not found for KeyPlot ID: " + keyPlotId));
+
+        cluster.setIsReject(true);
+        cluster.setStatus("rejected");
+        cluster.setIs_active(false);
+        cluster.setInvestigatorRemark(request.getReason_for_cluster());
+        cluster.setUpdatedAt(LocalDateTime.now());
+        clusterMasterRepository.save(cluster);
+
+        // 4. Build response
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "KeyPlot and its Cluster rejected successfully");
+        response.put("keyPlotId", rejectedKeyPlot.getId());
+        response.put("clusterId", cluster.getCluMasterId());
+        return response;
+    }
 
     public KeyPlotDetailsResponse getKeyPlotDetails(UUID plotId) {
         Optional<KeyPlots> keyPlotOpt = keyPlotsRepository.findById(plotId);

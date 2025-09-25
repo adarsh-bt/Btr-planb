@@ -39,20 +39,28 @@ public class TblBtrData {
     private Double north;
     private Double south;
     private Integer lsgcode;
+    private Double totCent;
 
-//    @Column(length = 500)
+    @Column(name = "land_owner_address")
+    private String address;
+    @Column(name = "house_number")
+    private Integer houseno;
+    @Column(name = "main_number")
+    private Integer mainno;
+    @Column(name = "sub_main_number")
+    private String subno;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "non_btr_type_id")
+    private TblNonBtr btrtype;
+
 //    private String remarks;
-
-
 //    private Double area;
 //    private LocalDateTime insertionTime;
 //    private LocalDateTime updationTime;
 //
 //    private LocalDate agreStartYear;
 //    private LocalDate agreEndYear;
-    private Double totCent;
-
-
 //    private Boolean reject;
 //
 //    private String reson;
@@ -62,6 +70,4 @@ public class TblBtrData {
 //    private String addonNotes;
 //
 //    private Integer fmp;
-
-
 }

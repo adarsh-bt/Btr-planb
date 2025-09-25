@@ -114,6 +114,21 @@ public class TblBtrDataService {
         entity.setResbdno(dto.getResbdno());
         entity.setLsgcode(dto.getLsgcode());
         entity.setTotCent(dto.getTotCent());
+        // Map the new fields
+        entity.setAddress(dto.getAddress());
+        entity.setHouseno(dto.getHouseno());
+        entity.setMainno(dto.getMainno());
+        entity.setSubno(dto.getSubno());
+
+        // For btrtype (foreign key), map Integer id to TblNonBtr entity with only id set
+        if (dto.getBtrtype() != null) {
+            TblNonBtr btrtype = new TblNonBtr();
+            btrtype.setBTypeId(Long.valueOf(dto.getBtrtype()));
+            entity.setBtrtype(btrtype);
+        } else {
+            entity.setBtrtype(null);
+        }
+
         return entity;
     }
     // ---------------- Duplicate Validation ----------------
@@ -178,7 +193,7 @@ public class TblBtrDataService {
 
 
     // ---------------- Required Fields Validation ----------------
-    private void validateRequiredFields(TblBtrDataDTO dto) {
+    private void validateRequiredFields(TblBtrDataDTO dto)   {
         List<String> errors = new ArrayList<>();
 
         if (dto.getDcode() == null) errors.add("District code (dcode) is required.");

@@ -1,13 +1,14 @@
 package cdti.aidea.earas.model.Btr_models;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
@@ -26,7 +27,7 @@ public class ClusterLimitLog {
   @Column(name = "cluster_max", nullable = false, precision = 10, scale = 1)
   private BigDecimal clusterMax;
 
-  @Column(name = "tso_approval_limit", nullable = false, precision = 10, scale = 1)
+  @Column(name = "tso_approval_limit", nullable = false,precision = 10, scale = 1)
   private BigDecimal tsoApprovalLimit;
 
   @Column(name = "added_by")
@@ -59,6 +60,7 @@ public class ClusterLimitLog {
   @Column(name = "is_active")
   private Boolean isActive = true;
 
+
   @PrePersist
   protected void onCreate() {
     createdAt = LocalDateTime.now();
@@ -70,3 +72,12 @@ public class ClusterLimitLog {
     updatedAt = LocalDateTime.now();
   }
 }
+
+
+
+
+
+
+
+
+

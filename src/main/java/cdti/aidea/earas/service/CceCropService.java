@@ -107,7 +107,7 @@ public class CceCropService {
   }
 
   //    @CircuitBreaker(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
-  @Retry(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
+//  @Retry(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
   public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
     AvailableCcePlotFetchRequest request = new AvailableCcePlotFetchRequest(zoneId);
     Map<String, Object> response = formEntryClient.getAvailableCcePlotsByZoneId(request);

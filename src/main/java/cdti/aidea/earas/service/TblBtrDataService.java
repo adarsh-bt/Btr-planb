@@ -3,7 +3,9 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.model.Btr_models.*;
+import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+import cdti.aidea.earas.model.Btr_models.Masters.TblZoneRevenueVillageMapping;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import java.time.LocalDate;
 import java.util.*;
@@ -23,6 +25,9 @@ public class TblBtrDataService {
   private final ClusterMasterRepository clusterMasterRepository;
   private final ClusterFormDataRepository clusterFormDataRepository;
   private final TblMasterZoneRepository tblMasterZoneRepository;
+  private final TblMasterVillageRepository tblMasterVillageRepository;
+  private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
+
 
   // ---------------- Single Save ----------------
   // ---------------- Single Save ----------------
@@ -41,6 +46,7 @@ public class TblBtrDataService {
     }
 
     // 1️⃣ Save TblBtrData
+    validateZoneMapping(dto);
     TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
 
     // 2️⃣ Fetch zone by UUID
@@ -184,4 +190,33 @@ public class TblBtrDataService {
 
     return errors;
   }
+  // ---------------- Zone Validation ----------------
+  private void validateZoneMapping(TblBtrDataDTO dto) {
+    // :one: Fetch the zone
+    Integer zoneId = dto.getZoneId();
+    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
+            .orElseThrow(() -> new RuntimeException("Zone not found for zoneId=" + zoneId));
+    // :two: Get all village mappings for this zone
+    List<TblZoneRevenueVillageMapping> zoneMappings =
+            tblZoneRevenueVillageMappingRepository.findByZone(zoneId);
+    if (zoneMappings.isEmpty()) {
+      throw new RuntimeException("No villages mapped for zoneId=" + zoneId);
+    }
+    // :three: Extract village IDs
+    List<Integer> villageIds = zoneMappings.stream()
+            .map(TblZoneRevenueVillageMapping::getRevenueVillage)
+            .toList();
+    // :four: Fetch all villages by IDs
+    List<TblMasterVillage> villages = tblMasterVillageRepository.findAllById(villageIds);
+    // :five: Check if the DTO's lsgcode exists in these villages
+    boolean exists = villages.stream()
+            .anyMatch(v -> v.getLsgCode().equals(dto.getLsgcode()));
+    if (!exists) {
+      throw new RuntimeException(
+              "Zone mismatch! Provided lsgCode=" + dto.getLsgcode() +
+                      " does not belong to zoneId=" + zoneId
+      );
+    }
+  }
+
 }

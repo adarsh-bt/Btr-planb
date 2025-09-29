@@ -1,5 +1,6 @@
 package cdti.aidea.earas.contract.Response;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -19,6 +20,10 @@ public class KeyPlotDetailsResponse {
   private String villageBlock;
   private String panchayath;
   private String lbcode;
+  private String status;
+  private BigDecimal clusterMax;
+  private BigDecimal clusterMin;
+  private BigDecimal clusterMean;
   private String syNo;
   private double areaCents;
   private String landType;

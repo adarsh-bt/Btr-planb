@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ZoneIdNameResponse {
-    private Integer zoneId;
-    private String zoneName;
+  private Integer zoneId;
+  private String zoneName;
 }

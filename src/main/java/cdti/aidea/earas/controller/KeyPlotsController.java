@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -33,6 +34,23 @@ public class KeyPlotsController {
 
     private final KeyPlots_Service keyPlots_Service;
 
+  @GetMapping("/get-all")
+  public ResponseEntity<Response> getAllKeyPlotsWithDetails() {
+    try {
+      List<KeyPlotDetailsResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails();
+
+      return ResponseEntity.ok(
+          Response.builder()
+              .payload(keyPlots)
+              .message("All key plots fetched successfully.")
+              .build());
+
+    } catch (Exception e) {
+      log.error("Error fetching all key plots: {}", e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(Response.builder().message("Error fetching key plots: " + e.getMessage()).build());
+    }
+  }
 
 //    @GetMapping("/fetch-existing-keyplots/{userId}")
 //    public ResponseEntity<Response> getExistingKeyPlots(@PathVariable("userId") UUID userId) {
@@ -63,7 +81,7 @@ public class KeyPlotsController {
                 HttpStatus.OK);
     }
 //@PostMapping("/fetch-existing-keyplots")
-//public ResponseEntity<Respons  e> getExistingKeyPlots(@Valid @RequestBody KeyplotsFetchUserIdReq request) {
+//public ResponseEntity<Response> getExistingKeyPlots(@Valid @RequestBody KeyplotsFetchUserIdReq request) {
 //    UUID userId = request.getUserId();
 //    Long zoneId = request.getZone_id();
 //    System.out.println("iossss");

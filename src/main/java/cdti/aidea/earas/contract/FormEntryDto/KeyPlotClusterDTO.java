@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class KeyPlotClusterDTO {
-    private Long clusterId;
-    private String landType;
-    private String localBodyName;
-    private Integer clusterNumber;
+  private Long clusterId;
+  private String landType;
+  private String localBodyName;
+  private Integer clusterNumber;
 }

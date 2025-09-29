@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class ClusertResponse {
-    private String status;
-    private String message;
-    private Long p1;
-    private Long p2;
+  private String status;
+  private String message;
+  private Long p1;
+  private Long p2;
 }

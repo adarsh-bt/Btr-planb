@@ -1,4 +1,5 @@
 package cdti.aidea.earas.model.Btr_models;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -13,24 +14,13 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "tbl_master_btr_type")
 public class TblBtrType {
-        @Id
-        @Column(name = "btr_type_id")
-        private Integer btrTypeId;
+  @Id
+  @Column(name = "btr_type_id")
+  private Integer btrTypeId;
 
-        @Column(name = "btr_type", length = 50)
-        private String btrType;
+  @Column(name = "btr_type", length = 50)
+  private String btrType;
 
-        @Column(name = "is_active")
-        private Boolean isActive;
-    }
-
-
-
-
-
-
-
-
-
-
-
+  @Column(name = "is_active")
+  private Boolean isActive;
+}

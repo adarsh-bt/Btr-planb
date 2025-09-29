@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MasterBlockRepository extends JpaRepository<MasterBlock, Integer> {
-    // Add custom query methods if required
+  // Add custom query methods if required
 }

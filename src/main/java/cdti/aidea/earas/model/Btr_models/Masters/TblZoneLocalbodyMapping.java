@@ -13,9 +13,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "tbl_zone_localbody_mapping")
 public class TblZoneLocalbodyMapping {
-    @Id
-    private Integer zoneLocalbodyMappingId;
-    private Integer zone;          // zone id
-    private Integer localbody;     // localbody id
-    private Boolean isValid;
+  @Id private Integer zoneLocalbodyMappingId;
+  private Integer zone; // zone id
+  private Integer localbody; // localbody id
+  private Boolean isValid;
 }

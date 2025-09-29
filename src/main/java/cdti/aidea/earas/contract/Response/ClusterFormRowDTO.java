@@ -8,13 +8,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClusterFormRowDTO {
-    private Long id;
-    private Long plot_id;
-    private Double actual;
-    private Integer svNo;    // resvno
-    private String subNo;   // resbdno
-    private Double area;
-    private String bcode;
-    private String village;
-
+  private Long id;
+  private Long plot_id;
+  private Double actual;
+  private Integer svNo; // resvno
+  private String subNo; // resbdno
+  private Double area;
+  private String bcode;
+  private String village;
 }

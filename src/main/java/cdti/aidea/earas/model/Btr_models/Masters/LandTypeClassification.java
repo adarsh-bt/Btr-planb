@@ -14,11 +14,10 @@ import lombok.NoArgsConstructor;
 @Table(name = "land_type_classification")
 public class LandTypeClassification {
 
-    @Id
-    private Long id;
+  @Id private Long id;
 
-    private String landType;
-    private String classification;
-    private String description;
-    private boolean is_active;
+  private String landType;
+  private String classification;
+  private String description;
+  private boolean is_active;
 }

@@ -24,5 +24,4 @@ public class DesTalukMaster {
   @JoinColumn(name = "dist_office_id", nullable = false)
   @JsonBackReference
   private DistrictMaster districtMaster;
-
 }

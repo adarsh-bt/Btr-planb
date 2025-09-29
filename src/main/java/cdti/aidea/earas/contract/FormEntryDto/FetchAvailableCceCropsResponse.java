@@ -10,6 +10,6 @@ import lombok.*;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FetchAvailableCceCropsResponse {
-    private Long cropId;
-    private String cropName;
+  private Long cropId;
+  private String cropName;
 }

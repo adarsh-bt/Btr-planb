@@ -27,7 +27,7 @@ public class BtrExportService {
   private final TblBtrRepository tblBtrRepository;
   private final LocalBodyRepository localBodyRepository;
   private final LandTypeClassificationService landTypeClassificationService;
-  private final TblBtrDataOldRepository tblBtrDataOldRepository;
+  private final TblBtrDataRepository tblBtrDataRepository;
 
   public ByteArrayResource exportUserBtrDataToExcel(UUID userId) {
     // Fetch user zone and related village
@@ -45,7 +45,7 @@ public class BtrExportService {
     List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
     List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
 
-    List<TblBtrDataOld> allData = tblBtrDataOldRepository.findAllByLsgcodeIn(lsgcodes);
+    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
 
     // Prepare maps
     Map<Integer, String> villageMap =
@@ -58,7 +58,7 @@ public class BtrExportService {
     Map<String, String> localBodyNameMap = new HashMap<>();
 
     //        new end
-    List<String> lbCodes = allData.stream().map(TblBtrDataOld::getLbcode).distinct().toList();
+    List<String> lbCodes = allData.stream().map(TblBtrData::getLbcode).distinct().toList();
     Map<Integer, String> localBodyMap =
         localBodyRepository.findAllByCodeApiIn(lbCodes).stream()
             .collect(
@@ -75,7 +75,7 @@ public class BtrExportService {
         allData.stream()
             .map(
                 data -> {
-                  double totalCent = data.getArea() != null ? data.getArea() : 0;
+                  double totalCent = data.getTotCent() != null ? data.getTotCent() : 0;
 
                   BigDecimal bd = new BigDecimal(totalCent).setScale(2, RoundingMode.HALF_UP);
 

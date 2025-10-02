@@ -584,6 +584,7 @@ public class ClusterService {
     // 🔹 Decide status based on limits
 
     String status;
+    System.out.println("total "+totalEnumeratedArea);
     if (clustermax != null && BigDecimal.valueOf(totalEnumeratedArea).compareTo(clustermax) > 0) {
       throw new RuntimeException("Maximum limit exceeded, please reduce the size.");
     } else if (clustermin != null

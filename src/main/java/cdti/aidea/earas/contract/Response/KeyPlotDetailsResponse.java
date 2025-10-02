@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class KeyPlotDetailsResponse {
   private UUID keyplotId;
+  private Integer dcode;
+  private Integer tcode;
   private Long clusterId;
   private String kvillageName;
   private Integer kvillageId;

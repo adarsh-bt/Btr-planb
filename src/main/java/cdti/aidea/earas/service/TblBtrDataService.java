@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.sl.draw.geom.GuideIf;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,10 +64,25 @@ public class TblBtrDataService {
     keyPlot.setCreated_by(UUID.randomUUID());
     keyPlot = keyPlotsRepository.save(keyPlot);
 
+    String lbcode = btrData.getLbcode();
+    String landType = btrData.getLtype(); // "Wet" or "Dry"
+
+    int agriYear = LocalDate.now().getYear();
+
+// In Kerala or India, agri year may start in June — adjust accordingly
+    LocalDate startDate = LocalDate.of(agriYear, 6, 1);
+    LocalDate endDate = startDate.plusYears(1).minusDays(1); // May 31 of next year
+
+    Optional<Integer> maxClusterNumberOpt = clusterMasterRepository
+            .findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(lbcode, landType, startDate, endDate);
+
+    int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+
+
     // 4️⃣ Save ClusterMaster
     ClusterMaster clusterMaster = new ClusterMaster();
     clusterMaster.setKeyPlot(keyPlot);
-    clusterMaster.setClusterNumber(1);
+    clusterMaster.setClusterNumber(nextClusterNumber);
     clusterMaster.setStatus("Not Started");
     clusterMaster.setIsReject(false);
     clusterMaster.setIs_active(true);
@@ -100,7 +116,7 @@ public class TblBtrDataService {
       if (!requiredErrors.isEmpty()) {
         allErrors.add(
             new ValidationErrorResponse(
-                dto.getResvno(), dto.getResbdno(), String.join(", ", requiredErrors)));
+                dto.getResvno(), dto.getResbdno(), dto.getTotCent(),String.join(", ", requiredErrors)));
       }
 
       // Duplicate validation
@@ -160,6 +176,7 @@ public class TblBtrDataService {
       return new ValidationErrorResponse(
           dto.getResvno(),
           dto.getResbdno(),
+          dto.getTotCent(),
           "Duplicate entry already exists for resvno="
               + dto.getResvno()
               + " and resbdno="
@@ -183,5 +200,36 @@ public class TblBtrDataService {
     if (dto.getZoneId() == null) errors.add("Zone Id (zoneId) is required.");
 
     return errors;
+  }
+
+
+  public ValidationErrorResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
+
+    String cleanedResbdno = dto.getResbdno() != null
+            ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "")
+            : null;
+
+    Optional<TblBtrData> exists = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+                    dto.getDcode(),
+                    dto.getTcode(),
+                    dto.getVcode(),
+                    dto.getBcode(),
+                    dto.getResvno(),
+                    cleanedResbdno
+            );
+
+
+    System.out.println("dto >..  "+dto);
+    if (exists.isPresent()) {
+      return new ValidationErrorResponse(
+              dto.getResvno(),
+              dto.getResbdno(),
+              exists.get().getTotCent(),
+
+              "Duplicate entry already exists for resvno=" + dto.getResvno() +
+                      " and resbdno=" + dto.getResbdno());
+    }
+
+    return null; // or Optional<ValidationErrorResponse>
   }
 }

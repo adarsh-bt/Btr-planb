@@ -90,6 +90,8 @@ public class KeyPlots_Service {
     Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
     return new KeyPlotDetailsResponse(
         keyPlot.getId(),
+        keyPlot.getBtrData().getDcode(),
+        keyPlot.getBtrData().getTcode(),
         cluster.get().getCluMasterId(),
         villageName,
         villageId,
@@ -1016,6 +1018,8 @@ public class KeyPlots_Service {
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
+                keyPlot.getBtrData().getDcode(),
+                keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
                 villageName,
                 villageId,

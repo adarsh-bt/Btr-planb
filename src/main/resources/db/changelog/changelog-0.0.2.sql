@@ -1,0 +1,62 @@
+CREATE TABLE tbl_btr_data (
+    id BIGSERIAL PRIMARY KEY,
+    dcode INT,
+    tcode INT,
+    vcode INT,
+    bcode VARCHAR(25),
+    resvno INT,
+    resbdno VARCHAR(255),
+    lbtype VARCHAR(100),
+    lbcode VARCHAR(100),
+    govpriv VARCHAR(100),
+    ltype VARCHAR(200),
+    landuse VARCHAR(255),
+    nhect DOUBLE PRECISION,
+    nare DOUBLE PRECISION,
+    nsqm DOUBLE PRECISION,
+    remarks VARCHAR(500),
+    east DOUBLE PRECISION,
+    west DOUBLE PRECISION,
+    north DOUBLE PRECISION,
+    south DOUBLE PRECISION,
+    Owner_name VARCHAR(255),
+    tp_no INT,
+    tb_subdivision_no INT,
+    lsgcode INT,
+    insertion_time TIMESTAMP,
+    updation_time TIMESTAMP,
+    agre_start_year DATE,
+    agre_end_year DATE,
+    tot_cent DOUBLE PRECISION,
+    reject BOOLEAN,
+    reson VARCHAR(255),
+    addon_notes JSONB,
+    fmp INTEGER,
+    -- New fields
+    land_owner_address VARCHAR(500), -- Address of the land owner
+    house_number INTEGER,
+    main_number INTEGER,
+    sub_main_number VARCHAR(400),
+    non_btr_type_id INT,          -- Foreign Key reference to TblNonBtr
+        -- Foreign Key Constraint
+        CONSTRAINT fk_non_btr_type_id FOREIGN KEY (non_btr_type_id)
+            REFERENCES tbl_master_non_btr(b_type_id)
+            ON DELETE SET NULL
+
+
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

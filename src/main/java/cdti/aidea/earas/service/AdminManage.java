@@ -3,10 +3,14 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
 import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
+import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
+import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.repository.Btr_repo.ClusterLimitLogRepository;
 import cdti.aidea.earas.repository.Btr_repo.KeyplotsLimitLogRepository;
+import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
+import cdti.aidea.earas.repository.Btr_repo.UserZoneAssignmentRepositoty;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,7 +26,12 @@ import org.springframework.stereotype.Service;
 public class AdminManage {
 
   private final KeyplotsLimitLogRepository repository;
+
   private final ClusterLimitLogRepository clusterLimitLogRepository;
+
+  private final TblMasterZoneRepository tblMasterZoneRepository;
+
+  private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
 
   public List<KeyplotsLimitLogResponse> getAllKeyplots() {
     List<KeyplotsLimitLog> entities = repository.findAll();
@@ -41,6 +50,45 @@ public class AdminManage {
                     entity.getAgriStartYear(),
                     entity.getAgriEndYear()))
         .collect(Collectors.toList());
+  }
+
+  public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
+    try {
+      List<TblMasterZone> zones = null;
+
+      // Decide which ID to use based on the type (Taluk, District, or Directorate)
+      if ("Taluk".equalsIgnoreCase(type)) {
+        zones = tblMasterZoneRepository.findByDesTalukId(idValue);
+      } else if ("District".equalsIgnoreCase(type)) {
+        zones = tblMasterZoneRepository.findByDistId(idValue);
+      } else if ("Directorate".equalsIgnoreCase(type)) {
+        // If type is DIRECTORATE, use appropriate repository method (change if needed)
+        zones = tblMasterZoneRepository.findByDistId(idValue);
+      } else {
+        throw new IllegalArgumentException(
+            "Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
+      }
+
+      if (zones == null || zones.isEmpty()) {
+        throw new IllegalArgumentException("No zones found for the given ID.");
+      }
+
+      // Directly map all zones to the response DTO
+      List<ZoneListResponse> zoneList =
+          zones.stream()
+              .map(
+                  zone ->
+                      new ZoneListResponse(
+                          zone.getZoneId(),
+                          zone.getZoneCode(),
+                          zone.getZoneNameEn(),
+                          zone.getZoneNameMal()))
+              .collect(Collectors.toList());
+
+      return zoneList;
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Something went wrong while fetching zones", e);
+    }
   }
 
   public KeyplotsLimitLog saveOrUpdateKeyplotsLimit(KeyplotsLimitLogRequest request) {

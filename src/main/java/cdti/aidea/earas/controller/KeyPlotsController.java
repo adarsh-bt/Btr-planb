@@ -2,14 +2,13 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.common.exception.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
 import cdti.aidea.earas.service.KeyPlots_Service;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
-import java.util.Map;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +26,24 @@ import org.springframework.web.bind.annotation.*;
 public class KeyPlotsController {
 
   private final KeyPlots_Service keyPlots_Service;
+
+  @GetMapping("/get-all")
+  public ResponseEntity<Response> getAllKeyPlotsWithDetails() {
+    try {
+      List<KeyPlotDetailsResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails();
+
+      return ResponseEntity.ok(
+          Response.builder()
+              .payload(keyPlots)
+              .message("All key plots fetched successfully.")
+              .build());
+
+    } catch (Exception e) {
+      log.error("Error fetching all key plots: {}", e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(Response.builder().message("Error fetching key plots: " + e.getMessage()).build());
+    }
+  }
 
   //    @GetMapping("/fetch-existing-keyplots/{userId}")
   //    public ResponseEntity<Response> getExistingKeyPlots(@PathVariable("userId") UUID userId) {
@@ -46,18 +63,18 @@ public class KeyPlotsController {
   //                HttpStatus.OK);
   //    }
 
-  @GetMapping("/fetch-by-id/{kpId}")
-  public ResponseEntity<Response> getById(@PathVariable("kpId") UUID kpId) {
-    return new ResponseEntity<>(
-        Response.builder()
-            .payload(keyPlots_Service.getByKpId(kpId))
-            .message("Key plot details fetched successfully.")
-            .build(),
-        HttpStatus.OK);
-  }
+  //  @GetMapping("/fetch-by-id/{kpId}")
+  //  public ResponseEntity<Response> getById(@PathVariable("kpId") UUID kpId) {
+  //    return new ResponseEntity<>(
+  //        Response.builder()
+  //            .payload(keyPlots_Service.getByKpId(kpId))
+  //            .message("Key plot details fetched successfully.")
+  //            .build(),
+  //        HttpStatus.OK);
+  //  }
   // @PostMapping("/fetch-existing-keyplots")
-  // public ResponseEntity<Respons  e> getExistingKeyPlots(@Valid @RequestBody
-  // KeyplotsFetchUserIdReq request) {
+  // public ResponseEntity<Response> getExistingKeyPlots(@Valid @RequestBody KeyplotsFetchUserIdReq
+  // request) {
   //    UUID userId = request.getUserId();
   //    Long zoneId = request.getZone_id();
   //    System.out.println("iossss");
@@ -129,21 +146,23 @@ public class KeyPlotsController {
     }
   }
 
-  @GetMapping("/fetch-by-keyplotsdetails/{kpId}")
-  public ResponseEntity<Response> getByPlotsDetails(@PathVariable("kpId") UUID kpId) {
-    return new ResponseEntity<>(
-        Response.builder()
-            .payload(keyPlots_Service.getByKpId(kpId))
-            .message("Key plot details fetched successfully.")
-            .build(),
-        HttpStatus.OK);
-  }
+  //    @GetMapping("/fetch-by-keyplotsdetails/{kpId}")
+  //    public ResponseEntity<Response> getByPlotsDetails(@PathVariable("kpId") UUID kpId) {
+  //        return new ResponseEntity<>(
+  //                Response.builder()
+  //                        .payload(keyPlots_Service.getByKpId(kpId))
+  //                        .message("Key plot details fetched successfully.")
+  //                        .build(),
+  //                HttpStatus.OK);
+  //    }
+  //    @PostMapping("/reject-keyplot/{keyPlotId}")
+  //    public ResponseEntity<Map<String, Object>> rejectAndReplaceKeyplot(
+  //            @PathVariable UUID keyPlotId,
+  //            @RequestBody KeyPlotRejectRequest request) {
+  //
+  //        Map<String, Object> response = keyPlots_Service.rejectAndReplaceKeyplot(keyPlotId,
+  // request);
+  //        return ResponseEntity.ok(response);
+  //    }
 
-  @PostMapping("/reject-keyplot/{keyPlotId}")
-  public ResponseEntity<Map<String, Object>> rejectAndReplaceKeyplot(
-      @PathVariable UUID keyPlotId, @RequestBody KeyPlotRejectRequest request) {
-
-    Map<String, Object> response = keyPlots_Service.rejectKeyplot(keyPlotId, request);
-    return ResponseEntity.ok(response);
-  }
 }

@@ -7,6 +7,7 @@ import cdti.aidea.earas.model.Btr_models.KeyPlots;
 import cdti.aidea.earas.repository.Btr_repo.ClusterMasterRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -106,7 +107,7 @@ public class CceCropService {
     }
   }
 
-  //    @CircuitBreaker(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
+  @CircuitBreaker(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
   @Retry(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
   public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
     AvailableCcePlotFetchRequest request = new AvailableCcePlotFetchRequest(zoneId);

@@ -1,20 +1,13 @@
 package cdti.aidea.earas.service;
 
-import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
-
 import cdti.aidea.earas.config.FormEntryClient;
-import cdti.aidea.earas.contract.FormEntryDto.CcePlotRejectionRequest;
-import cdti.aidea.earas.contract.FormEntryDto.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.Response.ClusterFormRowDTO;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
-import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
 import cdti.aidea.earas.contract.Response.SidePlotDTO;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
-import cdti.aidea.earas.model.Btr_models.Masters.TblZoneRevenueVillageMapping;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -23,18 +16,13 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.Conditions;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -53,8 +41,64 @@ public class KeyPlots_Service {
   private final ClusterFormDataRepository clusterFormDataRepository;
   private final CceCropService cceCropService;
   private final FormEntryClient formEntryClient;
+  private final ClusterLimitLogRepository clusterLimitLogRepository;
 
   @PersistenceContext private EntityManager entityManager;
+
+  public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails() {
+    List<KeyPlots> allKeyPlots = keyPlotsRepository.findAll();
+
+    return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
+  }
+
+  private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(KeyPlots keyPlot) {
+    TblBtrData plot = keyPlot.getBtrData();
+    String syNo = plot.getResvno() + "/" + plot.getResbdno();
+    String villageBlock = plot.getBcode();
+    double area = plot.getTotCent();
+    String lbcode = plot.getLbcode();
+
+    String panchayath =
+        localBodyRepository
+            .findByCodeApi(lbcode)
+            .map(TblLocalBody::getLocalbodyNameEn)
+            .orElse(lbcode); // fallback if name not found
+
+    String landType = keyPlot.getLandType();
+
+    Optional<TblMasterVillage> village =
+        tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+
+    // Fetch related SidePlotDTOs
+    List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
+    Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
+    String villageName = village.map(TblMasterVillage::getVillageNameEn).orElse("Unknown");
+    Integer villageId = village.map(TblMasterVillage::getVillageId).orElse(null);
+    Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
+    BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+    BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+    BigDecimal tsoclusterlimit =
+        currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
+    Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
+    return new KeyPlotDetailsResponse(
+        keyPlot.getId(),
+        keyPlot.getBtrData().getDcode(),
+        keyPlot.getBtrData().getTcode(),
+        cluster.get().getCluMasterId(),
+        villageName,
+        villageId,
+        villageBlock,
+        panchayath,
+        lbcode,
+        status.get().getStatus(),
+        clustermax,
+        clustermin,
+        tsoclusterlimit,
+        syNo,
+        area,
+        landType,
+        sidePlots);
+  }
 
   //    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
   //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
@@ -943,66 +987,6 @@ public class KeyPlots_Service {
   //        return newPlotMap;
   //    }
 
-  @Transactional
-  public Map<String, Object> rejectKeyplot(UUID keyPlotId, KeyPlotRejectRequest request) {
-
-    KeyPlots rejectedKeyPlot =
-        keyPlotsRepository
-            .findById(keyPlotId)
-            .orElseThrow(
-                () -> new EntityNotFoundException("Keyplot not found with ID: " + keyPlotId));
-
-    rejectedKeyPlot.setIsRejected(true);
-    rejectedKeyPlot.setReason(request.getReason());
-    rejectedKeyPlot.setRejectDate(LocalDate.now());
-    rejectedKeyPlot.setCreated_by(request.getUserId());
-    rejectedKeyPlot.setStatus(false);
-    keyPlotsRepository.save(rejectedKeyPlot);
-
-    ClusterMaster cluster =
-        clusterMasterRepository
-            .findByKeyPlotId(rejectedKeyPlot.getId())
-            .orElseThrow(
-                () ->
-                    new EntityNotFoundException("Cluster not found for KeyPlot ID: " + keyPlotId));
-
-    cluster.setIsReject(true);
-    cluster.setStatus("rejected");
-    cluster.setIs_active(false);
-    cluster.setInvestigatorRemark(request.getReasonForCluster());
-    cluster.setUpdatedAt(LocalDateTime.now());
-    clusterMasterRepository.save(cluster);
-
-    try {
-      CcePlotRejectionRequest cceRequest = new CcePlotRejectionRequest();
-      cceRequest.setOldPlotId(rejectedKeyPlot.getId());
-      cceRequest.setOldClusterId(cluster.getCluMasterId());
-      cceRequest.setUserId(request.getUserId());
-      cceRequest.setRemarks(request.getReason());
-
-      ResponseEntity<Response> cceResponse = formEntryClient.ccePlotRejection(cceRequest);
-
-      if (cceResponse == null || cceResponse.getBody() == null) {
-        throw new IllegalStateException("CCE rejection API failed: No response body");
-      }
-
-      if (cceResponse.getStatusCode() != HttpStatus.OK
-          && cceResponse.getStatusCode() != HttpStatus.CREATED) {
-        throw new IllegalStateException(
-            "CCE rejection API failed with status: " + cceResponse.getStatusCode());
-      }
-      System.out.println("Local CCE rejection API success.");
-    } catch (Exception e) {
-      System.out.println("Local CCE rejection API exception: " + e.getMessage());
-    }
-
-    Map<String, Object> response = new HashMap<>();
-    response.put("message", "KeyPlot and its Cluster rejected successfully");
-    response.put("keyPlotId", rejectedKeyPlot.getId());
-    response.put("clusterId", cluster.getCluMasterId());
-    return response;
-  }
-
   public KeyPlotDetailsResponse getKeyPlotDetails(UUID plotId) {
     Optional<KeyPlots> keyPlotOpt = keyPlotsRepository.findById(plotId);
 
@@ -1027,19 +1011,31 @@ public class KeyPlots_Service {
 
     Optional<TblMasterVillage> village =
         tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+    Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
     // Fetch related SidePlotDTOs
     List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
     String villageName = village.get().getVillageNameEn();
     Integer villageId = village.get().getVillageId();
+    Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
+    BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+    BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+    BigDecimal tsoclusterlimit =
+        currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
     Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
     return new KeyPlotDetailsResponse(
         keyPlot.getId(),
+        keyPlot.getBtrData().getDcode(),
+        keyPlot.getBtrData().getTcode(),
         cluster.get().getCluMasterId(),
         villageName,
         villageId,
         villageBlock,
         panchayath,
         lbcode,
+        status.get().getStatus(),
+        clustermax,
+        clustermin,
+        tsoclusterlimit,
         syNo,
         area,
         landType,
@@ -1264,145 +1260,152 @@ public class KeyPlots_Service {
   //        return clusterList;
   //    }
 
-  public KeyPlotOwnerDetailsResponse getByKpId(UUID kpId) {
-    modelMapper
-        .getConfiguration()
-        .setFieldMatchingEnabled(true)
-        .setFieldAccessLevel(PRIVATE)
-        .setPropertyCondition(Conditions.isNotNull());
-    KeyPlots keyPlotDetails =
-        keyPlotsRepository
-            .findById(kpId)
-            .orElseThrow(() -> new IllegalArgumentException("Id not found: " + kpId));
+  //    public KeyPlotOwnerDetailsResponse getByKpId(UUID kpId) {
+  //        modelMapper
+  //                .getConfiguration()
+  //                .setFieldMatchingEnabled(true)
+  //                .setFieldAccessLevel(PRIVATE)
+  //                .setPropertyCondition(Conditions.isNotNull());
+  //        KeyPlots keyPlotDetails =
+  //                keyPlotsRepository
+  //                        .findById(kpId)
+  //                        .orElseThrow(() -> new IllegalArgumentException("Id not found: " +
+  // kpId));
+  //
+  //        return modelMapper.map(keyPlotDetails, KeyPlotOwnerDetailsResponse.class);
+  //    }
 
-    return modelMapper.map(keyPlotDetails, KeyPlotOwnerDetailsResponse.class);
-  }
-
-  public Object KeyplotsFormation(UUID userId) {
-    var user = userZoneAssignmentRepositoty.findByUserId(userId);
-    var zoneRevenueList =
-        tblZoneRevenueVillageMappingRepository.findByZone(
-            user.get().getTblMasterZone().getZoneId());
-    List<Integer> villageIds =
-        zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
-    List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
-    List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
-
-    List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
-
-    // Fetch the dynamic land type classification map
-    Map<String, String> landTypeClassificationMap =
-        landTypeClassificationService.getLandTypeClassificationMap();
-
-    // Get LB codes
-    List<String> LbcodeList =
-        allData.stream().map(TblBtrData::getLbcode).distinct().collect(Collectors.toList());
-
-    // Fetch Local Bodies
-    List<TblLocalBody> localBodies_full = localBodyRepository.findAllByCodeApiIn(LbcodeList);
-
-    // Prepare the map of LB Code to Local Body Name
-    Map<String, String> localBodyNameMap = new HashMap<>();
-    localBodies_full.forEach(
-        localBody -> {
-          localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn());
-        });
-
-    // Group data by Panchayath (LB Code)
-    Map<String, List<TblBtrData>> panchayathDataMap =
-        allData.stream().collect(Collectors.groupingBy(TblBtrData::getLbcode));
-
-    // Calculate the total area of the zone and also gather wet and dry area data for each
-    // panchayath
-    double totalZoneArea = 0;
-    Map<String, Double> panchayathAreaMap = new HashMap<>();
-    Map<String, Double> wetAreaMap = new HashMap<>();
-    Map<String, Double> dryAreaMap = new HashMap<>();
-    Map<String, Integer> wetPlotsMap = new HashMap<>(); // Wet plots count for each panchayath
-    Map<String, Integer> dryPlotsMap = new HashMap<>(); // Dry plots count for each panchayath
-
-    for (Map.Entry<String, List<TblBtrData>> entry : panchayathDataMap.entrySet()) {
-      String lbcode = entry.getKey();
-      List<TblBtrData> panchayathData = entry.getValue();
-
-      double wetArea = 0, dryArea = 0, othersArea = 0;
-      int wetPlots = 0, dryPlots = 0;
-
-      for (TblBtrData data : panchayathData) {
-        String landTypeValue = data.getLtype();
-        double nsqm = data.getNsqm();
-        double nare = data.getNare();
-        double nhect = data.getNhect();
-
-        // Sum up the areas based on land type classification
-        if (landTypeClassificationMap.containsKey(landTypeValue)) {
-          String classification = landTypeClassificationMap.get(landTypeValue);
-          double area = nsqm * 0.000001 + nare * 0.0001 + nhect * 0.01;
-
-          switch (classification) {
-            case "wet":
-              wetArea += area;
-              wetPlots++; // Count the number of wet plots
-              break;
-            case "dry":
-            case "others": // Treat "others" as "dry"
-              dryArea += area;
-              dryPlots++; // Count the number of dry plots
-              break;
-          }
-        }
-      }
-
-      // Total area for the current panchayath
-      double panchayathArea = wetArea + dryArea + othersArea;
-      panchayathAreaMap.put(lbcode, panchayathArea);
-      wetAreaMap.put(lbcode, wetArea);
-      dryAreaMap.put(lbcode, dryArea);
-      wetPlotsMap.put(lbcode, wetPlots);
-      dryPlotsMap.put(lbcode, dryPlots);
-      totalZoneArea += panchayathArea;
-    }
-
-    // Calculate clusters for each panchayath and distribute wet and dry clusters
-    List<Map<String, Object>> clusterList = new ArrayList<>();
-    for (Map.Entry<String, Double> entry : panchayathAreaMap.entrySet()) {
-      String lbcode = entry.getKey();
-      double panchayathArea = entry.getValue();
-      double wetArea = wetAreaMap.get(lbcode);
-      double dryArea = dryAreaMap.get(lbcode);
-      int wetPlots = wetPlotsMap.get(lbcode);
-      int dryPlots = dryPlotsMap.get(lbcode);
-
-      // Calculate the total number of clusters for the current panchayath
-      int totalClusters = (int) Math.round((panchayathArea / totalZoneArea) * 100);
-
-      // Calculate the number of wet clusters and dry clusters
-      int wetClusters = (int) Math.round(totalClusters * (wetArea / panchayathArea));
-      int dryClusters = totalClusters - wetClusters;
-
-      // Calculate the class intervals (wet and dry)
-      int classIntervalWet = wetPlots / wetClusters;
-      int classIntervalDry = dryPlots / dryClusters;
-
-      // Round the class intervals to the nearest integer
-      classIntervalWet = (int) Math.round(classIntervalWet);
-      classIntervalDry = (int) Math.round(classIntervalDry);
-
-      // Prepare response for the current panchayath
-      Map<String, Object> panchayathCluster = new HashMap<>();
-      panchayathCluster.put("panchayath", localBodyNameMap.get(lbcode));
-      panchayathCluster.put("totalClusters", totalClusters);
-      panchayathCluster.put("wetClusters", wetClusters);
-      panchayathCluster.put("dryClusters", dryClusters);
-      panchayathCluster.put("classIntervalWet", classIntervalWet);
-      panchayathCluster.put("classIntervalDry", classIntervalDry);
-
-      clusterList.add(panchayathCluster);
-    }
-
-    // Sort the cluster list by Panchayath name (alphabetically)
-    clusterList.sort(Comparator.comparing(o -> (String) o.get("panchayath")));
-
-    return clusterList;
-  }
+  //    public Object KeyplotsFormation(UUID userId) {
+  //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
+  //        var zoneRevenueList =
+  // tblZoneRevenueVillageMappingRepository.findByZone(user.get().getTblMasterZone().getZoneId());
+  //        List<Integer> villageIds = zoneRevenueList.stream()
+  //                .map(TblZoneRevenueVillageMapping::getRevenueVillage)
+  //                .toList();
+  //        List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
+  //        List<Integer> lsgcodes =
+  // villageList.stream().map(TblMasterVillage::getLsgCode).toList();
+  //
+  //        List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
+  //
+  //        // Fetch the dynamic land type classification map
+  //        Map<String, String> landTypeClassificationMap =
+  // landTypeClassificationService.getLandTypeClassificationMap();
+  //
+  //
+  //        // Get LB codes
+  //        List<String> LbcodeList = allData.stream()
+  //                .map(TblBtrData::getLbcode)
+  //                .distinct()
+  //                .collect(Collectors.toList());
+  //
+  //        // Fetch Local Bodies
+  //        List<TblLocalBody> localBodies_full =
+  // localBodyRepository.findAllByCodeApiIn(LbcodeList);
+  //
+  //        // Prepare the map of LB Code to Local Body Name
+  //        Map<String, String> localBodyNameMap = new HashMap<>();
+  //        localBodies_full.forEach(localBody -> {
+  //            localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn());
+  //        });
+  //
+  //        // Group data by Panchayath (LB Code)
+  //        Map<String, List<TblBtrData>> panchayathDataMap = allData.stream()
+  //                .collect(Collectors.groupingBy(TblBtrData::getLbcode));
+  //
+  //        // Calculate the total area of the zone and also gather wet and dry area data for each
+  // panchayath
+  //        double totalZoneArea = 0;
+  //        Map<String, Double> panchayathAreaMap = new HashMap<>();
+  //        Map<String, Double> wetAreaMap = new HashMap<>();
+  //        Map<String, Double> dryAreaMap = new HashMap<>();
+  //        Map<String, Integer> wetPlotsMap = new HashMap<>();  // Wet plots count for each
+  // panchayath
+  //        Map<String, Integer> dryPlotsMap = new HashMap<>();  // Dry plots count for each
+  // panchayath
+  //
+  //        for (Map.Entry<String, List<TblBtrData>> entry : panchayathDataMap.entrySet()) {
+  //            String lbcode = entry.getKey();
+  //            List<TblBtrData> panchayathData = entry.getValue();
+  //
+  //            double wetArea = 0, dryArea = 0, othersArea = 0;
+  //            int wetPlots = 0, dryPlots = 0;
+  //
+  //            for (TblBtrData data : panchayathData) {
+  //                String landTypeValue = data.getLtype();
+  //                double nsqm = data.getNsqm();
+  //                double nare = data.getNare();
+  //                double nhect = data.getNhect();
+  //
+  //                // Sum up the areas based on land type classification
+  //                if (landTypeClassificationMap.containsKey(landTypeValue)) {
+  //                    String classification = landTypeClassificationMap.get(landTypeValue);
+  //                    double area = nsqm * 0.000001 + nare * 0.0001 + nhect * 0.01;
+  //
+  //                    switch (classification) {
+  //                        case "wet":
+  //                            wetArea += area;
+  //                            wetPlots++;  // Count the number of wet plots
+  //                            break;
+  //                        case "dry":
+  //                        case "others": // Treat "others" as "dry"
+  //                            dryArea += area;
+  //                            dryPlots++;  // Count the number of dry plots
+  //                            break;
+  //                    }
+  //                }
+  //            }
+  //
+  //            // Total area for the current panchayath
+  //            double panchayathArea = wetArea + dryArea + othersArea;
+  //            panchayathAreaMap.put(lbcode, panchayathArea);
+  //            wetAreaMap.put(lbcode, wetArea);
+  //            dryAreaMap.put(lbcode, dryArea);
+  //            wetPlotsMap.put(lbcode, wetPlots);
+  //            dryPlotsMap.put(lbcode, dryPlots);
+  //            totalZoneArea += panchayathArea;
+  //        }
+  //
+  //        // Calculate clusters for each panchayath and distribute wet and dry clusters
+  //        List<Map<String, Object>> clusterList = new ArrayList<>();
+  //        for (Map.Entry<String, Double> entry : panchayathAreaMap.entrySet()) {
+  //            String lbcode = entry.getKey();
+  //            double panchayathArea = entry.getValue();
+  //            double wetArea = wetAreaMap.get(lbcode);
+  //            double dryArea = dryAreaMap.get(lbcode);
+  //            int wetPlots = wetPlotsMap.get(lbcode);
+  //            int dryPlots = dryPlotsMap.get(lbcode);
+  //
+  //            // Calculate the total number of clusters for the current panchayath
+  //            int totalClusters = (int) Math.round((panchayathArea / totalZoneArea) * 100);
+  //
+  //            // Calculate the number of wet clusters and dry clusters
+  //            int wetClusters = (int) Math.round(totalClusters * (wetArea / panchayathArea));
+  //            int dryClusters = totalClusters - wetClusters;
+  //
+  //            // Calculate the class intervals (wet and dry)
+  //            int classIntervalWet = wetPlots / wetClusters;
+  //            int classIntervalDry = dryPlots / dryClusters;
+  //
+  //            // Round the class intervals to the nearest integer
+  //            classIntervalWet = (int) Math.round(classIntervalWet);
+  //            classIntervalDry = (int) Math.round(classIntervalDry);
+  //
+  //            // Prepare response for the current panchayath
+  //            Map<String, Object> panchayathCluster = new HashMap<>();
+  //            panchayathCluster.put("panchayath", localBodyNameMap.get(lbcode));
+  //            panchayathCluster.put("totalClusters", totalClusters);
+  //            panchayathCluster.put("wetClusters", wetClusters);
+  //            panchayathCluster.put("dryClusters", dryClusters);
+  //            panchayathCluster.put("classIntervalWet", classIntervalWet);
+  //            panchayathCluster.put("classIntervalDry", classIntervalDry);
+  //
+  //            clusterList.add(panchayathCluster);
+  //        }
+  //
+  //        // Sort the cluster list by Panchayath name (alphabetically)
+  //        clusterList.sort(Comparator.comparing(o -> (String) o.get("panchayath")));
+  //
+  //        return clusterList;
+  //    }
 }

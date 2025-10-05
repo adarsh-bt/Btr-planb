@@ -8,6 +8,7 @@ import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,7 @@ public class Zone_Service {
         zones = tblMasterZoneRepository.findByDistId(idValue);
       } else if ("Directorate".equalsIgnoreCase(type)) {
         // If type is DIRECTORATE, exclude the District logic and only fetch by Taluk
-        zones = tblMasterZoneRepository.findByDistId(idValue);
+        zones = tblMasterZoneRepository.findAll();
       } else {
         throw new IllegalArgumentException("Invalid type. Use 'Taluk' or 'District'.");
       }
@@ -88,8 +89,9 @@ public class Zone_Service {
   }
 
   public List<ZoneIdNameResponse> getAssignedZones(UUID userId) {
-    List<UserZoneAssignment> assignments = userZoneAssignmentRepositoty.findAllByUserId(userId);
-
+    System.out.println("use id "+userId);
+    List<UserZoneAssignment> assignments = userZoneAssignmentRepositoty.findAllByUserIdAndIsActiveTrue(userId);
+    System.out.println("asss "+assignments);
     if (assignments.isEmpty()) {
       throw new IllegalArgumentException("User has no assigned zones.");
     }
@@ -102,6 +104,52 @@ public class Zone_Service {
                                     a.getTblMasterZone().getZoneNameEn() // Use .getZoneNameMal() if needed
                             ))
             .collect(Collectors.toList());
+  }
+
+
+  public UserZoneAssignment updateZoneAssignmentStatus(ZoneAssignedRequset request) {
+    try {
+      // 🔁 Convert Integer to Long
+      Long zoneId = request.getZoneId().longValue();
+      System.out.println("request "+request);
+      // 1. Fetch the current assignment to update
+      Optional<UserZoneAssignment> existingAssignment =
+              userZoneAssignmentRepositoty.findByUserIdAndTblMasterZone_ZoneId(request.getUser_id(), zoneId);
+
+      if (existingAssignment.isEmpty()) {
+        throw new IllegalArgumentException("Zone assignment not found for this user and zone");
+      }
+
+      UserZoneAssignment assignment = existingAssignment.get();
+
+      // 2. If activating, deactivate all other assignments
+//            if (Boolean.TRUE.equals(request.getIs_active())) {
+//                List<UserZoneAssignment> allAssignments =
+//                        userZoneAssignmentRepositoty.findByUserId(request.getUser_id());
+//
+//                for (UserZoneAssignment a : allAssignments) {
+//                    if (!a.getTblMasterZone().getZoneId().equals(zoneId)) {
+//                        a.setIsActive(false);
+//                    }
+//                }
+//
+//                // Save updated inactive zones
+//                userZoneAssignmentRepositoty.saveAll(allAssignments);
+//            }
+
+      // 3. Update the selected zone’s status
+      assignment.setIsActive(request.getIs_active());
+      assignment.setAssignedBy(request.getAssigner_id());
+      assignment.setUpdatedAt(LocalDateTime.now());
+
+      // 4. Save and return the updated assignment
+      return userZoneAssignmentRepositoty.save(assignment);
+
+    } catch (IllegalArgumentException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Failed to update zone status: " + e.getMessage());
+    }
   }
 
   public UserZoneAssignment ZoneAssignedService(ZoneAssignedRequset request) {
@@ -129,22 +177,22 @@ public class Zone_Service {
       }
 
       // 3. Check if user already has a zone assignment
-      Optional<UserZoneAssignment> existingUserAssignment =
-              userZoneAssignmentRepositoty.findByUserId(request.getUser_id());
-
-      if (existingUserAssignment.isPresent()) {
-        UserZoneAssignment currentAssignment = existingUserAssignment.get();
-
-        // If zone is the same, no action needed (optional)
-        if (currentAssignment.getTblMasterZone().getZoneId().equals(request.getZoneId())) {
-          throw new IllegalArgumentException("User is already assigned to this zone");
-        }
-
-        // Otherwise, allow multiple assignments → create a new record
-        // Optional: you could deactivate the old assignment if you only want one active
-        //                currentAssignment.setIsActive(false);
-        //                userZoneAssignmentRepositoty.save(currentAssignment);
-      }
+//      Optional<UserZoneAssignment> existingUserAssignment =
+//              userZoneAssignmentRepositoty.findByUserId(request.getUser_id());
+//
+//      if (existingUserAssignment.isPresent()) {
+//        UserZoneAssignment currentAssignment = existingUserAssignment.get();
+//
+//        // If zone is the same, no action needed (optional)
+//        if (currentAssignment.getTblMasterZone().getZoneId().equals(request.getZoneId())) {
+//          throw new IllegalArgumentException("User is already assigned to this zone");
+//        }
+//
+//        // Otherwise, allow multiple assignments → create a new record
+//        // Optional: you could deactivate the old assignment if you only want one active
+//        //                currentAssignment.setIsActive(false);
+//        //                userZoneAssignmentRepositoty.save(currentAssignment);
+//      }
 
       // 4. Create new assignment
       UserZoneAssignment newAssignment = new UserZoneAssignment();
@@ -501,7 +549,6 @@ public class Zone_Service {
     }
     var zone = tblMasterZoneRepository.findById(zone_id);
     var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(zone.get().getZoneId());
-
     List<Integer> villageIds =
             zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
 
@@ -510,7 +557,7 @@ public class Zone_Service {
     List<String> villages_names =
             villageList.stream().map(TblMasterVillage::getVillageNameEn).toList();
 
-
+    System.out.println("ok   "+lsgcodes);
     List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
 
     Map<String, String> landTypeClassificationMap =

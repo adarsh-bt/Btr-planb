@@ -56,7 +56,7 @@ public class KeyPlots_Service {
 
   public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails() {
     List<KeyPlots> allKeyPlots = keyPlotsRepository.findAll();
-
+    System.out.println(">>>>>>> ");
     return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
   }
 

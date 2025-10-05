@@ -13,11 +13,12 @@ public interface UserZoneAssignmentRepositoty extends JpaRepository<UserZoneAssi
   @Query("SELECT u.tblMasterZone.zoneId FROM UserZoneAssignment u")
   List<Long> findAssignedZoneIds();
 
-  Optional<UserZoneAssignment> findByUserId(UUID userId);
+//  Optional<UserZoneAssignment> findByUserId(UUID userId);
 
   Optional<UserZoneAssignment> findByTblMasterZone_ZoneId(Integer zoneId);
 
   Optional<UserZoneAssignment> findByUserIdAndTblMasterZone_ZoneId(UUID userId, Long zoneId);
 
-  List<UserZoneAssignment> findAllByUserId(UUID userId);
+  List<UserZoneAssignment> findAllByUserIdAndIsActiveTrue(UUID userId);
+
 }

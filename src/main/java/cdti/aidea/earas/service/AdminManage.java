@@ -64,7 +64,7 @@ public class AdminManage {
         zones = tblMasterZoneRepository.findByDistId(idValue);
       } else if ("Directorate".equalsIgnoreCase(type)) {
         // If type is DIRECTORATE, use appropriate repository method (change if needed)
-        zones = tblMasterZoneRepository.findByDistId(idValue);
+        zones = tblMasterZoneRepository.findAll();
       } else {
         throw new IllegalArgumentException("Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
       }

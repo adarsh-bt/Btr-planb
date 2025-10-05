@@ -2,7 +2,7 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.Response.PlotDuplicateResponse;
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
-import cdti.aidea.earas.contract.ValidationErrorResponse;
+import cdti.aidea.earas.contract.Response.ValidationResponse;
 import cdti.aidea.earas.service.TblBtrDataService;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ public class TblBtrDataController {
 
   @PostMapping("/validate-duplicate")
   public ResponseEntity<?> validateDuplicate(@RequestBody TblBtrDataDTO dto) {
-    ValidationErrorResponse response = service.validateDuplicateForCluster(dto);
+    ValidationResponse response = service.validateDuplicateForCluster(dto);
 
     if (response != null) {
       return ResponseEntity.status(HttpStatus.CONFLICT).body(response);

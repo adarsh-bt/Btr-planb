@@ -1,7 +1,6 @@
 package cdti.aidea.earas.service;
 
 import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
-// import jakarta.transaction.Transactional;
 
 import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.FormEntryDto.CcePlotRejectionRequest;
@@ -956,7 +955,7 @@ public class KeyPlots_Service {
     rejectedKeyPlot.setIsRejected(true);
     rejectedKeyPlot.setReason(request.getReason());
     rejectedKeyPlot.setRejectDate(LocalDate.now());
-    rejectedKeyPlot.setCreated_by(request.getUserid());
+    rejectedKeyPlot.setCreated_by(request.getUserId());
     rejectedKeyPlot.setStatus(false);
     keyPlotsRepository.save(rejectedKeyPlot);
 
@@ -970,7 +969,7 @@ public class KeyPlots_Service {
     cluster.setIsReject(true);
     cluster.setStatus("rejected");
     cluster.setIs_active(false);
-    cluster.setInvestigatorRemark(request.getReason_for_cluster());
+    cluster.setInvestigatorRemark(request.getReasonForCluster());
     cluster.setUpdatedAt(LocalDateTime.now());
     clusterMasterRepository.save(cluster);
 
@@ -978,7 +977,7 @@ public class KeyPlots_Service {
       CcePlotRejectionRequest cceRequest = new CcePlotRejectionRequest();
       cceRequest.setOldPlotId(rejectedKeyPlot.getId());
       cceRequest.setOldClusterId(cluster.getCluMasterId());
-      cceRequest.setUserId(request.getUserid());
+      cceRequest.setUserId(request.getUserId());
       cceRequest.setRemarks(request.getReason());
 
       ResponseEntity<Response> cceResponse = formEntryClient.ccePlotRejection(cceRequest);

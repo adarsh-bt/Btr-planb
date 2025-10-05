@@ -1,13 +1,9 @@
 package cdti.aidea.earas.service;
 
 import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
-// import jakarta.transaction.Transactional;
 
 import cdti.aidea.earas.config.FormEntryClient;
-import cdti.aidea.earas.contract.FormEntryDto.CcePlotRejectionRequest;
-import cdti.aidea.earas.contract.FormEntryDto.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.Response.ClusterFormRowDTO;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
@@ -24,7 +20,6 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -32,10 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.Conditions;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +48,50 @@ public class KeyPlots_Service {
   private final FormEntryClient formEntryClient;
 
   @PersistenceContext private EntityManager entityManager;
+
+  public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails() {
+    List<KeyPlots> allKeyPlots = keyPlotsRepository.findAll();
+
+    return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
+  }
+
+  private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(KeyPlots keyPlot) {
+    TblBtrData plot = keyPlot.getBtrData();
+    String syNo = plot.getResvno() + "/" + plot.getResbdno();
+    String villageBlock = plot.getBcode();
+    double area = plot.getTotCent();
+    String lbcode = plot.getLbcode();
+
+    String panchayath =
+        localBodyRepository
+            .findByCodeApi(lbcode)
+            .map(TblLocalBody::getLocalbodyNameEn)
+            .orElse(lbcode); // fallback if name not found
+
+    String landType = keyPlot.getLandType();
+
+    Optional<TblMasterVillage> village =
+        tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+
+    // Fetch related SidePlotDTOs
+    List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
+
+    String villageName = village.map(TblMasterVillage::getVillageNameEn).orElse("Unknown");
+    Integer villageId = village.map(TblMasterVillage::getVillageId).orElse(null);
+    Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
+    return new KeyPlotDetailsResponse(
+        keyPlot.getId(),
+        cluster.get().getCluMasterId(),
+        villageName,
+        villageId,
+        villageBlock,
+        panchayath,
+        lbcode,
+        syNo,
+        area,
+        landType,
+        sidePlots);
+  }
 
   //    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
   //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
@@ -943,66 +979,6 @@ public class KeyPlots_Service {
   //
   //        return newPlotMap;
   //    }
-
-  @Transactional
-  public Map<String, Object> rejectKeyplot(UUID keyPlotId, KeyPlotRejectRequest request) {
-
-    KeyPlots rejectedKeyPlot =
-        keyPlotsRepository
-            .findById(keyPlotId)
-            .orElseThrow(
-                () -> new EntityNotFoundException("Keyplot not found with ID: " + keyPlotId));
-
-    rejectedKeyPlot.setIsRejected(true);
-    rejectedKeyPlot.setReason(request.getReason());
-    rejectedKeyPlot.setRejectDate(LocalDate.now());
-    rejectedKeyPlot.setCreated_by(request.getUserid());
-    rejectedKeyPlot.setStatus(false);
-    keyPlotsRepository.save(rejectedKeyPlot);
-
-    ClusterMaster cluster =
-        clusterMasterRepository
-            .findByKeyPlotId(rejectedKeyPlot.getId())
-            .orElseThrow(
-                () ->
-                    new EntityNotFoundException("Cluster not found for KeyPlot ID: " + keyPlotId));
-
-    cluster.setIsReject(true);
-    cluster.setStatus("rejected");
-    cluster.setIs_active(false);
-    cluster.setInvestigatorRemark(request.getReason_for_cluster());
-    cluster.setUpdatedAt(LocalDateTime.now());
-    clusterMasterRepository.save(cluster);
-
-    try {
-      CcePlotRejectionRequest cceRequest = new CcePlotRejectionRequest();
-      cceRequest.setOldPlotId(rejectedKeyPlot.getId());
-      cceRequest.setOldClusterId(cluster.getCluMasterId());
-      cceRequest.setUserId(request.getUserid());
-      cceRequest.setRemarks(request.getReason());
-
-      ResponseEntity<Response> cceResponse = formEntryClient.ccePlotRejection(cceRequest);
-
-      if (cceResponse == null || cceResponse.getBody() == null) {
-        throw new IllegalStateException("CCE rejection API failed: No response body");
-      }
-
-      if (cceResponse.getStatusCode() != HttpStatus.OK
-          && cceResponse.getStatusCode() != HttpStatus.CREATED) {
-        throw new IllegalStateException(
-            "CCE rejection API failed with status: " + cceResponse.getStatusCode());
-      }
-      System.out.println("Local CCE rejection API success.");
-    } catch (Exception e) {
-      System.out.println("Local CCE rejection API exception: " + e.getMessage());
-    }
-
-    Map<String, Object> response = new HashMap<>();
-    response.put("message", "KeyPlot and its Cluster rejected successfully");
-    response.put("keyPlotId", rejectedKeyPlot.getId());
-    response.put("clusterId", cluster.getCluMasterId());
-    return response;
-  }
 
   public KeyPlotDetailsResponse getKeyPlotDetails(UUID plotId) {
     Optional<KeyPlots> keyPlotOpt = keyPlotsRepository.findById(plotId);

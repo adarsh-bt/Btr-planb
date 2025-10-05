@@ -3,15 +3,14 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.model.Btr_models.*;
-import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
-import cdti.aidea.earas.model.Btr_models.Masters.TblZoneRevenueVillageMapping;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.sl.draw.geom.GuideIf;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,9 +24,8 @@ public class TblBtrDataService {
   private final ClusterMasterRepository clusterMasterRepository;
   private final ClusterFormDataRepository clusterFormDataRepository;
   private final TblMasterZoneRepository tblMasterZoneRepository;
-  private final TblMasterVillageRepository tblMasterVillageRepository;
-  private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
 
+  // ---------------- Single Save ----------------
   // ---------------- Single Save ----------------
   @Transactional
   public Map<String, Object> saveData(TblBtrDataDTO dto) {
@@ -37,10 +35,6 @@ public class TblBtrDataService {
       throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
     }
 
-    // ✅ Validate duplicates
-    validateDuplicate(dto);
-    validateZoneMapping(dto);
-    // 1️⃣ Save TblBtrData
     // ✅ Validate duplicates
     ValidationErrorResponse duplicateError = validateDuplicate(dto);
     if (duplicateError != null) {
@@ -70,10 +64,25 @@ public class TblBtrDataService {
     keyPlot.setCreated_by(UUID.randomUUID());
     keyPlot = keyPlotsRepository.save(keyPlot);
 
+    String lbcode = btrData.getLbcode();
+    String landType = btrData.getLtype(); // "Wet" or "Dry"
+
+    int agriYear = LocalDate.now().getYear();
+
+// In Kerala or India, agri year may start in June — adjust accordingly
+    LocalDate startDate = LocalDate.of(agriYear, 6, 1);
+    LocalDate endDate = startDate.plusYears(1).minusDays(1); // May 31 of next year
+
+    Optional<Integer> maxClusterNumberOpt = clusterMasterRepository
+            .findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(lbcode, landType, startDate, endDate);
+
+    int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+
+
     // 4️⃣ Save ClusterMaster
     ClusterMaster clusterMaster = new ClusterMaster();
     clusterMaster.setKeyPlot(keyPlot);
-    clusterMaster.setClusterNumber(1);
+    clusterMaster.setClusterNumber(nextClusterNumber);
     clusterMaster.setStatus("Not Started");
     clusterMaster.setIsReject(false);
     clusterMaster.setIs_active(true);
@@ -96,42 +105,6 @@ public class TblBtrDataService {
     return response;
   }
 
-  // ---------------- Zone Validation ----------------
-  private void validateZoneMapping(TblBtrDataDTO dto) {
-    // 1️⃣ Fetch the zone
-    Integer zoneId = dto.getZoneId();
-    TblMasterZone zone =
-        tblMasterZoneRepository
-            .findById(zoneId)
-            .orElseThrow(() -> new RuntimeException("Zone not found for zoneId=" + zoneId));
-
-    // 2️⃣ Get all village mappings for this zone
-    List<TblZoneRevenueVillageMapping> zoneMappings =
-        tblZoneRevenueVillageMappingRepository.findByZone(zoneId);
-
-    if (zoneMappings.isEmpty()) {
-      throw new RuntimeException("No villages mapped for zoneId=" + zoneId);
-    }
-
-    // 3️⃣ Extract village IDs
-    List<Integer> villageIds =
-        zoneMappings.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
-
-    // 4️⃣ Fetch all villages by IDs
-    List<TblMasterVillage> villages = tblMasterVillageRepository.findAllById(villageIds);
-
-    // 5️⃣ Check if the DTO's lsgcode exists in these villages
-    boolean exists = villages.stream().anyMatch(v -> v.getLsgCode().equals(dto.getLsgcode()));
-
-    if (!exists) {
-      throw new RuntimeException(
-          "Zone mismatch! Provided lsgCode="
-              + dto.getLsgcode()
-              + " does not belong to zoneId="
-              + zoneId);
-    }
-  }
-
   // ---------------- Save All ----------------
   @Transactional
   public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
@@ -143,7 +116,7 @@ public class TblBtrDataService {
       if (!requiredErrors.isEmpty()) {
         allErrors.add(
             new ValidationErrorResponse(
-                dto.getResvno(), dto.getResbdno(), String.join(", ", requiredErrors)));
+                dto.getResvno(), dto.getResbdno(), dto.getTotCent(),String.join(", ", requiredErrors)));
       }
 
       // Duplicate validation
@@ -203,6 +176,7 @@ public class TblBtrDataService {
       return new ValidationErrorResponse(
           dto.getResvno(),
           dto.getResbdno(),
+          dto.getTotCent(),
           "Duplicate entry already exists for resvno="
               + dto.getResvno()
               + " and resbdno="
@@ -223,9 +197,39 @@ public class TblBtrDataService {
     if (dto.getResvno() == null) errors.add("Reservation number (resvno) is required.");
     if (dto.getResbdno() == null || dto.getResbdno().trim().isEmpty())
       errors.add("Reservation boundary number (resbdno) is required.");
-    if (dto.getZoneId() == null)
-      errors.add("Zone Id (zoneId) is required."); // ✅ Added zoneId validation
+    if (dto.getZoneId() == null) errors.add("Zone Id (zoneId) is required.");
 
     return errors;
+  }
+
+
+  public ValidationErrorResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
+
+    String cleanedResbdno = dto.getResbdno() != null
+            ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "")
+            : null;
+
+    Optional<TblBtrData> exists = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+                    dto.getDcode(),
+                    dto.getTcode(),
+                    dto.getVcode(),
+                    dto.getBcode(),
+                    dto.getResvno(),
+                    cleanedResbdno
+            );
+
+
+    System.out.println("dto >..  "+dto);
+    if (exists.isPresent()) {
+      return new ValidationErrorResponse(
+              dto.getResvno(),
+              dto.getResbdno(),
+              exists.get().getTotCent(),
+
+              "Duplicate entry already exists for resvno=" + dto.getResvno() +
+                      " and resbdno=" + dto.getResbdno());
+    }
+
+    return null; // or Optional<ValidationErrorResponse>
   }
 }

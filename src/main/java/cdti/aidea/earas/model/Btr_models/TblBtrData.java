@@ -37,6 +37,12 @@ public class TblBtrData {
   private Double south;
   private Integer lsgcode;
   private Double totCent;
+  @Column(name = "owner_name")
+  private String ownername;
+    @Column(name = "tp_no")
+  private Integer tpno;
+    @Column(name = "tb_subdivision_no")
+  private Integer tbsubdivisionno;
 
   @Column(name = "land_owner_address")
   private String address;
@@ -55,7 +61,7 @@ public class TblBtrData {
   private TblNonBtr btrtype;
 
   //    private String remarks;
-  //    private Double area;
+  //       private Double area;
   //    private LocalDateTime insertionTime;
   //    private LocalDateTime updationTime;
   //

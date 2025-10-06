@@ -182,11 +182,48 @@ public class TblBtrDataService {
     entity.setBcode(dto.getBcode());
     entity.setLbcode(dto.getLbcode());
     entity.setLtype(dto.getLtype());
-    entity.setResvno(dto.getResvno());
-    entity.setResbdno(dto.getResbdno());
     entity.setLsgcode(dto.getLsgcode());
     entity.setTotCent(dto.getTotCent());
-    return entity;
+      entity.setResvno(dto.getResvno());
+      entity.setResbdno(dto.getResbdno());
+// 🧩 Determine type-based mapping
+      if (dto.getBtrtype() != null) {
+          int typeId = dto.getBtrtype();
+
+          // Type 1 → dcode to resbdno
+          if (typeId == 1) {
+              entity.setResvno(dto.getResvno());
+              entity.setResbdno(dto.getResbdno());
+          }
+          // Type 2 → dcode to totcent + ownername, address, houseno
+          else if (typeId == 2) {
+              entity.setOwnername(dto.getOwnername());
+              entity.setAddress(dto.getAddress());
+              entity.setHouseno(dto.getHouseno());
+          }
+          // Type 3 → dcode to totcent + ownername, address
+          // but not resvno/resbdno
+          else if (typeId == 3) {
+              entity.setOwnername(dto.getOwnername());
+              entity.setAddress(dto.getAddress());
+          }
+          // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno
+          // (mapped to mainno and subno)
+          else if (typeId == 4) {
+              entity.setOwnername(dto.getOwnername());
+              entity.setAddress(dto.getAddress());
+              entity.setTpno(dto.getTpno());
+              entity.setTbsubdivisionno(dto.getTbsubdivisionno());
+          }
+          // Type 5 → dcode to totcent + ownername, address, mainno, subno
+          // but not resvno/resbdno
+          else if (typeId == 5) {
+              entity.setOwnername(dto.getOwnername());
+              entity.setMainno(dto.getMainno());
+              entity.setSubno(dto.getSubno());
+          }
+      }
+          return entity;
   }
 
   // ---------------- Duplicate Validation ----------------

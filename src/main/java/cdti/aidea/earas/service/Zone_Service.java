@@ -536,7 +536,6 @@ public class Zone_Service {
             .collect(Collectors.toList());
 
     List<Long> ids = localbodyTypeIds.stream().map(Short::longValue).collect(Collectors.toList());
-
     List<LocalBodyType> localBodyType_full = localBodyTypeRepository.findByIdIn(ids);
 
     // Build Map<typeId, typeName>
@@ -589,8 +588,6 @@ public class Zone_Service {
                   dryArea += area;
                   dryCount++;
               }
-//              totalPlotCount += (wetArea + dryArea);
-//          }
           }
         }
       }
@@ -683,8 +680,7 @@ public class Zone_Service {
         zoneName,
         panchayathResponses,
         new ArrayList<>(localBodyNameMap.keySet()),
-      //  505,
-            totalPlotCount ,
+        totalPlotCount ,
         overallTotalArea,
         totalWetAreaZone,
         totalDryAreaZone,

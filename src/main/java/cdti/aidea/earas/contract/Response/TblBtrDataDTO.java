@@ -27,4 +27,8 @@ public class TblBtrDataDTO {
   private Integer mainno;
   private String subno;
   private Integer btrtype;
+  private String ownername;
+  private Integer tpno;
+  private Integer tbsubdivisionno;
+
 }

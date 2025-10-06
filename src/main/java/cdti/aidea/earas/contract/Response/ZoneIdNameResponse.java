@@ -14,4 +14,6 @@ import lombok.NoArgsConstructor;
 public class ZoneIdNameResponse {
   private Integer zoneId;
   private String zoneName;
+
+
 }

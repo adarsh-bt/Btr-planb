@@ -22,17 +22,27 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.validation.Valid;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.Conditions;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
+//import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -111,640 +121,608 @@ public class KeyPlots_Service {
         sidePlots);
   }
 
-  //    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
-  //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
-  //        LocalDate cutoffDate = LocalDate.now().minusYears(2);
-  //        System.out.println("user found ");
-  //        int currentYear = LocalDate.now().getYear();
-  //        LocalDate today = LocalDate.now();
-  //
-  //         List<KeyPlots> existingKeyPlots = keyPlotsRepository.findValidKeyPlots(
-  //                user.get().getTblMasterZone().getZoneId(),
-  //                currentYear,
-  //                today
-  //        );
-  //
-  //        System.out.println("ssss ns");
-  //        if (existingKeyPlots.isEmpty()) {
-  //            return Collections.emptyList();
-  //        }
-  //
-  //        Map<String, List<KeyPlots>> groupedByPanchayat = existingKeyPlots.stream()
-  //                .collect(Collectors.groupingBy(kp -> kp.getLocalbody().getLocalbodyNameEn()));
-  //
-  //        List<Map<String, Object>> clusterList = new ArrayList<>();
-  //        int globalSlNo = 1;
-  //        for (Map.Entry<String, List<KeyPlots>> entry : groupedByPanchayat.entrySet()) {
-  //            String panchayath = entry.getKey();
-  //            List<KeyPlots> plots = entry.getValue();
-  //
-  //            List<Map<String, Object>> wetSamples = new ArrayList<>();
-  //            List<Map<String, Object>> drySamples = new ArrayList<>();
-  //            double wetArea = 0, dryArea = 0;
-  //            int wetClusters = 0, dryClusters = 0;
-  //            int classIntervalWet = 0, classIntervalDry = 0;
-  //
-  //            for (KeyPlots kp : plots) {
-  //                TblBtrDataOld plot = kp.getBtrDataOld();
-  //                Map<String, Object> row = new HashMap<>();
-  //                row.put("id", plot.getId());
-  //                row.put("plot_id", kp.getId());
-  //
-  //                row.put("no",globalSlNo++);
-  //                row.put("panchayth", kp.getLocalbody().getLocalbodyNameEn());
-  //                row.put("Sy. No", plot.getResvno() + "/" + plot.getResbdno());
-  //                Double roundedArea = BigDecimal.valueOf(plot.getArea())
-  //                        .setScale(2, RoundingMode.HALF_UP)
-  //                        .doubleValue();
-  //                row.put("Area (Cents)", roundedArea);
-  //
-  //                row.put("Village/Block", plot.getBcode());
-  ////                row.put("Random No", plot.getId().intValue());
-  ////                row.put("AgreStartYear", kp.getAgriStartYear());
-  ////                row.put("AgreEndYear", kp.getAgriEndYear());
-  //
-  //                if ("Wet".equalsIgnoreCase(kp.getLandType())) {
-  //                    wetSamples.add(row);
-  //                    wetArea += plot.getArea();
-  //                    wetClusters++;
-  //                    classIntervalWet = kp.getIntervals();
-  //                } else if ("Dry".equalsIgnoreCase(kp.getLandType())) {
-  //                    drySamples.add(row);
-  //                    dryArea += plot.getArea();
-  //                    dryClusters++;
-  //                    classIntervalDry = kp.getIntervals();
-  //                }
-  //            }
-  //
-  //            Map<String, Object> clusterData = new HashMap<>();
-  //            clusterData.put("panchayath", panchayath);
-  //            clusterData.put("wetSamples", wetSamples);
-  //            clusterData.put("drySamples", drySamples);
-  //            clusterData.put("wetarea", Math.round(wetArea));
-  //            clusterData.put("dryarea", Math.round(dryArea));
-  //            clusterData.put("totalarea", Math.round(wetArea + dryArea));
-  //
-  //            clusterList.add(clusterData);
-  //        }
-  //
-  //        return clusterList;
-  //    }
+//    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
+//        var user = userZoneAssignmentRepositoty.findByUserId(userId);
+//        LocalDate cutoffDate = LocalDate.now().minusYears(2);
+//        System.out.println("user found ");
+//        int currentYear = LocalDate.now().getYear();
+//        LocalDate today = LocalDate.now();
+//
+//         List<KeyPlots> existingKeyPlots = keyPlotsRepository.findValidKeyPlots(
+//                user.get().getTblMasterZone().getZoneId(),
+//                currentYear,
+//                today
+//        );
+//
+//        System.out.println("ssss ns");
+//        if (existingKeyPlots.isEmpty()) {
+//            return Collections.emptyList();
+//        }
+//
+//        Map<String, List<KeyPlots>> groupedByPanchayat = existingKeyPlots.stream()
+//                .collect(Collectors.groupingBy(kp -> kp.getLocalbody().getLocalbodyNameEn()));
+//
+//        List<Map<String, Object>> clusterList = new ArrayList<>();
+//        int globalSlNo = 1;
+//        for (Map.Entry<String, List<KeyPlots>> entry : groupedByPanchayat.entrySet()) {
+//            String panchayath = entry.getKey();
+//            List<KeyPlots> plots = entry.getValue();
+//
+//            List<Map<String, Object>> wetSamples = new ArrayList<>();
+//            List<Map<String, Object>> drySamples = new ArrayList<>();
+//            double wetArea = 0, dryArea = 0;
+//            int wetClusters = 0, dryClusters = 0;
+//            int classIntervalWet = 0, classIntervalDry = 0;
+//
+//            for (KeyPlots kp : plots) {
+//                TblBtrDataOld plot = kp.getBtrDataOld();
+//                Map<String, Object> row = new HashMap<>();
+//                row.put("id", plot.getId());
+//                row.put("plot_id", kp.getId());
+//
+//                row.put("no",globalSlNo++);
+//                row.put("panchayth", kp.getLocalbody().getLocalbodyNameEn());
+//                row.put("Sy. No", plot.getResvno() + "/" + plot.getResbdno());
+//                Double roundedArea = BigDecimal.valueOf(plot.getArea())
+//                        .setScale(2, RoundingMode.HALF_UP)
+//                        .doubleValue();
+//                row.put("Area (Cents)", roundedArea);
+//
+//                row.put("Village/Block", plot.getBcode());
+////                row.put("Random No", plot.getId().intValue());
+////                row.put("AgreStartYear", kp.getAgriStartYear());
+////                row.put("AgreEndYear", kp.getAgriEndYear());
+//
+//                if ("Wet".equalsIgnoreCase(kp.getLandType())) {
+//                    wetSamples.add(row);
+//                    wetArea += plot.getArea();
+//                    wetClusters++;
+//                    classIntervalWet = kp.getIntervals();
+//                } else if ("Dry".equalsIgnoreCase(kp.getLandType())) {
+//                    drySamples.add(row);
+//                    dryArea += plot.getArea();
+//                    dryClusters++;
+//                    classIntervalDry = kp.getIntervals();
+//                }
+//            }
+//
+//            Map<String, Object> clusterData = new HashMap<>();
+//            clusterData.put("panchayath", panchayath);
+//            clusterData.put("wetSamples", wetSamples);
+//            clusterData.put("drySamples", drySamples);
+//            clusterData.put("wetarea", Math.round(wetArea));
+//            clusterData.put("dryarea", Math.round(dryArea));
+//            clusterData.put("totalarea", Math.round(wetArea + dryArea));
+//
+//            clusterList.add(clusterData);
+//        }
+//
+//        return clusterList;
+//    }
 
-  //    public Object generateNewKeyPlots(UUID userId) {
-  //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
-  //        LocalDate cutoffDate = LocalDate.now().minusYears(2);
-  //
-  //        List<KeyPlots> existingKeyPlots = keyPlotsRepository.findValidKeyPlots(
-  //                Long.valueOf(user.get().getTblMasterZone().getZoneId()),
-  //                cutoffDate
-  //        );
-  //
-  //        HashSet<KeyPlots> excludedIdSet = new HashSet<>(existingKeyPlots);
-  //        var zoneRevenueList =
-  // tblZoneRevenueVillageMappingRepository.findByZone(user.get().getTblMasterZone().getZoneId());
-  //
-  //        List<Integer> villageIds = zoneRevenueList.stream()
-  //                .map(TblZoneRevenueVillageMapping::getRevenueVillage)
-  //                .toList();
-  //        List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
-  //        List<Integer> lsgcodes =
-  // villageList.stream().map(TblMasterVillage::getLsgCode).toList();
-  //
-  //        List<TblBtrDataOld> allData = tblBtrDataOldRepository.findAllByLsgcodeIn(lsgcodes);
-  //        Map<String, List<TblBtrDataOld>> panchayathDataMap = allData.stream()
-  //                .collect(Collectors.groupingBy(TblBtrDataOld::getLbcode));
-  //
-  //        List<String> lbcodeList = allData.stream()
-  //                .map(TblBtrDataOld::getLbcode)
-  //                .distinct()
-  //                .toList();
-  //
-  //        List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbcodeList);
-  //        Map<String, String> localBodyNameMap = localBodies.stream()
-  //                .collect(Collectors.toMap(TblLocalBody::getCodeApi,
-  // TblLocalBody::getLocalbodyNameMal));
-  //
-  //        // Phase 1: Area Stats
-  //        List<Map<String, Object>> areaStats = new ArrayList<>();
-  //        double totalZoneArea = 0;
-  //
-  //        for (Map.Entry<String, List<TblBtrDataOld>> entry : panchayathDataMap.entrySet()) {
-  //            String lbcode = entry.getKey();
-  //            double wetArea = 0, dryArea = 0;
-  //            int wetPlots = 0, dryPlots = 0;
-  //
-  //            for (TblBtrDataOld data : entry.getValue()) {
-  //                double area = data.getArea();
-  //                String landType = data.getLtype().trim().toUpperCase();
-  //
-  //                if ("W".equals(landType)) {
-  //                    wetArea += area;
-  //                    wetPlots++;
-  //                } else if ("D".equals(landType)) {
-  //                    dryArea += area;
-  //                    dryPlots++;
-  //                }
-  //            }
-  //
-  //            double totalArea = wetArea + dryArea;
-  //            totalZoneArea += totalArea;
-  //
-  //            Map<String, Object> stats = new HashMap<>();
-  //            stats.put("lbcode", lbcode);
-  //            stats.put("wetArea", wetArea);
-  //            stats.put("dryArea", dryArea);
-  //            stats.put("wetPlots", wetPlots);
-  //            stats.put("dryPlots", dryPlots);
-  //            stats.put("totalArea", totalArea);
-  //            areaStats.add(stats);
-  //        }
-  //
-  //        areaStats.sort(Comparator.comparing(s -> localBodyNameMap.getOrDefault((String)
-  // s.get("lbcode"), "")));
-  //
-  //        // Phase 2: Clustering
-  //        List<Map<String, Object>> clusterList = new ArrayList<>();
-  //        int totalClusters = 100, clusterAssigned = 0;
-  //
-  //        for (int i = 0; i < areaStats.size(); i++) {
-  //            Map<String, Object> stats = areaStats.get(i);
-  //            String lbcode = (String) stats.get("lbcode");
-  //            double wetArea = (double) stats.get("wetArea");
-  //            double dryArea = (double) stats.get("dryArea");
-  //            double totalArea = (double) stats.get("totalArea");
-  //            int wetPlots = (int) stats.get("wetPlots");
-  //            int dryPlots = (int) stats.get("dryPlots");
-  //
-  //            int clusters = (i == areaStats.size() - 1)
-  //                    ? totalClusters - clusterAssigned
-  //                    : (int) Math.round((totalArea / totalZoneArea) * totalClusters);
-  //            clusterAssigned += clusters;
-  //
-  //            int wetClusters = (int) Math.round(clusters * (wetArea / totalArea));
-  //            int dryClusters = clusters - wetClusters;
-  //            int classIntervalWet = (wetClusters > 0 && wetPlots > 0) ? (int) Math.round((double)
-  // wetPlots / wetClusters) : 0;
-  //            int classIntervalDry = (dryClusters > 0 && dryPlots > 0) ? (int) Math.round((double)
-  // dryPlots / dryClusters) : 0;
-  //
-  //            List<TblBtrDataOld> wetList = panchayathDataMap.get(lbcode).stream()
-  //                    .filter(d -> "W".equalsIgnoreCase(d.getLtype()))
-  //                    .filter(d -> !excludedIdSet.contains(d.getId()))
-  //                    .toList();
-  //
-  //            List<TblBtrDataOld> dryList = panchayathDataMap.get(lbcode).stream()
-  //                    .filter(d -> "D".equalsIgnoreCase(d.getLtype()))
-  //                    .filter(d -> !excludedIdSet.contains(d.getId()))
-  //                    .toList();
-  //
-  //            Map<String, Integer> randomStartMap = Map.of("01108", 242, "01113", 3032);
-  //            int randomStart = randomStartMap.getOrDefault(lbcode, 0);
-  //
-  //            List<Map<String, Object>> wetSamples = getSystematicSample(wetList, wetClusters,
-  // classIntervalWet, randomStart, localBodyNameMap);
-  //            List<Map<String, Object>> drySamples = getSystematicSample(dryList, dryClusters,
-  // classIntervalDry, randomStart, localBodyNameMap);
-  //
-  //            TblLocalBody localbody = localBodies.stream()
-  //                    .filter(lb -> lb.getCodeApi().equals(lbcode))
-  //                    .findFirst()
-  //                    .orElseThrow(() -> new EntityNotFoundException("Localbody not found for
-  // code: " + lbcode));
-  //
-  //            saveSamples(wetSamples, classIntervalWet, user.get().getTblMasterZone().getZoneId(),
-  // "Wet", localbody,userId, clusterCounter);
-  //            saveSamples(drySamples, classIntervalDry, user.get().getTblMasterZone().getZoneId(),
-  // "Dry", localbody,userId, clusterCounter);
-  //
-  //            Map<String, Object> panchayathCluster = new HashMap<>();
-  //            panchayathCluster.put("panchayath", localBodyNameMap.get(lbcode));
-  //            panchayathCluster.put("totalarea", (double) Math.round(totalArea));
-  //            panchayathCluster.put("wetarea", (double) Math.round(wetArea));
-  //            panchayathCluster.put("dryarea", (double) Math.round(dryArea));
-  //            panchayathCluster.put("totalClusters", clusters);
-  //            panchayathCluster.put("wetClusters", wetClusters);
-  //            panchayathCluster.put("dryClusters", dryClusters);
-  //            panchayathCluster.put("classIntervalWet", classIntervalWet);
-  //            panchayathCluster.put("classIntervalDry", classIntervalDry);
-  //            panchayathCluster.put("wetSamples", wetSamples);
-  //            panchayathCluster.put("drySamples", drySamples);
-  //
-  //            clusterList.add(panchayathCluster);
-  //        }
-  //
-  //        return clusterList;
-  //    }
+//    public Object generateNewKeyPlots(UUID userId) {
+//        var user = userZoneAssignmentRepositoty.findByUserId(userId);
+//        LocalDate cutoffDate = LocalDate.now().minusYears(2);
+//
+//        List<KeyPlots> existingKeyPlots = keyPlotsRepository.findValidKeyPlots(
+//                Long.valueOf(user.get().getTblMasterZone().getZoneId()),
+//                cutoffDate
+//        );
+//
+//        HashSet<KeyPlots> excludedIdSet = new HashSet<>(existingKeyPlots);
+//        var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(user.get().getTblMasterZone().getZoneId());
+//
+//        List<Integer> villageIds = zoneRevenueList.stream()
+//                .map(TblZoneRevenueVillageMapping::getRevenueVillage)
+//                .toList();
+//        List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
+//        List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
+//
+//        List<TblBtrDataOld> allData = tblBtrDataOldRepository.findAllByLsgcodeIn(lsgcodes);
+//        Map<String, List<TblBtrDataOld>> panchayathDataMap = allData.stream()
+//                .collect(Collectors.groupingBy(TblBtrDataOld::getLbcode));
+//
+//        List<String> lbcodeList = allData.stream()
+//                .map(TblBtrDataOld::getLbcode)
+//                .distinct()
+//                .toList();
+//
+//        List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbcodeList);
+//        Map<String, String> localBodyNameMap = localBodies.stream()
+//                .collect(Collectors.toMap(TblLocalBody::getCodeApi, TblLocalBody::getLocalbodyNameMal));
+//
+//        // Phase 1: Area Stats
+//        List<Map<String, Object>> areaStats = new ArrayList<>();
+//        double totalZoneArea = 0;
+//
+//        for (Map.Entry<String, List<TblBtrDataOld>> entry : panchayathDataMap.entrySet()) {
+//            String lbcode = entry.getKey();
+//            double wetArea = 0, dryArea = 0;
+//            int wetPlots = 0, dryPlots = 0;
+//
+//            for (TblBtrDataOld data : entry.getValue()) {
+//                double area = data.getArea();
+//                String landType = data.getLtype().trim().toUpperCase();
+//
+//                if ("W".equals(landType)) {
+//                    wetArea += area;
+//                    wetPlots++;
+//                } else if ("D".equals(landType)) {
+//                    dryArea += area;
+//                    dryPlots++;
+//                }
+//            }
+//
+//            double totalArea = wetArea + dryArea;
+//            totalZoneArea += totalArea;
+//
+//            Map<String, Object> stats = new HashMap<>();
+//            stats.put("lbcode", lbcode);
+//            stats.put("wetArea", wetArea);
+//            stats.put("dryArea", dryArea);
+//            stats.put("wetPlots", wetPlots);
+//            stats.put("dryPlots", dryPlots);
+//            stats.put("totalArea", totalArea);
+//            areaStats.add(stats);
+//        }
+//
+//        areaStats.sort(Comparator.comparing(s -> localBodyNameMap.getOrDefault((String) s.get("lbcode"), "")));
+//
+//        // Phase 2: Clustering
+//        List<Map<String, Object>> clusterList = new ArrayList<>();
+//        int totalClusters = 100, clusterAssigned = 0;
+//
+//        for (int i = 0; i < areaStats.size(); i++) {
+//            Map<String, Object> stats = areaStats.get(i);
+//            String lbcode = (String) stats.get("lbcode");
+//            double wetArea = (double) stats.get("wetArea");
+//            double dryArea = (double) stats.get("dryArea");
+//            double totalArea = (double) stats.get("totalArea");
+//            int wetPlots = (int) stats.get("wetPlots");
+//            int dryPlots = (int) stats.get("dryPlots");
+//
+//            int clusters = (i == areaStats.size() - 1)
+//                    ? totalClusters - clusterAssigned
+//                    : (int) Math.round((totalArea / totalZoneArea) * totalClusters);
+//            clusterAssigned += clusters;
+//
+//            int wetClusters = (int) Math.round(clusters * (wetArea / totalArea));
+//            int dryClusters = clusters - wetClusters;
+//            int classIntervalWet = (wetClusters > 0 && wetPlots > 0) ? (int) Math.round((double) wetPlots / wetClusters) : 0;
+//            int classIntervalDry = (dryClusters > 0 && dryPlots > 0) ? (int) Math.round((double) dryPlots / dryClusters) : 0;
+//
+//            List<TblBtrDataOld> wetList = panchayathDataMap.get(lbcode).stream()
+//                    .filter(d -> "W".equalsIgnoreCase(d.getLtype()))
+//                    .filter(d -> !excludedIdSet.contains(d.getId()))
+//                    .toList();
+//
+//            List<TblBtrDataOld> dryList = panchayathDataMap.get(lbcode).stream()
+//                    .filter(d -> "D".equalsIgnoreCase(d.getLtype()))
+//                    .filter(d -> !excludedIdSet.contains(d.getId()))
+//                    .toList();
+//
+//            Map<String, Integer> randomStartMap = Map.of("01108", 242, "01113", 3032);
+//            int randomStart = randomStartMap.getOrDefault(lbcode, 0);
+//
+//            List<Map<String, Object>> wetSamples = getSystematicSample(wetList, wetClusters, classIntervalWet, randomStart, localBodyNameMap);
+//            List<Map<String, Object>> drySamples = getSystematicSample(dryList, dryClusters, classIntervalDry, randomStart, localBodyNameMap);
+//
+//            TblLocalBody localbody = localBodies.stream()
+//                    .filter(lb -> lb.getCodeApi().equals(lbcode))
+//                    .findFirst()
+//                    .orElseThrow(() -> new EntityNotFoundException("Localbody not found for code: " + lbcode));
+//
+//            saveSamples(wetSamples, classIntervalWet, user.get().getTblMasterZone().getZoneId(), "Wet", localbody,userId, clusterCounter);
+//            saveSamples(drySamples, classIntervalDry, user.get().getTblMasterZone().getZoneId(), "Dry", localbody,userId, clusterCounter);
+//
+//            Map<String, Object> panchayathCluster = new HashMap<>();
+//            panchayathCluster.put("panchayath", localBodyNameMap.get(lbcode));
+//            panchayathCluster.put("totalarea", (double) Math.round(totalArea));
+//            panchayathCluster.put("wetarea", (double) Math.round(wetArea));
+//            panchayathCluster.put("dryarea", (double) Math.round(dryArea));
+//            panchayathCluster.put("totalClusters", clusters);
+//            panchayathCluster.put("wetClusters", wetClusters);
+//            panchayathCluster.put("dryClusters", dryClusters);
+//            panchayathCluster.put("classIntervalWet", classIntervalWet);
+//            panchayathCluster.put("classIntervalDry", classIntervalDry);
+//            panchayathCluster.put("wetSamples", wetSamples);
+//            panchayathCluster.put("drySamples", drySamples);
+//
+//            clusterList.add(panchayathCluster);
+//        }
+//
+//        return clusterList;
+//    }
 
-  // working code but existing and genrtae same
 
-  //    public Object KeyplotsFormationOldbtr(UUID userId) {
-  //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
-  //        AtomicInteger globalSlNo = new AtomicInteger(1);
-  //
-  //        AtomicInteger clusterCounter = new AtomicInteger(1);
-  //
-  //        int currentYear = LocalDate.now().getYear();
-  //
-  //        List<KeyPlots> existingKeyPlots = keyPlotsRepository.findValidKeyPlots(
-  //                user.get().getTblMasterZone().getZoneId(),
-  //                currentYear - 1,
-  //                LocalDate.now()
-  //        );
-  //
-  //// Only exclude plots used last year and not rejected
-  //        Set<Long> excludedPlotIds = existingKeyPlots.stream()
-  //                .filter(kp -> Boolean.FALSE.equals(kp.getIsRejected()))
-  //                .map(kp -> kp.getBtrDataOld().getId())
-  //                .collect(Collectors.toSet());
-  //
-  //        if (!existingKeyPlots.isEmpty()) {
-  //            Map<String, List<KeyPlots>> groupedByPanchayat = existingKeyPlots.stream()
-  //                    .collect(Collectors.groupingBy(kp ->
-  // kp.getLocalbody().getLocalbodyNameEn()));
-  //
-  //
-  //            List<Map<String, Object>> clusterList = new ArrayList<>();
-  //
-  //            for (Map.Entry<String, List<KeyPlots>> entry : groupedByPanchayat.entrySet()) {
-  //                String panchayath = entry.getKey();
-  //                List<KeyPlots> plots = entry.getValue();
-  //
-  //                List<Map<String, Object>> wetSamples = new ArrayList<>();
-  //                List<Map<String, Object>> drySamples = new ArrayList<>();
-  //                double wetArea = 0, dryArea = 0;
-  //                int wetClusters = 0, dryClusters = 0;
-  //                int classIntervalWet = 0, classIntervalDry = 0;
-  //
-  //                for (KeyPlots kp : plots) {
-  //                    TblBtrDataOld plot = kp.getBtrDataOld();
-  //                    Map<String, Object> row = new HashMap<>();
-  //                    row.put("id", plot.getId());
-  //                    row.put("plot_id", kp.getId());
-  //                    row.put("panchayth", kp.getLocalbody().getLocalbodyNameEn());
-  //                    row.put("Sy. No", plot.getResvno() + "/" + plot.getResbdno());
-  //                    Double roundedArea = BigDecimal.valueOf(plot.getArea())
-  //                            .setScale(2, RoundingMode.HALF_UP)
-  //                            .doubleValue();
-  //                    row.put("Area (Cents)", roundedArea);
-  //
-  //
-  //                    row.put("Village/Block", plot.getBcode());
-  ////                    row.put("Random No", plot.getId().intValue()); // Approximation
-  ////                    row.put("Interval", kp.getIntervals());
-  ////                    row.put("Land Type", kp.getLandType());
-  ////                    row.put("AgreStartYear", kp.getAgriStartYear());
-  ////                    row.put("AgreEndYear", kp.getAgriEndYear());
-  //
-  //                    if ("Wet".equalsIgnoreCase(kp.getLandType())) {
-  //                        wetSamples.add(row);
-  //                        wetArea += Math.round(plot.getArea() * 100.0) / 100.0;
-  //                        wetClusters++;
-  //                        classIntervalWet = kp.getIntervals();
-  //                    } else if ("Dry".equalsIgnoreCase(kp.getLandType())) {
-  //                        drySamples.add(row);
-  //                        dryArea += Math.round(plot.getArea() * 100.0) / 100.0;
-  //                        dryClusters++;
-  //                        classIntervalDry = kp.getIntervals();
-  //                    }
-  //                }
-  //
-  //                Map<String, Object> clusterData = new HashMap<>();
-  //                clusterData.put("panchayath", panchayath);
-  //                clusterData.put("wetSamples", wetSamples);
-  //                clusterData.put("drySamples", drySamples);
-  ////                clusterData.put("wetClusters", wetClusters);
-  ////                clusterData.put("dryClusters", dryClusters);
-  ////                clusterData.put("totalClusters", wetClusters + dryClusters);
-  //                clusterData.put("wetarea", Math.round(wetArea));
-  //                clusterData.put("dryarea", Math.round(dryArea));
-  //                clusterData.put("totalarea", Math.round(wetArea + dryArea));
-  ////                clusterData.put("classIntervalWet", classIntervalWet);
-  ////                clusterData.put("classIntervalDry", classIntervalDry);
-  //
-  //                clusterList.add(clusterData);
-  //            }
-  //
-  //            Map<String, Object> response = new HashMap<>();
-  //
-  //            return clusterList;
-  //        }
-  //
-  //
-  ////        LocalDate cutoffDate = LocalDate.now().minusYears(2);
-  ////        List<Long> excludedPlotIds = keyPlotsRepository.findRecentlyUsedBtrIds(cutoffDate);
-  //
-  //
-  ////        Set<Long> excludedIdSet = new HashSet<>(excludedPlotIds);
-  //        HashSet<KeyPlots> excludedIdSet = new HashSet<>(existingKeyPlots);
-  //        var zoneRevenueList =
-  // tblZoneRevenueVillageMappingRepository.findByZone(user.get().getTblMasterZone().getZoneId());
-  //
-  //        List<Integer> villageIds = zoneRevenueList.stream()
-  //                .map(TblZoneRevenueVillageMapping::getRevenueVillage)
-  //                .toList();
-  //        List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
-  //        List<Integer> lsgcodes =
-  // villageList.stream().map(TblMasterVillage::getLsgCode).toList();
-  //
-  //        List<TblBtrDataOld> allData = tblBtrDataOldRepository.findAllByLsgcodeIn(lsgcodes);
-  //
-  //        Map<String, List<TblBtrDataOld>> panchayathDataMap = allData.stream()
-  //                .collect(Collectors.groupingBy(TblBtrDataOld::getLbcode));
-  //
-  //        List<String> lbcodeList = allData.stream()
-  //                .map(TblBtrDataOld::getLbcode)
-  //                .distinct()
-  //                .collect(Collectors.toList());
-  //
-  //        List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbcodeList);
-  //        Map<String, String> localBodyNameMap = new HashMap<>();
-  //        localBodies.forEach(localBody -> localBodyNameMap.put(localBody.getCodeApi(),
-  // localBody.getLocalbodyNameEn()));
-  //
-  //        // First pass: calculate total area per panchayath
-  //        List<Map<String, Object>> areaStats = new ArrayList<>();
-  //        double totalZoneArea = 0;
-  //
-  //        for (Map.Entry<String, List<TblBtrDataOld>> entry : panchayathDataMap.entrySet()) {
-  //            String lbcode = entry.getKey();
-  //            List<TblBtrDataOld> panchayathData = entry.getValue();
-  //
-  //            double wetArea = 0, dryArea = 0;
-  //            int wetPlots = 0, dryPlots = 0;
-  //
-  //            for (TblBtrDataOld data : panchayathData) {
-  //                double area = data.getArea();
-  //                String landType = data.getLtype().trim().toUpperCase();
-  //
-  //                if ("W".equals(landType)) {
-  //                    wetArea += area;
-  //                    wetPlots++;
-  //                } else if ("D".equals(landType)) {
-  //                    dryArea += area;
-  //                    dryPlots++;
-  //                }
-  //            }
-  //
-  //            double totalArea = wetArea + dryArea;
-  //            totalZoneArea += totalArea;
-  //
-  //            Map<String, Object> stats = new HashMap<>();
-  //            stats.put("lbcode", lbcode);
-  //            stats.put("wetArea", wetArea);
-  //            stats.put("dryArea", dryArea);
-  //            stats.put("wetPlots", wetPlots);
-  //            stats.put("dryPlots", dryPlots);
-  //            stats.put("totalArea", totalArea);
-  //            areaStats.add(stats);
-  //        }
-  //
-  //        // Sort alphabetically by panchayath name
-  //        areaStats.sort(Comparator.comparing(s -> localBodyNameMap.getOrDefault((String)
-  // s.get("lbcode"), "")));
-  //
-  //        // Second pass: calculate clusters and intervals
-  //        List<Map<String, Object>> clusterList = new ArrayList<>();
-  //        int totalClusters = 100;
-  //        int clusterAssigned = 0;
-  //        List<KeyPlots> allWetKeyPlots = new ArrayList<>();
-  //        List<KeyPlots> allDryKeyPlots = new ArrayList<>();
-  //        List<Map<String, Object>> wetSamplesMapList = new ArrayList<>();
-  //        List<Map<String, Object>> drySamplesMapList = new ArrayList<>();
-  //
-  //        for (int i = 0; i < areaStats.size(); i++) {
-  //            Map<String, Object> stats = areaStats.get(i);
-  //            String lbcode = (String) stats.get("lbcode");
-  //
-  //            double wetArea = (double) stats.get("wetArea");
-  //            double dryArea = (double) stats.get("dryArea");
-  //            double totalArea = (double) stats.get("totalArea");
-  //            int wetPlots = (int) stats.get("wetPlots");
-  //            int dryPlots = (int) stats.get("dryPlots");
-  //
-  //            int clusters = (i == areaStats.size() - 1)
-  //                    ? totalClusters - clusterAssigned
-  //                    : (int) Math.round((totalArea / totalZoneArea) * totalClusters);
-  //            clusterAssigned += clusters;
-  //
-  //            int wetClusters = (int) Math.round(clusters * (wetArea / totalArea));
-  //            int dryClusters = clusters - wetClusters;
-  //
-  //            int classIntervalWet = (wetClusters > 0 && wetPlots > 0) ? (int) Math.round((double)
-  // wetPlots / wetClusters) : 0;
-  //            int classIntervalDry = (dryClusters > 0 && dryPlots > 0) ? (int) Math.round((double)
-  // dryPlots / dryClusters) : 0;
-  //
-  //            // Sample selection
-  //            List<TblBtrDataOld> panchayathData = panchayathDataMap.get(lbcode);
-  //
-  //            List<TblBtrDataOld> wetList = panchayathData.stream()
-  //                    .filter(d -> "W".equalsIgnoreCase(d.getLtype().trim().toUpperCase()))
-  //                    .filter(d -> !excludedPlotIds.contains(d.getId())) // ✅ using your exclusion
-  // logic
-  //                    .collect(Collectors.toList());
-  //
-  //            List<TblBtrDataOld> dryList = panchayathData.stream()
-  //                    .filter(d -> "D".equalsIgnoreCase(d.getLtype().trim().toUpperCase()))
-  //                    .filter(d -> !excludedPlotIds.contains(d.getId())) // ✅ using your exclusion
-  // logic
-  //                    .collect(Collectors.toList());
-  //
-  //
-  ////            int randomStart = 242;
-  //            Map<String, Integer> randomStartMap = new HashMap<>();
-  //            randomStartMap.put("01108", 242);    // കിളിമാനൂർ
-  //            randomStartMap.put("01113", 3032);   // നാഗരൂർ
-  //
-  //// Add more lbcode -> random start pairs as needed
-  //            int randomStart = randomStartMap.getOrDefault(lbcode, 0); // Fallback to 0 if not
-  // found
-  //
-  //            List<Map<String, Object>> wetSamples = getSystematicSample(
-  //                    wetList, wetClusters, classIntervalWet, randomStart, localBodyNameMap,
-  // globalSlNo
-  //            );
-  //
-  //            List<Map<String, Object>> drySamples = getSystematicSample(
-  //                    dryList, dryClusters, classIntervalDry, randomStart, localBodyNameMap,
-  // globalSlNo
-  //            );
-  //
-  //
-  //
-  //            // You can merge samples or keep separately
-  //            Map<String, Object> panchayathCluster = new HashMap<>();
-  //            panchayathCluster.put("panchayath", localBodyNameMap.get(lbcode));
-  //            panchayathCluster.put("totalarea", (double) Math.round(totalArea));
-  //            panchayathCluster.put("wetarea", (double) Math.round(wetArea));
-  //            panchayathCluster.put("dryarea", (double) Math.round(dryArea));
-  //            panchayathCluster.put("totalClusters", clusters);
-  //            panchayathCluster.put("wetClusters", wetClusters);
-  //            panchayathCluster.put("dryClusters", dryClusters);
-  //            panchayathCluster.put("classIntervalWet", classIntervalWet);
-  //            panchayathCluster.put("classIntervalDry", classIntervalDry);
-  //            panchayathCluster.put("wetSamples", wetSamples);
-  //            panchayathCluster.put("drySamples", drySamples);
-  //            TblLocalBody localbody = localBodies.stream()
-  //                    .filter(lb -> lb.getCodeApi().equals(lbcode))
-  //                    .findFirst()
-  //                    .orElseThrow(() -> new EntityNotFoundException("Localbody not found for
-  // code: " + lbcode));
-  //
-  //
-  //            wetSamplesMapList.addAll(wetSamples);
-  //            drySamplesMapList.addAll(drySamples);
-  //            System.out.println("zone id "+user.get().getTblMasterZone().getZoneId());
-  //            List<KeyPlots> wetKeyPlots = prepareKeyPlots(wetSamples,  classIntervalWet,
-  // user.get().getTblMasterZone().getZoneId(), "Wet", localbody, userId);
-  //            List<KeyPlots> dryKeyPlots = prepareKeyPlots(drySamples, classIntervalDry,
-  // user.get().getTblMasterZone().getZoneId(), "Dry", localbody, userId);
-  //
-  //            allWetKeyPlots.addAll(wetKeyPlots);
-  //            allDryKeyPlots.addAll(dryKeyPlots);
-  //
-  //// Optionally update sample map to keep reference of the plot after saving
-  //
-  //
-  ////            saveSamples(
-  ////
-  ////                    wetSamples,
-  ////                    classIntervalWet,
-  //////                    localBodyNameMap.get(lbcode) + "_WET",
-  ////                    user.get().getTblMasterZone().getZoneId(),
-  ////                    "Wet",
-  ////                    localbody,
-  ////                    userId,
-  ////                    clusterCounter
-  ////            );
-  ////
-  ////            saveSamples(
-  ////
-  ////                    drySamples,
-  ////                    classIntervalDry,
-  //////                    localBodyNameMap.get(lbcode) + "_DRY",
-  ////                    user.get().getTblMasterZone().getZoneId(),
-  ////                    "Dry",
-  ////                    localbody,
-  ////                    userId,
-  ////                    clusterCounter
-  ////            );
-  //            clusterList.add(panchayathCluster);
-  //        }
-  //        List<KeyPlots> savedWetKeyPlots = keyPlotsRepository.saveAll(allWetKeyPlots);
-  //        List<KeyPlots> savedDryKeyPlots = keyPlotsRepository.saveAll(allDryKeyPlots);
-  //
-  //        saveClustersForKeyPlots(savedWetKeyPlots, clusterCounter);
-  //        saveClustersForKeyPlots(savedDryKeyPlots, clusterCounter);
-  //
-  //        Map<Long, UUID> wetPlotIdMap = savedWetKeyPlots.stream()
-  //                .collect(Collectors.toMap(kp -> kp.getBtrDataOld().getId(), KeyPlots::getId));
-  //
-  //        Map<Long, UUID> dryPlotIdMap = savedDryKeyPlots.stream()
-  //                .collect(Collectors.toMap(kp -> kp.getBtrDataOld().getId(), KeyPlots::getId));
-  //
-  //        wetSamplesMapList.forEach(row -> {
-  //            Long btrId = (Long) row.get("id");
-  //            row.put("plot_id", wetPlotIdMap.get(btrId));
-  //        });
-  //
-  //        drySamplesMapList.forEach(row -> {
-  //            Long btrId = (Long) row.get("id");
-  //            row.put("plot_id", dryPlotIdMap.get(btrId));
-  //        });
-  //// 👉 Add this
-  //        List<KeyPlots> allSavedKeyPlots = new ArrayList<>();
-  //        allSavedKeyPlots.addAll(savedWetKeyPlots);
-  //        allSavedKeyPlots.addAll(savedDryKeyPlots);
-  //
-  //        List<CceCropDetailsResponse> crops = cceCropService.getCceCrops();
-  //
-  //        cceCropService.assignCropsToKeyPlots(allSavedKeyPlots, crops,userId);
-  //        return clusterList;
-  //    }
+// working code but existing and genrtae same
 
-  private List<KeyPlots> prepareKeyPlots(
-      List<Map<String, Object>> samples,
-      int interval,
-      int zoneId,
-      String landType,
-      TblLocalBody localbody,
-      UUID userId) {
-    UserZoneAssignment zone =
-        userZoneAssignmentRepositoty
-            .findByTblMasterZone_ZoneId(zoneId)
-            .orElseThrow(() -> new EntityNotFoundException("Zone not found: " + zoneId));
+//    public Object KeyplotsFormationOldbtr(UUID userId) {
+//        var user = userZoneAssignmentRepositoty.findByUserId(userId);
+//        AtomicInteger globalSlNo = new AtomicInteger(1);
+//
+//        AtomicInteger clusterCounter = new AtomicInteger(1);
+//
+//        int currentYear = LocalDate.now().getYear();
+//
+//        List<KeyPlots> existingKeyPlots = keyPlotsRepository.findValidKeyPlots(
+//                user.get().getTblMasterZone().getZoneId(),
+//                currentYear - 1,
+//                LocalDate.now()
+//        );
+//
+//// Only exclude plots used last year and not rejected
+//        Set<Long> excludedPlotIds = existingKeyPlots.stream()
+//                .filter(kp -> Boolean.FALSE.equals(kp.getIsRejected()))
+//                .map(kp -> kp.getBtrDataOld().getId())
+//                .collect(Collectors.toSet());
+//
+//        if (!existingKeyPlots.isEmpty()) {
+//            Map<String, List<KeyPlots>> groupedByPanchayat = existingKeyPlots.stream()
+//                    .collect(Collectors.groupingBy(kp -> kp.getLocalbody().getLocalbodyNameEn()));
+//
+//
+//            List<Map<String, Object>> clusterList = new ArrayList<>();
+//
+//            for (Map.Entry<String, List<KeyPlots>> entry : groupedByPanchayat.entrySet()) {
+//                String panchayath = entry.getKey();
+//                List<KeyPlots> plots = entry.getValue();
+//
+//                List<Map<String, Object>> wetSamples = new ArrayList<>();
+//                List<Map<String, Object>> drySamples = new ArrayList<>();
+//                double wetArea = 0, dryArea = 0;
+//                int wetClusters = 0, dryClusters = 0;
+//                int classIntervalWet = 0, classIntervalDry = 0;
+//
+//                for (KeyPlots kp : plots) {
+//                    TblBtrDataOld plot = kp.getBtrDataOld();
+//                    Map<String, Object> row = new HashMap<>();
+//                    row.put("id", plot.getId());
+//                    row.put("plot_id", kp.getId());
+//                    row.put("panchayth", kp.getLocalbody().getLocalbodyNameEn());
+//                    row.put("Sy. No", plot.getResvno() + "/" + plot.getResbdno());
+//                    Double roundedArea = BigDecimal.valueOf(plot.getArea())
+//                            .setScale(2, RoundingMode.HALF_UP)
+//                            .doubleValue();
+//                    row.put("Area (Cents)", roundedArea);
+//
+//
+//                    row.put("Village/Block", plot.getBcode());
+////                    row.put("Random No", plot.getId().intValue()); // Approximation
+////                    row.put("Interval", kp.getIntervals());
+////                    row.put("Land Type", kp.getLandType());
+////                    row.put("AgreStartYear", kp.getAgriStartYear());
+////                    row.put("AgreEndYear", kp.getAgriEndYear());
+//
+//                    if ("Wet".equalsIgnoreCase(kp.getLandType())) {
+//                        wetSamples.add(row);
+//                        wetArea += Math.round(plot.getArea() * 100.0) / 100.0;
+//                        wetClusters++;
+//                        classIntervalWet = kp.getIntervals();
+//                    } else if ("Dry".equalsIgnoreCase(kp.getLandType())) {
+//                        drySamples.add(row);
+//                        dryArea += Math.round(plot.getArea() * 100.0) / 100.0;
+//                        dryClusters++;
+//                        classIntervalDry = kp.getIntervals();
+//                    }
+//                }
+//
+//                Map<String, Object> clusterData = new HashMap<>();
+//                clusterData.put("panchayath", panchayath);
+//                clusterData.put("wetSamples", wetSamples);
+//                clusterData.put("drySamples", drySamples);
+////                clusterData.put("wetClusters", wetClusters);
+////                clusterData.put("dryClusters", dryClusters);
+////                clusterData.put("totalClusters", wetClusters + dryClusters);
+//                clusterData.put("wetarea", Math.round(wetArea));
+//                clusterData.put("dryarea", Math.round(dryArea));
+//                clusterData.put("totalarea", Math.round(wetArea + dryArea));
+////                clusterData.put("classIntervalWet", classIntervalWet);
+////                clusterData.put("classIntervalDry", classIntervalDry);
+//
+//                clusterList.add(clusterData);
+//            }
+//
+//            Map<String, Object> response = new HashMap<>();
+//
+//            return clusterList;
+//        }
+//
+//
+////        LocalDate cutoffDate = LocalDate.now().minusYears(2);
+////        List<Long> excludedPlotIds = keyPlotsRepository.findRecentlyUsedBtrIds(cutoffDate);
+//
+//
+////        Set<Long> excludedIdSet = new HashSet<>(excludedPlotIds);
+//        HashSet<KeyPlots> excludedIdSet = new HashSet<>(existingKeyPlots);
+//        var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(user.get().getTblMasterZone().getZoneId());
+//
+//        List<Integer> villageIds = zoneRevenueList.stream()
+//                .map(TblZoneRevenueVillageMapping::getRevenueVillage)
+//                .toList();
+//        List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
+//        List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
+//
+//        List<TblBtrDataOld> allData = tblBtrDataOldRepository.findAllByLsgcodeIn(lsgcodes);
+//
+//        Map<String, List<TblBtrDataOld>> panchayathDataMap = allData.stream()
+//                .collect(Collectors.groupingBy(TblBtrDataOld::getLbcode));
+//
+//        List<String> lbcodeList = allData.stream()
+//                .map(TblBtrDataOld::getLbcode)
+//                .distinct()
+//                .collect(Collectors.toList());
+//
+//        List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbcodeList);
+//        Map<String, String> localBodyNameMap = new HashMap<>();
+//        localBodies.forEach(localBody -> localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn()));
+//
+//        // First pass: calculate total area per panchayath
+//        List<Map<String, Object>> areaStats = new ArrayList<>();
+//        double totalZoneArea = 0;
+//
+//        for (Map.Entry<String, List<TblBtrDataOld>> entry : panchayathDataMap.entrySet()) {
+//            String lbcode = entry.getKey();
+//            List<TblBtrDataOld> panchayathData = entry.getValue();
+//
+//            double wetArea = 0, dryArea = 0;
+//            int wetPlots = 0, dryPlots = 0;
+//
+//            for (TblBtrDataOld data : panchayathData) {
+//                double area = data.getArea();
+//                String landType = data.getLtype().trim().toUpperCase();
+//
+//                if ("W".equals(landType)) {
+//                    wetArea += area;
+//                    wetPlots++;
+//                } else if ("D".equals(landType)) {
+//                    dryArea += area;
+//                    dryPlots++;
+//                }
+//            }
+//
+//            double totalArea = wetArea + dryArea;
+//            totalZoneArea += totalArea;
+//
+//            Map<String, Object> stats = new HashMap<>();
+//            stats.put("lbcode", lbcode);
+//            stats.put("wetArea", wetArea);
+//            stats.put("dryArea", dryArea);
+//            stats.put("wetPlots", wetPlots);
+//            stats.put("dryPlots", dryPlots);
+//            stats.put("totalArea", totalArea);
+//            areaStats.add(stats);
+//        }
+//
+//        // Sort alphabetically by panchayath name
+//        areaStats.sort(Comparator.comparing(s -> localBodyNameMap.getOrDefault((String) s.get("lbcode"), "")));
+//
+//        // Second pass: calculate clusters and intervals
+//        List<Map<String, Object>> clusterList = new ArrayList<>();
+//        int totalClusters = 100;
+//        int clusterAssigned = 0;
+//        List<KeyPlots> allWetKeyPlots = new ArrayList<>();
+//        List<KeyPlots> allDryKeyPlots = new ArrayList<>();
+//        List<Map<String, Object>> wetSamplesMapList = new ArrayList<>();
+//        List<Map<String, Object>> drySamplesMapList = new ArrayList<>();
+//
+//        for (int i = 0; i < areaStats.size(); i++) {
+//            Map<String, Object> stats = areaStats.get(i);
+//            String lbcode = (String) stats.get("lbcode");
+//
+//            double wetArea = (double) stats.get("wetArea");
+//            double dryArea = (double) stats.get("dryArea");
+//            double totalArea = (double) stats.get("totalArea");
+//            int wetPlots = (int) stats.get("wetPlots");
+//            int dryPlots = (int) stats.get("dryPlots");
+//
+//            int clusters = (i == areaStats.size() - 1)
+//                    ? totalClusters - clusterAssigned
+//                    : (int) Math.round((totalArea / totalZoneArea) * totalClusters);
+//            clusterAssigned += clusters;
+//
+//            int wetClusters = (int) Math.round(clusters * (wetArea / totalArea));
+//            int dryClusters = clusters - wetClusters;
+//
+//            int classIntervalWet = (wetClusters > 0 && wetPlots > 0) ? (int) Math.round((double) wetPlots / wetClusters) : 0;
+//            int classIntervalDry = (dryClusters > 0 && dryPlots > 0) ? (int) Math.round((double) dryPlots / dryClusters) : 0;
+//
+//            // Sample selection
+//            List<TblBtrDataOld> panchayathData = panchayathDataMap.get(lbcode);
+//
+//            List<TblBtrDataOld> wetList = panchayathData.stream()
+//                    .filter(d -> "W".equalsIgnoreCase(d.getLtype().trim().toUpperCase()))
+//                    .filter(d -> !excludedPlotIds.contains(d.getId())) // ✅ using your exclusion logic
+//                    .collect(Collectors.toList());
+//
+//            List<TblBtrDataOld> dryList = panchayathData.stream()
+//                    .filter(d -> "D".equalsIgnoreCase(d.getLtype().trim().toUpperCase()))
+//                    .filter(d -> !excludedPlotIds.contains(d.getId())) // ✅ using your exclusion logic
+//                    .collect(Collectors.toList());
+//
+//
+////            int randomStart = 242;
+//            Map<String, Integer> randomStartMap = new HashMap<>();
+//            randomStartMap.put("01108", 242);    // കിളിമാനൂർ
+//            randomStartMap.put("01113", 3032);   // നാഗരൂർ
+//
+//// Add more lbcode -> random start pairs as needed
+//            int randomStart = randomStartMap.getOrDefault(lbcode, 0); // Fallback to 0 if not found
+//
+//            List<Map<String, Object>> wetSamples = getSystematicSample(
+//                    wetList, wetClusters, classIntervalWet, randomStart, localBodyNameMap, globalSlNo
+//            );
+//
+//            List<Map<String, Object>> drySamples = getSystematicSample(
+//                    dryList, dryClusters, classIntervalDry, randomStart, localBodyNameMap, globalSlNo
+//            );
+//
+//
+//
+//            // You can merge samples or keep separately
+//            Map<String, Object> panchayathCluster = new HashMap<>();
+//            panchayathCluster.put("panchayath", localBodyNameMap.get(lbcode));
+//            panchayathCluster.put("totalarea", (double) Math.round(totalArea));
+//            panchayathCluster.put("wetarea", (double) Math.round(wetArea));
+//            panchayathCluster.put("dryarea", (double) Math.round(dryArea));
+//            panchayathCluster.put("totalClusters", clusters);
+//            panchayathCluster.put("wetClusters", wetClusters);
+//            panchayathCluster.put("dryClusters", dryClusters);
+//            panchayathCluster.put("classIntervalWet", classIntervalWet);
+//            panchayathCluster.put("classIntervalDry", classIntervalDry);
+//            panchayathCluster.put("wetSamples", wetSamples);
+//            panchayathCluster.put("drySamples", drySamples);
+//            TblLocalBody localbody = localBodies.stream()
+//                    .filter(lb -> lb.getCodeApi().equals(lbcode))
+//                    .findFirst()
+//                    .orElseThrow(() -> new EntityNotFoundException("Localbody not found for code: " + lbcode));
+//
+//
+//            wetSamplesMapList.addAll(wetSamples);
+//            drySamplesMapList.addAll(drySamples);
+//            System.out.println("zone id "+user.get().getTblMasterZone().getZoneId());
+//            List<KeyPlots> wetKeyPlots = prepareKeyPlots(wetSamples,  classIntervalWet, user.get().getTblMasterZone().getZoneId(), "Wet", localbody, userId);
+//            List<KeyPlots> dryKeyPlots = prepareKeyPlots(drySamples, classIntervalDry, user.get().getTblMasterZone().getZoneId(), "Dry", localbody, userId);
+//
+//            allWetKeyPlots.addAll(wetKeyPlots);
+//            allDryKeyPlots.addAll(dryKeyPlots);
+//
+//// Optionally update sample map to keep reference of the plot after saving
+//
+//
+////            saveSamples(
+////
+////                    wetSamples,
+////                    classIntervalWet,
+//////                    localBodyNameMap.get(lbcode) + "_WET",
+////                    user.get().getTblMasterZone().getZoneId(),
+////                    "Wet",
+////                    localbody,
+////                    userId,
+////                    clusterCounter
+////            );
+////
+////            saveSamples(
+////
+////                    drySamples,
+////                    classIntervalDry,
+//////                    localBodyNameMap.get(lbcode) + "_DRY",
+////                    user.get().getTblMasterZone().getZoneId(),
+////                    "Dry",
+////                    localbody,
+////                    userId,
+////                    clusterCounter
+////            );
+//            clusterList.add(panchayathCluster);
+//        }
+//        List<KeyPlots> savedWetKeyPlots = keyPlotsRepository.saveAll(allWetKeyPlots);
+//        List<KeyPlots> savedDryKeyPlots = keyPlotsRepository.saveAll(allDryKeyPlots);
+//
+//        saveClustersForKeyPlots(savedWetKeyPlots, clusterCounter);
+//        saveClustersForKeyPlots(savedDryKeyPlots, clusterCounter);
+//
+//        Map<Long, UUID> wetPlotIdMap = savedWetKeyPlots.stream()
+//                .collect(Collectors.toMap(kp -> kp.getBtrDataOld().getId(), KeyPlots::getId));
+//
+//        Map<Long, UUID> dryPlotIdMap = savedDryKeyPlots.stream()
+//                .collect(Collectors.toMap(kp -> kp.getBtrDataOld().getId(), KeyPlots::getId));
+//
+//        wetSamplesMapList.forEach(row -> {
+//            Long btrId = (Long) row.get("id");
+//            row.put("plot_id", wetPlotIdMap.get(btrId));
+//        });
+//
+//        drySamplesMapList.forEach(row -> {
+//            Long btrId = (Long) row.get("id");
+//            row.put("plot_id", dryPlotIdMap.get(btrId));
+//        });
+//// 👉 Add this
+//        List<KeyPlots> allSavedKeyPlots = new ArrayList<>();
+//        allSavedKeyPlots.addAll(savedWetKeyPlots);
+//        allSavedKeyPlots.addAll(savedDryKeyPlots);
+//
+//        List<CceCropDetailsResponse> crops = cceCropService.getCceCrops();
+//
+//        cceCropService.assignCropsToKeyPlots(allSavedKeyPlots, crops,userId);
+//        return clusterList;
+//    }
 
-    List<KeyPlots> keyPlots = new ArrayList<>();
 
-    for (Map<String, Object> sample : samples) {
-      Long plotId = (Long) sample.get("id");
-      TblBtrData btrData =
-          tblBtrDataRepository
-              .findById(plotId)
-              .orElseThrow(() -> new EntityNotFoundException("BTR not found: " + plotId));
+    private List<KeyPlots> prepareKeyPlots(
+            List<Map<String, Object>> samples,
+            int interval,
+            int zoneId,
+            String landType,
+            TblLocalBody localbody,
+            UUID userId
+    ) {
+        UserZoneAssignment zone = userZoneAssignmentRepositoty.findByTblMasterZone_ZoneId(zoneId)
+                .orElseThrow(() -> new EntityNotFoundException("Zone not found: " + zoneId));
 
-      KeyPlots keyPlot = new KeyPlots();
-      keyPlot.setBtrData(btrData);
-      keyPlot.setZone(zone.getTblMasterZone());
-      keyPlot.setIntervals(interval);
-      keyPlot.setLandType(landType);
-      keyPlot.setLocalbody(localbody);
-      keyPlot.setAgriStartYear(LocalDate.now());
-      keyPlot.setAgriEndYear(LocalDate.now().plusYears(1));
-      keyPlot.setStatus(true);
-      keyPlot.setIsRejected(false);
-      keyPlot.setCreated_by(userId);
+        List<KeyPlots> keyPlots = new ArrayList<>();
 
-      keyPlots.add(keyPlot);
+        for (Map<String, Object> sample : samples) {
+            Long plotId = (Long) sample.get("id");
+            TblBtrData btrData = tblBtrDataRepository.findById(plotId)
+                    .orElseThrow(() -> new EntityNotFoundException("BTR not found: " + plotId));
+
+            KeyPlots keyPlot = new KeyPlots();
+            keyPlot.setBtrData(btrData);
+            keyPlot.setZone(zone.getTblMasterZone());
+            keyPlot.setIntervals(interval);
+            keyPlot.setLandType(landType);
+            keyPlot.setLocalbody(localbody);
+            keyPlot.setAgriStartYear(LocalDate.now());
+            keyPlot.setAgriEndYear(LocalDate.now().plusYears(1));
+            keyPlot.setStatus(true);
+            keyPlot.setIsRejected(false);
+            keyPlot.setCreated_by(userId);
+
+            keyPlots.add(keyPlot);
+        }
+
+        return keyPlots;
     }
 
-    return keyPlots;
-  }
+    private void saveClustersForKeyPlots(List<KeyPlots> savedKeyPlots, AtomicInteger clusterCounter) {
+        List<ClusterMaster> clusterList = new ArrayList<>();
+        List<ClusterFormData> clusterFormDataList = new ArrayList<>();
 
-  private void saveClustersForKeyPlots(List<KeyPlots> savedKeyPlots, AtomicInteger clusterCounter) {
-    List<ClusterMaster> clusterList = new ArrayList<>();
-    List<ClusterFormData> clusterFormDataList = new ArrayList<>();
+        for (KeyPlots kp : savedKeyPlots) {
+            ClusterMaster cluster = new ClusterMaster();
+            cluster.setKeyPlot(kp);
+            cluster.setStatus("Not Started");
+            cluster.setClusterNumber(clusterCounter.getAndIncrement());
+            cluster.setZone(kp.getZone());
+            clusterList.add(cluster);
 
-    for (KeyPlots kp : savedKeyPlots) {
-      ClusterMaster cluster = new ClusterMaster();
-      cluster.setKeyPlot(kp);
-      cluster.setStatus("Not Started");
-      cluster.setClusterNumber(clusterCounter.getAndIncrement());
-      cluster.setZone(kp.getZone());
-      clusterList.add(cluster);
+            ClusterFormData clusterFormData = new ClusterFormData();
+            clusterFormData.setPlot(kp.getBtrData());
+            clusterFormData.setClusterMaster(cluster);
+            clusterFormData.setPlotLabel("K");
+            clusterFormData.setStatus(true);
+            clusterFormData.setEnumeratedArea(kp.getBtrData().getTotCent());
+            clusterFormData.setCreatedBy(kp.getCreated_by());
 
-      ClusterFormData clusterFormData = new ClusterFormData();
-      clusterFormData.setPlot(kp.getBtrData());
-      clusterFormData.setClusterMaster(cluster);
-      clusterFormData.setPlotLabel("K");
-      clusterFormData.setStatus(true);
-      clusterFormData.setEnumeratedArea(kp.getBtrData().getTotCent());
-      clusterFormData.setCreatedBy(kp.getCreated_by());
+            clusterFormDataList.add(clusterFormData);
+        }
 
-      clusterFormDataList.add(clusterFormData);
+        clusterMasterRepository.saveAll(clusterList);
+        clusterFormDataRepository.saveAll(clusterFormDataList);
     }
 
-    clusterMasterRepository.saveAll(clusterList);
-    clusterFormDataRepository.saveAll(clusterFormDataList);
-  }
 
-  public List<Map<String, Object>> getSystematicSample(
-      List<TblBtrData> plots,
-      int clusters,
-      int interval,
-      int randomStart,
-      Map<String, String> localBodyNameMap,
-      AtomicInteger globalSlNo) {
-    List<Map<String, Object>> sample = new ArrayList<>();
+    public List<Map<String, Object>> getSystematicSample(List<TblBtrData> plots, int clusters, int interval, int randomStart,Map<String, String> localBodyNameMap,AtomicInteger globalSlNo) {
+        List<Map<String, Object>> sample = new ArrayList<>();
 
-    if (plots.isEmpty() || clusters == 0 || interval <= 0) return sample;
+        if (plots.isEmpty() || clusters == 0 || interval <= 0) return sample;
 
-    // Sort plots by Sy. No (or area or any consistent key)
-    plots.sort(Comparator.comparing(TblBtrData::getId)); // Sort by ID or any field that makes sense
+        // Sort plots by Sy. No (or area or any consistent key)
+        plots.sort(Comparator.comparing(TblBtrData::getId));  // Sort by ID or any field that makes sense
 
-    // Start index as per the provided random start
-    //        Random random = new Random();
-    //        int randomStarts = random.nextInt(plots.size());
+        // Start index as per the provided random start
+//        Random random = new Random();
+//        int randomStarts = random.nextInt(plots.size());
 
         int index = randomStart;  // Use provided randomStart (e.g., 242)
 
@@ -984,9 +962,48 @@ public class KeyPlots_Service {
 //        return newPlotMap;
 //    }
 
+  @Transactional
+  public Map<String, Object> rejectAndReplaceKeyplot(UUID keyPlotId, KeyPlotRejectRequest request) {
+    // 1. Find the keyplot
+    KeyPlots rejectedKeyPlot =
+        keyPlotsRepository
+            .findById(keyPlotId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Keyplot not found with ID: " + keyPlotId));
 
-    public KeyPlotDetailsResponse getKeyPlotDetails(UUID plotId) {
-        Optional<KeyPlots> keyPlotOpt = keyPlotsRepository.findById(plotId);
+    // 2. Update keyplot fields
+    rejectedKeyPlot.setIsRejected(true);
+    rejectedKeyPlot.setReason(request.getReason());
+    rejectedKeyPlot.setRejectDate(LocalDate.now());
+    rejectedKeyPlot.setCreated_by(request.getUserid());
+    rejectedKeyPlot.setStatus(false);
+    keyPlotsRepository.save(rejectedKeyPlot);
+
+    // 3. Find and reject cluster linked to this keyplot
+    ClusterMaster cluster =
+        clusterMasterRepository
+            .findByKeyPlotId(rejectedKeyPlot.getId())
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException("Cluster not found for KeyPlot ID: " + keyPlotId));
+
+    cluster.setIsReject(true);
+    cluster.setStatus("rejected");
+    cluster.setIs_active(false);
+    cluster.setInvestigatorRemark(request.getReason_for_cluster());
+    cluster.setUpdatedAt(LocalDateTime.now());
+    clusterMasterRepository.save(cluster);
+
+    // 4. Build response
+    Map<String, Object> response = new HashMap<>();
+    response.put("message", "KeyPlot and its Cluster rejected successfully");
+    response.put("keyPlotId", rejectedKeyPlot.getId());
+    response.put("clusterId", cluster.getCluMasterId());
+    return response;
+  }
+
+  public KeyPlotDetailsResponse getKeyPlotDetails(UUID plotId) {
+    Optional<KeyPlots> keyPlotOpt = keyPlotsRepository.findById(plotId);
 
         if (keyPlotOpt.isEmpty()) {
             throw new NoSuchElementException("Plot ID not found: " + plotId);

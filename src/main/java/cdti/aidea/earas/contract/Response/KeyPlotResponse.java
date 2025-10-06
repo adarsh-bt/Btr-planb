@@ -19,7 +19,7 @@ public class KeyPlotResponse<T> {
   private String zone_name;
   private List<Map<String, Object>> data;
   private List<String> panchayth;
-  private int totalCount;
+  private double totalCount;
   private double totalArea;
   private double totalWetArea;
   private double totalDryArea;

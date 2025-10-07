@@ -634,6 +634,7 @@ public class ClusterService {
     for (SidePlotDTO sidePlot : sidePlots) {
       for (ClusterFormRowDTO row : sidePlot.getRows()) {
         Long currentPlotId = row.getPlot_id();
+        System.out.println("village   "+row.getVillage());
         String currentPlotLabel = sidePlot.getLabel();
         String uniqueKey = currentPlotId.toString() + "_" + currentPlotLabel;
         submittedKeys.add(uniqueKey); // Add to submitted keys set

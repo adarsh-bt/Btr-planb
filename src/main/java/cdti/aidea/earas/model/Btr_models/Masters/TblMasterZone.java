@@ -40,4 +40,7 @@ public class TblMasterZone {
 
   @Column(name = "dist_id")
   private Integer distId;
+
+  @Column(name = "btr_type_id")
+  private Integer btrTypeId;
 }

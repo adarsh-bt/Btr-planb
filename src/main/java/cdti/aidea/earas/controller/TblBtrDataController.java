@@ -3,6 +3,7 @@ package cdti.aidea.earas.controller;
 import cdti.aidea.earas.contract.Response.PlotDuplicateResponse;
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
+import cdti.aidea.earas.model.Btr_models.TblNonBtr;
 import cdti.aidea.earas.service.TblBtrDataService;
 import java.util.List;
 import java.util.Map;
@@ -41,5 +42,6 @@ public class TblBtrDataController {
       );
     }
   }
+
 
 }

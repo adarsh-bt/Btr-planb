@@ -1,12 +1,15 @@
 package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.LocalbodyDto;
+import cdti.aidea.earas.contract.Response.ZoneBtrTypeResponse;
 import cdti.aidea.earas.contract.RevenueTalukDto;
 import cdti.aidea.earas.contract.RevenueVillageDto;
 import cdti.aidea.earas.service.ZoneMappingService;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ZoneMappingController {
 
+  @Autowired
   private final ZoneMappingService zoneMappingService;
 
   // Modified Endpoint: Returns a JSON object
@@ -48,5 +52,36 @@ public class ZoneMappingController {
       @PathVariable Integer zoneId, @RequestParam(defaultValue = "en") String lang) {
     List<RevenueVillageDto> result = zoneMappingService.getRevenueVillagesByZone(zoneId, lang);
     return ResponseEntity.ok(result);
+  }
+
+
+  @GetMapping("/{zoneId}/btr-type")
+  public ResponseEntity<?> getZoneBtrType(@PathVariable Integer zoneId) {
+    try {
+      ZoneBtrTypeResponse response = zoneMappingService.getZoneBtrType(zoneId);
+
+      if (response == null) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "error", "Zone not found",
+                        "message", "No active zone found with id: " + zoneId
+                ));
+      }
+
+      return ResponseEntity.ok(response);
+
+    } catch (NumberFormatException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+              .body(Map.of(
+                      "error", "Invalid zone ID format",
+                      "message", "Zone ID must be a valid number"
+              ));
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body(Map.of(
+                      "error", "Internal server error",
+                      "message", "An unexpected error occurred"
+              ));
+    }
   }
 }

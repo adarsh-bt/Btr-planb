@@ -1,13 +1,16 @@
 package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.contract.LocalbodyDto;
+import cdti.aidea.earas.contract.Response.ZoneBtrTypeResponse;
 import cdti.aidea.earas.contract.RevenueTalukDto;
 import cdti.aidea.earas.contract.RevenueVillageDto;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
+import cdti.aidea.earas.model.Btr_models.TblBtrType;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,6 +24,12 @@ public class ZoneMappingService {
   private final TblMasterVillageRepository tblMasterVillageRepository;
   private final TblMasterVillageBlockRepository tblMasterVillageBlockRepository;
   private final TblMasterZoneRepository tblMasterZoneRepository;
+
+  @Autowired
+  private TblMasterZoneRepository zoneRepository;
+
+  @Autowired
+  private TblBtrTypeRepository btrTypeRepository;
 
   // New Method: Get District ID by Zone ID
   public Optional<Integer> getDistrictIdByZone(Integer zoneId) {
@@ -125,5 +134,45 @@ public class ZoneMappingService {
             Comparator.comparing(
                 RevenueVillageDto::getRevenueVillageName, String.CASE_INSENSITIVE_ORDER))
         .toList();
+  }
+
+  public ZoneBtrTypeResponse getZoneBtrType(Integer zoneId) {
+    // Find active zone by ID - return null if not found
+    TblMasterZone zone = zoneRepository.findActiveZoneById(zoneId).orElse(null);
+
+    if (zone == null) {
+      return null; // Zone not found
+    }
+
+    if (zone.getBtrTypeId() == null) {
+      return null; // BTR Type ID is null
+    }
+
+    // Find BTR type by btrTypeId - return null if not found
+    TblBtrType btrType = btrTypeRepository.findById(zone.getBtrTypeId()).orElse(null);
+
+    if (btrType == null) {
+      return null; // BTR Type not found
+    }
+
+    // Create and return response
+    return new ZoneBtrTypeResponse(
+            zone.getZoneId(),
+            zone.getZoneNameEn(),
+            btrType.getBtrTypeId(),
+            btrType.getBtrType(),
+            isBtrType(btrType.getBtrType())
+    );
+  }
+
+  /**
+   * Classification logic based on your database:
+   * btrTypeId = 1 (btr) -> true (Show BTR component)
+   * btrTypeId = 2 (non_btr) -> false (Show Non-BTR component)
+   * btrTypeId = 3 (btr_with_minor_circuit) -> true (Show BTR component)
+   */
+  private boolean isBtrType(String btrType) {
+    return "btr".equalsIgnoreCase(btrType) ||
+            "btr_with_minor_circuit".equalsIgnoreCase(btrType);
   }
 }

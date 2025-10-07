@@ -46,6 +46,7 @@ public class KeyPlots_Service {
   private final ClusterFormDataRepository clusterFormDataRepository;
   private final CceCropService cceCropService;
   private final FormEntryClient formEntryClient;
+  private final ClusterLimitLogRepository clusterLimitLogRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -63,35 +64,52 @@ public class KeyPlots_Service {
     String lbcode = plot.getLbcode();
 
     String panchayath =
-        localBodyRepository
-            .findByCodeApi(lbcode)
-            .map(TblLocalBody::getLocalbodyNameEn)
-            .orElse(lbcode); // fallback if name not found
+            localBodyRepository
+                    .findByCodeApi(lbcode)
+                    .map(TblLocalBody::getLocalbodyNameEn)
+                    .orElse(lbcode); // fallback if name not found
 
     String landType = keyPlot.getLandType();
 
     Optional<TblMasterVillage> village =
-        tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+            tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
 
     // Fetch related SidePlotDTOs
     List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
-
+    Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
     String villageName = village.map(TblMasterVillage::getVillageNameEn).orElse("Unknown");
     Integer villageId = village.map(TblMasterVillage::getVillageId).orElse(null);
+    Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
+    BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+    BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+    BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
     Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
     return new KeyPlotDetailsResponse(
-        keyPlot.getId(),
-        cluster.get().getCluMasterId(),
-        villageName,
-        villageId,
-        villageBlock,
-        panchayath,
-        lbcode,
-        syNo,
-        area,
-        landType,
-        sidePlots);
+            keyPlot.getId(),
+            keyPlot.getBtrData().getDcode(),
+            keyPlot.getBtrData().getTcode(),
+            cluster.get().getCluMasterId(),
+            villageName,
+            villageId,
+            villageBlock,
+            panchayath,
+            lbcode,
+            status.get().getStatus(),
+            clustermax,
+            clustermin,
+            tsoclusterlimit,
+            syNo,
+            area,
+            landType,
+            sidePlots);
   }
+
+
+
+
+
+
+
 
   //    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
   //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
@@ -996,31 +1014,42 @@ public class KeyPlots_Service {
 
     String lbcode = plot.getLbcode();
     String panchayath =
-        localBodyRepository
-            .findByCodeApi(lbcode)
-            .map(TblLocalBody::getLocalbodyNameEn)
-            .orElse(lbcode); // fallback if name not found
+            localBodyRepository
+                    .findByCodeApi(lbcode)
+                    .map(TblLocalBody::getLocalbodyNameEn)
+                    .orElse(lbcode); // fallback if name not found
     String landType = keyPlot.getLandType();
 
     Optional<TblMasterVillage> village =
-        tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+            tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+    Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
     // Fetch related SidePlotDTOs
     List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
     String villageName = village.get().getVillageNameEn();
     Integer villageId = village.get().getVillageId();
+    Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
+    BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+    BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+    BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
     Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
     return new KeyPlotDetailsResponse(
-        keyPlot.getId(),
-        cluster.get().getCluMasterId(),
-        villageName,
-        villageId,
-        villageBlock,
-        panchayath,
-        lbcode,
-        syNo,
-        area,
-        landType,
-        sidePlots);
+            keyPlot.getId(),
+            keyPlot.getBtrData().getDcode(),
+            keyPlot.getBtrData().getTcode(),
+            cluster.get().getCluMasterId(),
+            villageName,
+            villageId,
+            villageBlock,
+            panchayath,
+            lbcode,
+            status.get().getStatus(),
+            clustermax,
+            clustermin,
+            tsoclusterlimit,
+            syNo,
+            area,
+            landType,
+            sidePlots);
   }
 
   private List<SidePlotDTO> fetchSidePlotsForKeyPlot(KeyPlots keyPlot) {

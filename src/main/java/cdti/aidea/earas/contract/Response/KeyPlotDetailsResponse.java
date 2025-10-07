@@ -31,3 +31,6 @@ public class KeyPlotDetailsResponse {
   private String landType;
   private List<SidePlotDTO> sidePlots;
 }
+
+
+

@@ -13,4 +13,5 @@ public class ZoneAssignedRequset {
   private Integer zoneId;
   private UUID user_id;
   private UUID assigner_id;
+  private Boolean is_active;
 }

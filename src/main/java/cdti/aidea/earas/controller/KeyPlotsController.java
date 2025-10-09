@@ -34,10 +34,10 @@ public class KeyPlotsController {
 
   private final KeyPlots_Service keyPlots_Service;
 
-  @GetMapping("/get-all")
-  public ResponseEntity<Response> getAllKeyPlotsWithDetails() {
+  @GetMapping("/get-all/{zoneId}")
+  public ResponseEntity<Response> getAllKeyPlotsWithDetails(@PathVariable("zoneId") Integer zoneId) {
     try {
-      List<KeyPlotDetailsResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails();
+      List<KeyPlotDetailsResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId);
 
       return ResponseEntity.ok(
           Response.builder()

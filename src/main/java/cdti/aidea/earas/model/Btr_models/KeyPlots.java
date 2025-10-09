@@ -51,7 +51,7 @@ public class KeyPlots {
 
   private Boolean status;
 
-  @Column(name = "land_type")
+//  @Column(name = "land_type")
   private String landType; // Expected values: "WET", "DRY"
 
   @ManyToOne(fetch = FetchType.LAZY)

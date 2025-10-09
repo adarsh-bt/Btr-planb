@@ -4,6 +4,9 @@
 *.class
 *.jar
 
+
+/src/main/resources/application-prod.yml
+
 # Maven
 .mvn/
 !**/src/main/**/mvnw*

@@ -15,6 +15,7 @@ import cdti.aidea.earas.contract.Response.SidePlotDTO;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
+import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.model.Btr_models.Masters.TblZoneRevenueVillageMapping;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.persistence.EntityManager;
@@ -51,12 +52,14 @@ public class KeyPlots_Service {
   private final CceCropService cceCropService;
   private final FormEntryClient formEntryClient;
   private final ClusterLimitLogRepository clusterLimitLogRepository;
+  private final TblMasterZoneRepository tblMasterZoneRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
-  public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails() {
-    List<KeyPlots> allKeyPlots = keyPlotsRepository.findAll();
-
+  public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
+      Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
+    List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
+    System.out.println(">>>>>>> ");
     return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
   }
 

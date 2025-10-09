@@ -15,8 +15,8 @@ public class BtrDataListResponse {
   //    private Integer bcode;
   private String bcode;
   private Integer resvno;
+//  private String resbdno;
   private String resbdno;
-    //private String resbdno;
   private String lbtype;
   private String lbname;
 

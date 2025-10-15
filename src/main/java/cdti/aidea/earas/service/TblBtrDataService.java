@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.sl.draw.geom.GuideIf;
+// import org.apache.poi.sl.draw.geom;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -205,6 +205,18 @@ public class TblBtrDataService {
                 entity.setBtrtype(nonBtr.get());
             }
         }
+        // ✅ NEW BLOCK — add this
+        LocalDate now = LocalDate.now();
+        entity.setInsertionTime(LocalDateTime.now());
+        entity.setUpdationTime(LocalDateTime.now());
+
+        // Agreement year logic
+        LocalDate agreStart = LocalDate.of(now.getYear(), 7, 1); // July 1 of current year
+        LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
+        entity.setAgreStartYear(agreStart);
+        entity.setAgreEndYear(agreEnd);
+        // ✅ END NEW BLOCK
+
         return entity;
     }
 

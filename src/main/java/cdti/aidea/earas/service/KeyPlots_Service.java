@@ -106,6 +106,8 @@ public class KeyPlots_Service {
         keyPlot.getBtrData().getDcode(),
         keyPlot.getBtrData().getTcode(),
         cluster.get().getCluMasterId(),
+        keyPlot.getBtrData().getBtrtype().getBTypeId(),
+        keyPlot.getBtrData().getBtrtype().getBTypeName(),
         villageName,
         villageId,
         villageBlock,
@@ -1041,6 +1043,8 @@ public class KeyPlots_Service {
                 keyPlot.getBtrData().getDcode(),
                 keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
+                keyPlot.getBtrData().getBtrtype().getBTypeId(),
+                keyPlot.getBtrData().getBtrtype().getBTypeName(),
                 villageName,
                 villageId,
                 villageBlock,
@@ -1108,7 +1112,15 @@ public class KeyPlots_Service {
                                             .setScale(2, RoundingMode.HALF_UP)
                                             .doubleValue(),
                                     plot.getBcode(),
-                                    villageNameMal
+                                    villageNameMal,
+                                    plot.getOwnername(),
+                                    plot.getAddress(),
+                                    plot.getTpno(),
+                                    plot.getTbsubdivisionno(),
+                                    plot.getHouseno(),
+                                    plot.getMainno(),
+                                    plot.getSubno(),
+                                    plot.getBtrtype().getBTypeId()
 
                             );
                         }, Collectors.toList())

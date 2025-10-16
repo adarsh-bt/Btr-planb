@@ -31,7 +31,8 @@ public class Zone_Service {
   private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
   private final TblMasterVillageRepository tblMasterVillageRepository;
   private final LocalBodyRepository localBodyRepository;
-  private final TblBtrRepository tblBtrDataRepository;
+//  private final TblBtrRepository tblBtrRepository;
+  private final TblBtrDataRepository tblBtrDataRepository;
   private final LandTypeClassificationService landTypeClassificationService;
   private final DistrictMasterRepository districtMasterRepository;
   private final ZoneRevenueTalukMappingRepository zoneRevenueTalukMappingRepository;
@@ -53,7 +54,7 @@ public class Zone_Service {
         zones = tblMasterZoneRepository.findByDistId(idValue);
       } else if ("Directorate".equalsIgnoreCase(type)) {
         // If type is DIRECTORATE, exclude the District logic and only fetch by Taluk
-        zones = tblMasterZoneRepository.findAll();
+        zones = tblMasterZoneRepository.findByDistId(idValue);
       } else {
         throw new IllegalArgumentException("Invalid type. Use 'Taluk' or 'District'.");
       }
@@ -66,21 +67,21 @@ public class Zone_Service {
       List<Long> assignedZoneIds = userZoneAssignmentRepositoty.findAssignedZoneIds();
       // Filter out the zones that are already assigned
       List<TblMasterZone> availableZones =
-              zones.stream()
-                      .filter(zone -> !assignedZoneIds.contains(zone.getZoneId().longValue()))
-                      .collect(Collectors.toList());
+          zones.stream()
+              .filter(zone -> !assignedZoneIds.contains(zone.getZoneId().longValue()))
+              .collect(Collectors.toList());
 
       // Map the available zones to the response DTO
       List<ZoneListResponse> zoneList =
-              availableZones.stream()
-                      .map(
-                              zone ->
-                                      new ZoneListResponse(
-                                              zone.getZoneId(),
-                                              zone.getZoneCode(),
-                                              zone.getZoneNameEn(),
-                                              zone.getZoneNameMal()))
-                      .collect(Collectors.toList());
+          availableZones.stream()
+              .map(
+                  zone ->
+                      new ZoneListResponse(
+                          zone.getZoneId(),
+                          zone.getZoneCode(),
+                          zone.getZoneNameEn(),
+                          zone.getZoneNameMal()))
+              .collect(Collectors.toList());
 
       return zoneList;
     } catch (Exception e) {
@@ -89,20 +90,19 @@ public class Zone_Service {
   }
 
   public List<ZoneIdNameResponse> getAssignedZones(UUID userId) {
-    System.out.println("use id "+userId);
     List<UserZoneAssignment> assignments = userZoneAssignmentRepositoty.findAllByUserIdAndIsActiveTrue(userId);
-    System.out.println("asss "+assignments);
+
     if (assignments.isEmpty()) {
       throw new IllegalArgumentException("User has no assigned zones.");
     }
 
     return assignments.stream()
-            .map(
-                    a ->
-                            new ZoneIdNameResponse(
-                                    a.getTblMasterZone().getZoneId(),
-                                    a.getTblMasterZone().getZoneNameEn() // Use .getZoneNameMal() if needed
-                            ))
+            .map(a -> new ZoneIdNameResponse(
+                    a.getTblMasterZone().getZoneId(),
+                    a.getTblMasterZone().getZoneNameEn(), // Use .getZoneNameMal() if needed
+                    a.getTblMasterZone().getBtrType().getBtrTypeId(),
+                    a.getTblMasterZone().getBtrType().getBtrType()
+            ))
             .collect(Collectors.toList());
   }
 
@@ -211,6 +211,7 @@ public class Zone_Service {
       throw new IllegalArgumentException("Something went wrong during zone assignment");
     }
   }
+
 
   public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(
           Integer zone_id, int page, int size, String filter) {
@@ -347,15 +348,6 @@ public class Zone_Service {
             pageResult.getContent().stream()
                     .map(
                             myTable -> {
-                              //                     Apply the formula: totalCent = nhect*247.13 + nare*2.47 +
-                              // nsqm*0.02471
-                              //                    double totalCent = (myTable.getNhect() != null ?
-                              // myTable.getNhect() : 0) * 247.13
-                              //                            + (myTable.getNare() != null ? myTable.getNare() :
-                              // 0) * 2.47
-                              //                            + (myTable.getNsqm() != null ? myTable.getNsqm() :
-                              // 0) * 0.02471;
-                              //                    double totalCent = myTable.getArea()
 
                               BigDecimal bd =
                                       new BigDecimal(myTable.getArea()).setScale(2, RoundingMode.HALF_UP);
@@ -367,7 +359,7 @@ public class Zone_Service {
                                       villageNameMap.get(myTable.getLsgcode()),
                                       myTable.getBcode(),
                                       myTable.getResvno(),
-                                      myTable.getResbdno(),
+                                      String.valueOf(myTable.getResbdno()),
                                       myTable.getLtype(),
                                       localBodyNameMap.get(myTable.getLbcode()),
                                       myTable.getLtype(),
@@ -386,6 +378,7 @@ public class Zone_Service {
             totalWetAreas,
             totalDryAreas);
   }
+
 
   //    public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(UUID userId, int page,
   // int size, String filter) {
@@ -549,6 +542,7 @@ public class Zone_Service {
     }
     var zone = tblMasterZoneRepository.findById(zone_id);
     var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(zone.get().getZoneId());
+
     List<Integer> villageIds =
             zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
 
@@ -556,10 +550,10 @@ public class Zone_Service {
     List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
     List<String> villages_names =
             villageList.stream().map(TblMasterVillage::getVillageNameEn).toList();
+    System.out.println("villages " + villages_names);
 
-    System.out.println("ok   "+lsgcodes);
     List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
-
+    System.out.println("sss >> "+allData);
     Map<String, String> landTypeClassificationMap =
             landTypeClassificationService.getLandTypeClassificationMap();
 
@@ -582,7 +576,6 @@ public class Zone_Service {
                     .collect(Collectors.toList());
 
     List<Long> ids = localbodyTypeIds.stream().map(Short::longValue).collect(Collectors.toList());
-
     List<LocalBodyType> localBodyType_full = localBodyTypeRepository.findByIdIn(ids);
 
     // Build Map<typeId, typeName>
@@ -626,7 +619,6 @@ public class Zone_Service {
         if (landTypeClassificationMap.containsKey(landTypeValue)) {
           String classification = landTypeClassificationMap.get(landTypeValue);
           double area = dataItem.getTotCent();
-
           switch (classification) {
             case "wet" -> {
               wetArea += area;
@@ -636,8 +628,6 @@ public class Zone_Service {
               dryArea += area;
               dryCount++;
             }
-//              totalPlotCount += (wetArea + dryArea);
-//          }
           }
         }
       }
@@ -648,7 +638,7 @@ public class Zone_Service {
       if (total_keyplots == 0) {
         unclassifiedPanchayaths.add(localBodyNameMap.get(lbcode));
       }
-      System.out.println("Wet >> "+wetArea);
+
       totalWetAreaZone += wetArea;
       totalDryAreaZone += dryArea;
       totalPlotCount += total_keyplots;
@@ -702,8 +692,10 @@ public class Zone_Service {
 
     Optional<ZoneLocalbodyBlockMapping> localbody_type =
             zoneLocalbodyBlockMappingRepository.findByZone(zone.get().getZoneId());
+    System.out.println(" rr> >  "+localbody_type);
     if (localbody_type.isPresent()) {
       if (localbody_type.get().getBlockPanchayatMunicipalArea() == 1) {
+        System.out.println("jjj  "+localbody_type.get().getBlockPanchayatMunicipalArea());
         Optional<MasterBlock> localbody =
                 masterBlockRepository.findById(localbody_type.get().getBlockDetails());
         localBodyLabel = localbody.map(MasterBlock::getBlockName).orElse("");
@@ -730,7 +722,6 @@ public class Zone_Service {
             zoneName,
             panchayathResponses,
             new ArrayList<>(localBodyNameMap.keySet()),
-            //  505,
             totalPlotCount ,
             overallTotalArea,
             totalWetAreaZone,

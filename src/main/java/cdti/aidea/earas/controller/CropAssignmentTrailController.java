@@ -26,7 +26,7 @@ public class CropAssignmentTrailController {
 
   @PostMapping("/save")
   public ResponseEntity<?> saveBatch(@RequestBody List<CropAssignmentTrailSaveDto> saveDto) {
-    System.out.println("SSS "+saveDto);
+    System.out.println("SSS " + saveDto);
     List<Long> savedIds = cropAssignmentTrailService.saveCropAssignmentTrail(saveDto);
 
     // Build response

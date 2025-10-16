@@ -17,7 +17,7 @@ public class TblBtrDataOld {
 
   private Integer resvno;
   private Integer resbdno;
-  //    private String resbdno;
+  // private String resbdno;
   private String ltype;
 
   @Column(name = "bcode_str")

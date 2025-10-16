@@ -2,6 +2,7 @@ package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.FormEntryDto.*;
+import cdti.aidea.earas.contract.RequestsDTOs.PlotSaveMobileAppRequest;
 import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
@@ -223,6 +224,7 @@ public class ClusterService {
       plotInfo.put("cluster_plot_id", data.getCluDetailId());
       plotInfo.put("svno", plot.getResvno() + "/" + plot.getResbdno());
       plotInfo.put("area", area);
+      plotInfo.put("actual_area",plot.getTotCent());
 
       // Add plot to label group
       labelToPlotsMap.computeIfAbsent(label, k -> new ArrayList<>()).add(plotInfo);
@@ -870,6 +872,115 @@ public class ClusterService {
 
     return dtos;
   }
+
+
+  @Transactional
+  public Map<String, Object> savePlotFromMobile(PlotSaveMobileAppRequest request) {
+    // 1. Get KeyPlot and its associated data
+    KeyPlots keyPlot = keyPlotsRepository.findById(request.getKeyplotId())
+            .orElseThrow(() -> new RuntimeException("KeyPlot not found with ID: " + request.getKeyplotId()));
+
+    TblBtrData keyPlotBtr = keyPlot.getBtrData();
+    if (keyPlotBtr == null) {
+      throw new RuntimeException("KeyPlot does not have associated BTR data.");
+    }
+
+    // 2. Create new BTR entry from mobile data
+    TblBtrData btrData = new TblBtrData();
+    btrData.setResvno(request.getSvNo());
+    btrData.setResbdno(request.getSubNo());
+    btrData.setTotCent(request.getArea());
+    btrData.setBcode(request.getBcode());
+    btrData.setVcode(request.getVillage());
+
+    // Copy values from keyplot BTR
+    btrData.setDcode(keyPlotBtr.getDcode());
+    btrData.setTcode(keyPlotBtr.getTcode());
+    btrData.setLtype(keyPlotBtr.getLtype());
+    btrData.setLbcode(keyPlotBtr.getLbcode());
+    btrData.setBtrtype(keyPlotBtr.getBtrtype());
+
+    // Set LSG code from village master (if available)
+    tblMasterVillageRepository.findById(request.getVillage())
+            .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
+
+    // Save BTR data
+    TblBtrData savedBtr = tblBtrDataRepository.save(btrData);
+
+    // 3. Find or create ClusterMaster
+    Optional<ClusterMaster> clusterMaster = clusterMasterRepository.findByKeyPlotId(request.getKeyplotId());
+
+
+    // 4. Check if ClusterFormData already exists
+    Optional<ClusterFormData> existingForm = clusterFormDataRepository
+            .findByClusterMasterAndPlotAndPlotLabel(clusterMaster.get(), savedBtr, request.getClusterlabel());
+
+    ClusterFormData formData = existingForm.orElseGet(ClusterFormData::new);
+    formData.setClusterMaster(clusterMaster.get());
+    formData.setPlot(savedBtr);
+    formData.setPlotLabel(request.getClusterlabel());
+    formData.setEnumeratedArea(request.getActual());
+    formData.setStatus(true);
+    formData.setUpdatedAt(LocalDateTime.now());
+    formData.setCreatedBy(request.getUserId());
+
+    if (formData.getCreatedAt() == null) {
+      formData.setCreatedAt(LocalDateTime.now());
+    }
+
+    // Save or update form data
+    clusterFormDataRepository.save(formData);
+
+    // 5. Optionally recalculate total area and update cluster status (optional)
+    double totalArea = clusterFormDataRepository
+            .findByClusterMaster(clusterMaster.get())
+            .stream()
+            .mapToDouble(f -> f.getEnumeratedArea() != null ? f.getEnumeratedArea() : 0.0)
+            .sum();
+
+    Optional<ClusterLimitLog> activeLimit = clusterLimitLogRepository.findByInActiveTrue();
+
+    String status = "On Going";
+    if (activeLimit.isPresent()) {
+      BigDecimal min = activeLimit.get().getClusterMin();
+      BigDecimal max = activeLimit.get().getClusterMax();
+      BigDecimal tsoLimit = activeLimit.get().getTsoApprovalLimit();
+
+      BigDecimal total = BigDecimal.valueOf(totalArea);
+      if (max != null && total.compareTo(max) > 0) {
+        throw new RuntimeException("Maximum cluster area exceeded.");
+      } else if (tsoLimit != null && total.compareTo(tsoLimit) < 0) {
+        status = "Under Review";
+
+        // Save review log
+        ClusterApprovalLog reviewLog = new ClusterApprovalLog();
+        reviewLog.setClusterMaster(clusterMaster.get());
+        reviewLog.setAddedBy(request.getUserId());
+        reviewLog.setZone(clusterMaster.get().getZone());
+        reviewLog.setRemarks("Cluster is under review from mobile");
+        reviewLog.setTotalArea(total);
+        clusterApprovalRepository.save(reviewLog);
+      } else if (min != null && total.compareTo(min) >= 0) {
+        status = "Completed";
+      }
+    }
+
+    // Update status if changed
+    clusterMaster.get().setStatus(status);
+    clusterMaster.get().setUpdatedAt(LocalDateTime.now());
+    clusterMasterRepository.save(clusterMaster.get());
+
+    // 6. Return response
+    Map<String, Object> result = new HashMap<>();
+    result.put("status", "Success");
+    result.put("message", "Plot saved to cluster successfully.");
+    result.put("plotId", savedBtr.getId());
+    result.put("clusterStatus", status);
+    return result;
+  }
+
+
+
 
   //    @Autowired
   //    public ClusterService(ClusterMasterRepository clusterMasterRepository,

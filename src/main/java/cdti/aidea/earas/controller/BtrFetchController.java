@@ -17,10 +17,6 @@ public class BtrFetchController {
 
   @Autowired private BtrFetchService btrFetchService;
 
-  /**
-   * Main endpoint: Get all BTR data for a specific zone with optional filtering Example: GET
-   * /api/v1/btr/zone/1/data Example: GET /api/v1/btr/zone/1/data?filter=agricultural
-   */
   @GetMapping("/zone/{zoneId}/data")
   public ResponseEntity<List<BtrDataResponse>> getAllBtrDataByZone(
       @PathVariable Integer zoneId, @RequestParam(required = false) String filter) {
@@ -40,24 +36,17 @@ public class BtrFetchController {
   @GetMapping("/data/{id}")
   public ResponseEntity<BtrDataResponse> getBtrDataById(@PathVariable Long id) {
     try {
-      System.out.println("=== DEBUG: getBtrDataById called with id: " + id + " ===");
-
       if (id == null || id <= 0) {
-        System.out.println("DEBUG: Invalid ID: " + id);
+
         return ResponseEntity.badRequest().build();
       }
-
       Optional<BtrDataResponse> response = btrFetchService.getBtrDataById(id);
-
       if (response.isPresent()) {
-        System.out.println("DEBUG: Found record with ID: " + response.get().getId());
         return ResponseEntity.ok(response.get());
       } else {
-        System.out.println("DEBUG: No record found with ID: " + id);
         return ResponseEntity.notFound().build();
       }
     } catch (Exception e) {
-      System.err.println("ERROR in getBtrDataById: " + e.getMessage());
       e.printStackTrace();
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }

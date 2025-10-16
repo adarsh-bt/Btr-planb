@@ -47,12 +47,15 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
   List<ClusterMaster> findByKeyPlotIn(List<KeyPlots> keyPlots);
 
 
-  // In ClusterMasterRepository
-  @Query("SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm " +
-          "WHERE cm.createdAt >= :startDate AND cm.createdAt <= :endDate")
-  Optional<Integer> findMaxClusterNumberByDateRange(
-          @Param("startDate") LocalDateTime startDate,
-          @Param("endDate") LocalDateTime endDate);
+  @Query("SELECT MAX(c.clusterNumber) FROM ClusterMaster c " +
+          "WHERE c.zone.zoneId = :zoneId " +
+          "AND c.createdAt BETWEEN :start AND :end")
+  Optional<Integer> findMaxClusterNumberByZoneAndDateRange(
+          @Param("zoneId") Integer zoneId,
+          @Param("start") LocalDateTime start,
+          @Param("end") LocalDateTime end);
+
+
 
 
 }

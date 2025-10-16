@@ -79,9 +79,10 @@ public class TblBtrDataService {
         LocalDateTime endDateTime = startDateTime.plusYears(1).minusSeconds(1);
 
         Optional<Integer> maxClusterNumberOpt = clusterMasterRepository
-                .findMaxClusterNumberByDateRange(startDateTime, endDateTime);
+                .findMaxClusterNumberByZoneAndDateRange(zone.getZoneId(), startDateTime, endDateTime);
 
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+
 
 
 
@@ -173,21 +174,21 @@ public class TblBtrDataService {
             if (typeId == 1) {
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 2 → dcode to totcent + ownername, address, houseno
+            // Type 2 → dcode to totcent + ownername, address, houseno > House List
             else if (typeId == 2) {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setHouseno(dto.getHouseno());
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 3 → dcode to totcent + ownername, address
+            // Type 3 → dcode to totcent + ownername, address >  Cultivators List
             // but not resvno/resbdno
             else if (typeId == 3) {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno
+            // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno > Thandaper Number
             // (mapped to mainno and subno)
             else if (typeId == 4) {
                 entity.setOwnername(dto.getOwnername());
@@ -239,6 +240,7 @@ public class TblBtrDataService {
 
         if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
         if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
+
         if (dto.getVcode() == null) errors.add("Village code (vcode) is required.");
         if (dto.getBcode() == null || dto.getBcode().trim().isEmpty())
             errors.add("Block code (bcode) is required.");

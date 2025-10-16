@@ -39,16 +39,16 @@ public class UserZoneController {
   //        // Forbidden
   //    }
 
-//  @GetMapping("/export")
-//  public ResponseEntity<ByteArrayResource> exportBtrData(@RequestParam UUID userId) {
-//    ByteArrayResource excelFile = btrExportService.exportUserBtrDataToExcel(userId);
-//
-//    return ResponseEntity.ok()
-//        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=btr_data.xlsx")
-//        .contentType(MediaType.APPLICATION_OCTET_STREAM)
-//        .contentLength(excelFile.contentLength())
-//        .body(excelFile);
-//  }
+  @GetMapping("/export")
+  public ResponseEntity<ByteArrayResource> exportBtrData(@RequestParam Integer zoneId) {
+    ByteArrayResource excelFile = btrExportService.exportUserBtrDataToExcel(zoneId);
+
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=btr_data.xlsx")
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .contentLength(excelFile.contentLength())
+        .body(excelFile);
+  }
 
   @GetMapping("/zones/{type}/{id}")
   public ResponseEntity<List<ZoneListResponse>> getById(

@@ -224,6 +224,7 @@ public class ClusterService {
       plotInfo.put("cluster_plot_id", data.getCluDetailId());
       plotInfo.put("svno", plot.getResvno() + "/" + plot.getResbdno());
       plotInfo.put("area", area);
+      plotInfo.put("actual_area",data.getPlot().getTotCent());
 
       // Add plot to label group
       labelToPlotsMap.computeIfAbsent(label, k -> new ArrayList<>()).add(plotInfo);

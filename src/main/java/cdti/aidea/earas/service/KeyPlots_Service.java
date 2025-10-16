@@ -1271,19 +1271,19 @@ public class KeyPlots_Service {
 //        return clusterList;
 //    }
 
-//    public KeyPlotOwnerDetailsResponse getByKpId(UUID kpId) {
-//        modelMapper
-//                .getConfiguration()
-//                .setFieldMatchingEnabled(true)
-//                .setFieldAccessLevel(PRIVATE)
-//                .setPropertyCondition(Conditions.isNotNull());
-//        KeyPlots keyPlotDetails =
-//                keyPlotsRepository
-//                        .findById(kpId)
-//                        .orElseThrow(() -> new IllegalArgumentException("Id not found: " + kpId));
-//
-//        return modelMapper.map(keyPlotDetails, KeyPlotOwnerDetailsResponse.class);
-//    }
+    public KeyPlotOwnerDetailsResponse getByKpId(UUID kpId) {
+        modelMapper
+                .getConfiguration()
+                .setFieldMatchingEnabled(true)
+                .setFieldAccessLevel(PRIVATE)
+                .setPropertyCondition(Conditions.isNotNull());
+        KeyPlots keyPlotDetails =
+                keyPlotsRepository
+                        .findById(kpId)
+                        .orElseThrow(() -> new IllegalArgumentException("Id not found: " + kpId));
+
+        return modelMapper.map(keyPlotDetails, KeyPlotOwnerDetailsResponse.class);
+    }
 
 //    public Object KeyplotsFormation(UUID userId) {
 //        var user = userZoneAssignmentRepositoty.findByUserId(userId);

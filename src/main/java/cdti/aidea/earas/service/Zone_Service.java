@@ -80,7 +80,8 @@ public class Zone_Service {
                           zone.getZoneId(),
                           zone.getZoneCode(),
                           zone.getZoneNameEn(),
-                          zone.getZoneNameMal()))
+                          zone.getZoneNameMal(),
+                              0,0,null,null))
               .collect(Collectors.toList());
 
       return zoneList;
@@ -232,7 +233,7 @@ public class Zone_Service {
     System.out.println(lsgcodes);
 
     //        List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
-    List<TblBtrDataOld> allData = tblBtrDataOldRepository.findAllByLsgcodeIn(lsgcodes);
+    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
 
     List<String> landType =
             allData.stream()
@@ -242,7 +243,7 @@ public class Zone_Service {
     System.out.println("land Type  " + landType);
 
     List<String> LbcodeList =
-            allData.stream().map(TblBtrDataOld::getLbcode).distinct().collect(Collectors.toList());
+            allData.stream().map(TblBtrData::getLbcode).distinct().collect(Collectors.toList());
     System.out.println("Lbcode " + LbcodeList);
     List<TblLocalBody> localBodies_full = localBodyRepository.findAllByCodeApiIn(LbcodeList);
 
@@ -269,19 +270,19 @@ public class Zone_Service {
                                                                                                     Sort.by("ltype") // 5. Land Type
                                                                                             ))))));
 
-    Page<TblBtrDataOld> pageResult;
+    Page<TblBtrData> pageResult;
 
     if (filter == null || filter.isEmpty()) {
-      pageResult = tblBtrDataOldRepository.findByLsgcodeInWithOrder(lsgcodes, pageable);
+      pageResult = tblBtrDataRepository.findByLsgcodeInWithOrder(lsgcodes, pageable);
     } else {
       // For filtered queries, you might need a similar ORDER BY clause
       pageResult =
-              tblBtrDataOldRepository.findByLsgcodeInWithNamesFilter(lsgcodes, filter, pageable);
+              tblBtrDataRepository.findByLsgcodeInWithNamesFilter(lsgcodes, filter, pageable);
     }
 
     double totalArea =
             pageResult.getContent().stream()
-                    .mapToDouble(TblBtrDataOld::getArea) // Assuming nsqm is the field you want to sum up
+                    .mapToDouble(TblBtrData::getTotCent) // Assuming nsqm is the field you want to sum up
                     .sum();
 
     // Prepare a map for village codes and names
@@ -294,7 +295,7 @@ public class Zone_Service {
     Map<String, String> localBodyNameMap = new HashMap<>();
     List<String> lbCodes =
             pageResult.getContent().stream()
-                    .map(TblBtrDataOld::getLbcode)
+                    .map(TblBtrData::getLbcode)
                     .distinct()
                     .collect(Collectors.toList());
 
@@ -310,7 +311,7 @@ public class Zone_Service {
     double totalWetArea = 0;
     double totalDryArea = 0;
 
-    for (TblBtrDataOld data : allData) {
+    for (TblBtrData data : allData) {
       String ltype = data.getLtype();
       if (ltype != null) {
         ltype = ltype.trim(); // <-- Trim whitespace here
@@ -318,7 +319,7 @@ public class Zone_Service {
       //            double nsqm = data.getNsqm() != null ? data.getNsqm() : 0;
       //            double nare = data.getNare() != null ? data.getNare() : 0;
       //            double nhect = data.getNhect() != null ? data.getNhect() : 0;
-      double areas = data.getArea() != null ? data.getArea() : 0;
+      double areas = data.getTotCent() != null ? data.getTotCent() : 0;
 
       if (landTypeClassificationMap.containsKey(ltype)) {
         String classification = landTypeClassificationMap.get(ltype);
@@ -350,7 +351,7 @@ public class Zone_Service {
                             myTable -> {
 
                               BigDecimal bd =
-                                      new BigDecimal(myTable.getArea()).setScale(2, RoundingMode.HALF_UP);
+                                      new BigDecimal(myTable.getTotCent()).setScale(2, RoundingMode.HALF_UP);
 
                               String formatted = bd.toPlainString(); // "10.00"
 
@@ -363,6 +364,13 @@ public class Zone_Service {
                                       myTable.getLtype(),
                                       localBodyNameMap.get(myTable.getLbcode()),
                                       myTable.getLtype(),
+                                      myTable.getOwnername(),
+                                      myTable.getAddress(),
+                                      myTable.getTpno(),
+                                      myTable.getTbsubdivisionno(),
+                                      myTable.getHouseno(),
+                                      myTable.getMainno(),
+                                      myTable.getSubno(),
                                       formatted);
                             })
                     .collect(Collectors.toList());
@@ -553,7 +561,7 @@ public class Zone_Service {
     System.out.println("villages " + villages_names);
 
     List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
-    System.out.println("sss >> "+allData);
+
     Map<String, String> landTypeClassificationMap =
             landTypeClassificationService.getLandTypeClassificationMap();
 
@@ -583,6 +591,7 @@ public class Zone_Service {
     localBodyType_full.forEach(
             localBodyType ->
                     localBodyTypeMap.put(localBodyType.getId().intValue(), localBodyType.getName()));
+
 
     Map<String, List<TblBtrData>> panchayathDataMap =
             allData.stream().collect(Collectors.groupingBy(TblBtrData::getLbcode));
@@ -690,12 +699,15 @@ public class Zone_Service {
     String localBodyLabel = "";
     String localbodyType = "";
 
+
     Optional<ZoneLocalbodyBlockMapping> localbody_type =
-            zoneLocalbodyBlockMappingRepository.findByZone(zone.get().getZoneId());
+            zoneLocalbodyBlockMappingRepository.findByZoneAndIsValid(zone.get().getZoneId(), true);
+
     System.out.println(" rr> >  "+localbody_type);
     if (localbody_type.isPresent()) {
       if (localbody_type.get().getBlockPanchayatMunicipalArea() == 1) {
-        System.out.println("jjj  "+localbody_type.get().getBlockPanchayatMunicipalArea());
+
+        System.out.println("----------");
         Optional<MasterBlock> localbody =
                 masterBlockRepository.findById(localbody_type.get().getBlockDetails());
         localBodyLabel = localbody.map(MasterBlock::getBlockName).orElse("");

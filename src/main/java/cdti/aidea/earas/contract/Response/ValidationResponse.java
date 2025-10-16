@@ -7,7 +7,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PlotDuplicateResponse {
-  private boolean duplicate;
+public class ValidationResponse {
+  private Long id;
+  private Integer resvno;
+  private String resbdno;
+  private Double totalcent;
   private String message;
+  private Double remainingArea;
 }

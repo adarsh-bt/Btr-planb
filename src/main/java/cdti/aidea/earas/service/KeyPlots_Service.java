@@ -1,13 +1,8 @@
 package cdti.aidea.earas.service;
 
-import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
-
 import cdti.aidea.earas.config.FormEntryClient;
-import cdti.aidea.earas.contract.FormEntryDto.AvailableCcePlotRejectionRequest;
-import cdti.aidea.earas.contract.FormEntryDto.CceCropDetailsResponse;
-import cdti.aidea.earas.contract.FormEntryDto.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs. KeyPlotRejectRequest;
+import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.Response.ClusterFormRowDTO;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
@@ -21,6 +16,7 @@ import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,12 +33,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
 
 import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
-//import jakarta.transaction.Transactional;
-import org.springframework.transaction.annotation.Transactional;
-
-
 
 @Service
 @RequiredArgsConstructor
@@ -106,6 +102,8 @@ public class KeyPlots_Service {
         keyPlot.getBtrData().getDcode(),
         keyPlot.getBtrData().getTcode(),
         cluster.get().getCluMasterId(),
+        keyPlot.getBtrData().getBtrtype().getBTypeId(),
+        keyPlot.getBtrData().getBtrtype().getBTypeName(),
         villageName,
         villageId,
         villageBlock,
@@ -681,8 +679,8 @@ public class KeyPlots_Service {
             keyPlots.add(keyPlot);
         }
 
-        return keyPlots;
-    }
+    return keyPlots;
+  }
 
     private void saveClustersForKeyPlots(List<KeyPlots> savedKeyPlots, AtomicInteger clusterCounter) {
         List<ClusterMaster> clusterList = new ArrayList<>();
@@ -975,7 +973,7 @@ public class KeyPlots_Service {
     rejectedKeyPlot.setIsRejected(true);
     rejectedKeyPlot.setReason(request.getReason());
     rejectedKeyPlot.setRejectDate(LocalDate.now());
-    rejectedKeyPlot.setCreated_by(request.getUserid());
+    rejectedKeyPlot.setCreated_by(request.getUserId());
     rejectedKeyPlot.setStatus(false);
     keyPlotsRepository.save(rejectedKeyPlot);
 
@@ -990,7 +988,7 @@ public class KeyPlots_Service {
     cluster.setIsReject(true);
     cluster.setStatus("rejected");
     cluster.setIs_active(false);
-    cluster.setInvestigatorRemark(request.getReason_for_cluster());
+    cluster.setInvestigatorRemark(request.getReasonForCluster());
     cluster.setUpdatedAt(LocalDateTime.now());
     clusterMasterRepository.save(cluster);
 
@@ -1041,6 +1039,8 @@ public class KeyPlots_Service {
                 keyPlot.getBtrData().getDcode(),
                 keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
+                keyPlot.getBtrData().getBtrtype().getBTypeId(),
+                keyPlot.getBtrData().getBtrtype().getBTypeName(),
                 villageName,
                 villageId,
                 villageBlock,
@@ -1055,13 +1055,6 @@ public class KeyPlots_Service {
                 landType,
                 sidePlots);
     }
-
-
-
-
-
-
-
 
     private List<SidePlotDTO> fetchSidePlotsForKeyPlot(KeyPlots keyPlot) {
         Optional<ClusterMaster> clusterOpt = clusterMasterRepository.findTopByKeyPlotOrderByCreatedAtDesc(keyPlot);

@@ -1,6 +1,7 @@
 package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
+import cdti.aidea.earas.contract.Response.ValidationResponse;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
@@ -37,11 +38,11 @@ public class TblBtrDataService {
             throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
         }
 
-        // ✅ Validate duplicates
-        ValidationErrorResponse duplicateError = validateDuplicate(dto);
-        if (duplicateError != null) {
-            throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
-        }
+    // ✅ Validate duplicates
+    ValidationErrorResponse duplicateError = validateDuplicate(dto);
+    if (duplicateError != null) {
+      throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
+    }
 
         // 1️⃣ Save TblBtrData
         TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
@@ -252,34 +253,74 @@ public class TblBtrDataService {
         return errors;
     }
 
+  public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
+    String cleanedResbdno =
+        dto.getResbdno() != null ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
 
-    public ValidationErrorResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
+    Optional<TblBtrData> exists;
 
-        String cleanedResbdno = dto.getResbdno() != null
-                ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "")
-                : null;
-
-        Optional<TblBtrData> exists = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-                dto.getDcode(),
-                dto.getTcode(),
-                dto.getVcode(),
-                dto.getBcode(),
-                dto.getResvno(),
-                cleanedResbdno
-        );
-
-
-        System.out.println("dto >..  "+dto);
-        if (exists.isPresent()) {
-            return new ValidationErrorResponse(
-                    dto.getResvno(),
-                    dto.getResbdno(),
-                    exists.get().getTotCent(),
-
-                    "Duplicate entry already exists for resvno=" + dto.getResvno() +
-                            " and resbdno=" + dto.getResbdno());
-        }
-
-        return null; // or Optional<ValidationErrorResponse>
+    if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
+      exists =
+          tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+              dto.getDcode(),
+              dto.getTcode(),
+              dto.getVcode(),
+              dto.getBcode(),
+              dto.getResvno(),
+              cleanedResbdno);
+    } else {
+      exists =
+          tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+              dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getResvno());
     }
+
+    if (exists.isPresent()) {
+      TblBtrData plot = exists.get();
+
+      int currentYear = java.time.LocalDate.now().getYear();
+      int nextYear = currentYear + 1;
+
+      List<ClusterFormData> clusterDataList =
+          clusterFormDataRepository.findByPlotAndCreatedAtBetween(
+              plot,
+              java.time.LocalDate.of(currentYear, 7, 1).atStartOfDay(),
+              java.time.LocalDate.of(nextYear, 6, 30).atTime(23, 59, 59));
+
+      double enumeratedSum =
+          clusterDataList.stream()
+              .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
+              .sum();
+
+      Double totalCent = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
+      Double remainingArea = totalCent - enumeratedSum;
+
+      if (remainingArea <= 0) {
+        return new ValidationResponse(
+            plot.getId(),
+            plot.getResvno(),
+            plot.getResbdno(),
+            totalCent,
+            "This plot cannot be selected for this agricultural year",
+            remainingArea);
+      } else if (remainingArea > 0 && !clusterDataList.isEmpty()) {
+        return new ValidationResponse(
+            plot.getId(),
+            plot.getResvno(),
+            plot.getResbdno(),
+            totalCent,
+            "Remaining area is available for this plot and not used in this agricultural year",
+            remainingArea);
+      } else {
+
+        return new ValidationResponse(
+            plot.getId(),
+            plot.getResvno(),
+            plot.getResbdno(),
+            totalCent,
+            "Duplicate entry already exists",
+            remainingArea);
+      }
+    }
+    return null;
+  }
 }

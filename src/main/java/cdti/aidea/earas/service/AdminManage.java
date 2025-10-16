@@ -21,7 +21,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -67,7 +69,7 @@ public class AdminManage {
         zones = tblMasterZoneRepository.findByDistId(idValue);
       } else if ("Directorate".equalsIgnoreCase(type)) {
         // If type is DIRECTORATE, use appropriate repository method (change if needed)
-        zones = tblMasterZoneRepository.findAll();
+        zones = tblMasterZoneRepository.findByDistId(idValue);
       } else {
         throw new IllegalArgumentException("Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
       }
@@ -80,7 +82,7 @@ public class AdminManage {
       List<ZoneListResponse> zoneList = zones.stream()
               .map(zone -> {
                 // Fetch taluk
-                
+
                 Optional<DesTaluk> taluk = desTalukRepository.findById(zone.getDesTalukId());
                 String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("Unknown Taluk");
 
@@ -229,5 +231,4 @@ public class AdminManage {
       return clusterLimitLogRepository.save(log);
     }
   }
-
 }

@@ -213,7 +213,6 @@ public class Zone_Service {
     }
   }
 
-
   public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(
           Integer zone_id, int page, int size, String filter) {
     // Fetch user and zone data
@@ -386,7 +385,6 @@ public class Zone_Service {
             totalWetAreas,
             totalDryAreas);
   }
-
 
   //    public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(UUID userId, int page,
   // int size, String filter) {
@@ -734,6 +732,7 @@ public class Zone_Service {
             zoneName,
             panchayathResponses,
             new ArrayList<>(localBodyNameMap.keySet()),
+            //  505,
             totalPlotCount ,
             overallTotalArea,
             totalWetAreaZone,

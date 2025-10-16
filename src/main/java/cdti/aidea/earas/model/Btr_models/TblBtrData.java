@@ -18,10 +18,10 @@ public class TblBtrData {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private Integer dcode;
-  private Integer tcode;
-  private Integer vcode;
-  private String bcode;
+    private Integer dcode;
+    private Integer tcode;
+    private Integer vcode;
+    private String bcode;
 
   private Integer resvno;
   private String resbdno;

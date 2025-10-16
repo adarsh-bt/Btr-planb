@@ -70,7 +70,7 @@ public class ClusterService {
 
     //        Optional<UserZoneAssignment> userOpt =
     // userZoneAssignmentRepositoty.findByUserId(userId);
-    System.out.println("okk "+zone_Id);
+    System.out.println("okk " + zone_Id);
     Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zone_Id);
     if (zone.isEmpty()) {
       throw new NoSuchElementException("User not found");
@@ -79,7 +79,7 @@ public class ClusterService {
     //        UserZoneAssignment user = userOpt.get();
 
     Long zoneId = Long.valueOf(zone.get().getZoneId());
-    System.out.println("zone id  "+zoneId);
+    System.out.println("zone id  " + zoneId);
     // Step 1: Get CCE plot assignments with fallback awareness
     Set<Long> assignedClusterIds = new HashSet<>();
     String cceMessage = null;
@@ -586,7 +586,7 @@ public class ClusterService {
     // 🔹 Decide status based on limits
 
     String status;
-    System.out.println("total "+totalEnumeratedArea);
+    System.out.println("total " + totalEnumeratedArea);
     if (clustermax != null && BigDecimal.valueOf(totalEnumeratedArea).compareTo(clustermax) > 0) {
       throw new RuntimeException("Maximum limit exceeded, please reduce the size.");
     } else if (clustermin != null

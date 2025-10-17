@@ -202,8 +202,8 @@ public class TblBtrDataService {
             // but not resvno/resbdno
             else if (typeId == 5) {
                 entity.setOwnername(dto.getOwnername());
-                entity.setMainno(dto.getMainno());
-                entity.setSubno(dto.getSubno());
+                entity.setOldsvno(dto.getMainno());
+                entity.setOldsubno(dto.getSubno());
                 entity.setBtrtype(nonBtr.get());
             }
         }

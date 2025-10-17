@@ -53,11 +53,11 @@ public class TblBtrData {
   @Column(name = "house_number")
   private Integer houseno;
 
-  @Column(name = "main_number")
-  private Integer mainno;
+  @Column(name = "old_survey_number")
+  private Integer oldsvno;
 
-  @Column(name = "sub_main_number")
-  private String subno;
+  @Column(name = "old_subdivision_number")
+  private String oldsubno;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "non_btr_type_id")

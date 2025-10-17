@@ -368,8 +368,8 @@ public class Zone_Service {
                                       myTable.getTpno(),
                                       myTable.getTbsubdivisionno(),
                                       myTable.getHouseno(),
-                                      myTable.getMainno(),
-                                      myTable.getSubno(),
+                                      myTable.getOldsvno(),
+                                      myTable.getOldsubno(),
                                       formatted);
                             })
                     .collect(Collectors.toList());
@@ -601,13 +601,14 @@ public class Zone_Service {
     double totalDryAreaZone = 0;
     double totalPlotCount=0;
 
-    Map<String, List<String>> lbcodeToVillageNamesMap = new HashMap<>();
-    lbcodeToVillageNamesMap.put("01108", Arrays.asList("KILIMANOOR"));
-    lbcodeToVillageNamesMap.put("01113", Arrays.asList("NAGAROOR", "VELLALLOOR"));
+//    Map<String, List<String>> lbcodeToVillageNamesMap = new HashMap<>();
+//    lbcodeToVillageNamesMap.put("01108", Arrays.asList("KILIMANOOR"));
+//    lbcodeToVillageNamesMap.put("01113", Arrays.asList("NAGAROOR", "VELLALLOOR"));
+//
+//    Map<String, List<String>> lbcodeToBlockCodesMap = new HashMap<>();
+//    lbcodeToBlockCodesMap.put("01108", Arrays.asList("029", "030"));
+//    lbcodeToBlockCodesMap.put("01113", Arrays.asList("037", "038"));
 
-    Map<String, List<String>> lbcodeToBlockCodesMap = new HashMap<>();
-    lbcodeToBlockCodesMap.put("01108", Arrays.asList("029", "030"));
-    lbcodeToBlockCodesMap.put("01113", Arrays.asList("037", "038"));
 
     // Loop through each panchayath data and calculate values
     for (Map.Entry<String, List<TblBtrData>> entry : panchayathDataMap.entrySet()) {
@@ -659,8 +660,25 @@ public class Zone_Service {
       data.put("Wet_plot", wetCount);
       data.put("dry_plot", dryCount);
       data.put("t_plot", total_keyplots);
-      data.put("villages", lbcodeToVillageNamesMap.getOrDefault(lbcode, new ArrayList<>()));
-      data.put("blocks", lbcodeToBlockCodesMap.getOrDefault(lbcode, new ArrayList<>()));
+      Set<Integer> vcodeSet = panchayathData.stream()
+              .map(TblBtrData::getVcode)
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+
+      List<TblMasterVillage> villages = tblMasterVillageRepository.findAllById(vcodeSet);
+
+      List<String> villageNames = villages.stream()
+              .map(TblMasterVillage::getVillageNameEn)
+              .distinct()
+              .toList();
+
+      Set<String> bcodeSet = panchayathData.stream()
+              .map(TblBtrData::getBcode)
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+
+      data.put("villages", villageNames); // ✅ Clean village names
+      data.put("blocks", new ArrayList<>(bcodeSet));
 
       // 🔍 Add localbody type name
       TblLocalBody matchingLocalBody =
@@ -687,7 +705,7 @@ public class Zone_Service {
                     .sum();
 
     //    var zone = zone_id;
-    Optional<DistrictMaster> district_name = districtMasterRepository.findById(1L);
+    Optional<DistrictMaster> district_name = districtMasterRepository.findById(Long.valueOf(zone.get().getDistId()));
     Optional<DesTaluk> taluk = desTalukRepository.findById(zone.get().getDesTalukId());
 
     String districtName = district_name.map(DistrictMaster::getDist_name_en).orElse("");

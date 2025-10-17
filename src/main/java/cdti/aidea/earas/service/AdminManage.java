@@ -69,7 +69,7 @@ public class AdminManage {
         zones = tblMasterZoneRepository.findByDistId(idValue);
       } else if ("Directorate".equalsIgnoreCase(type)) {
         // If type is DIRECTORATE, use appropriate repository method (change if needed)
-        zones = tblMasterZoneRepository.findByDistId(idValue);
+        zones = tblMasterZoneRepository.findAll();
       } else {
         throw new IllegalArgumentException("Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
       }
@@ -77,7 +77,7 @@ public class AdminManage {
       if (zones == null || zones.isEmpty()) {
         throw new IllegalArgumentException("No zones found for the given ID.");
       }
-      System.out.println("kkkkkkkkkkkkkkkkkkkk");
+
       // Directly map all zones to the response DTO
       List<ZoneListResponse> zoneList = zones.stream()
               .map(zone -> {

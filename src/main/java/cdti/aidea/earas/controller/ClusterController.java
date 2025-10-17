@@ -215,8 +215,7 @@ public class ClusterController {
     }
     return ResponseEntity.ok(clusters);
   }
-
-
+  
   @PostMapping("/single/save-plot")
   public ResponseEntity<?> savePlotFromMobile(
 

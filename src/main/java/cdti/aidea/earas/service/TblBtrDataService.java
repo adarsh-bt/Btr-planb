@@ -38,11 +38,11 @@ public class TblBtrDataService {
             throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
         }
 
-    // ✅ Validate duplicates
-    ValidationErrorResponse duplicateError = validateDuplicate(dto);
-    if (duplicateError != null) {
-      throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
-    }
+        // ✅ Validate duplicates
+        ValidationErrorResponse duplicateError = validateDuplicate(dto);
+        if (duplicateError != null) {
+            throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
+        }
 
         // 1️⃣ Save TblBtrData
         TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
@@ -83,7 +83,6 @@ public class TblBtrDataService {
                 .findMaxClusterNumberByZoneAndDateRange(zone.getZoneId(), startDateTime, endDateTime);
 
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
-
 
 
 
@@ -175,21 +174,21 @@ public class TblBtrDataService {
             if (typeId == 1) {
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 2 → dcode to totcent + ownername, address, houseno > House List
+            // Type 2 → dcode to totcent + ownername, address, houseno
             else if (typeId == 2) {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setHouseno(dto.getHouseno());
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 3 → dcode to totcent + ownername, address >  Cultivators List
+            // Type 3 → dcode to totcent + ownername, address
             // but not resvno/resbdno
             else if (typeId == 3) {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno > Thandaper Number
+            // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno
             // (mapped to mainno and subno)
             else if (typeId == 4) {
                 entity.setOwnername(dto.getOwnername());
@@ -202,11 +201,23 @@ public class TblBtrDataService {
             // but not resvno/resbdno
             else if (typeId == 5) {
                 entity.setOwnername(dto.getOwnername());
-                entity.setOldsvno(dto.getMainno());
-                entity.setOldsubno(dto.getSubno());
+               // entity.setMainno(dto.getMainno());
+                //entity.setSubno(dto.getSubno());
                 entity.setBtrtype(nonBtr.get());
             }
         }
+        // ✅ NEW BLOCK — add this
+        LocalDate now = LocalDate.now();
+        entity.setInsertionTime(LocalDateTime.now());
+        entity.setUpdationTime(LocalDateTime.now());
+
+        // Agreement year logic
+        LocalDate agreStart = LocalDate.of(now.getYear(), 7, 1); // July 1 of current year
+        LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
+        entity.setAgreStartYear(agreStart);
+        entity.setAgreEndYear(agreEnd);
+        // ✅ END NEW BLOCK
+
         return entity;
     }
 
@@ -241,7 +252,6 @@ public class TblBtrDataService {
 
         if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
         if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
-
         if (dto.getVcode() == null) errors.add("Village code (vcode) is required.");
         if (dto.getBcode() == null || dto.getBcode().trim().isEmpty())
             errors.add("Block code (bcode) is required.");

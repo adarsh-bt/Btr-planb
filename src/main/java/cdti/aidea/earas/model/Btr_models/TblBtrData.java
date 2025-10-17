@@ -65,11 +65,16 @@ public class TblBtrData {
 
   //    private String remarks;
   //       private Double area;
-  //    private LocalDateTime insertionTime;
-  //    private LocalDateTime updationTime;
-  //
-  //    private LocalDate agreStartYear;
-  //    private LocalDate agreEndYear;
+     private LocalDateTime insertionTime;
+     private LocalDateTime updationTime;
+
+     private LocalDate agreStartYear;
+     private LocalDate agreEndYear;
+
+    private Integer ward_number;
+    private  String cl_no;
+
+
   //    private Boolean reject;
   //
   //    private String reson;

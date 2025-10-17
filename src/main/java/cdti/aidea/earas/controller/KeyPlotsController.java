@@ -2,7 +2,6 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.common.exception.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;

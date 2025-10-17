@@ -6,11 +6,10 @@ import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
+import cdti.aidea.earas.model.Btr_models.Masters.DesTaluk;
+import cdti.aidea.earas.model.Btr_models.Masters.DistrictMaster;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
-import cdti.aidea.earas.repository.Btr_repo.ClusterLimitLogRepository;
-import cdti.aidea.earas.repository.Btr_repo.KeyplotsLimitLogRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
-import cdti.aidea.earas.repository.Btr_repo.UserZoneAssignmentRepositoty;
+import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +17,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +35,8 @@ public class AdminManage {
   private final ClusterLimitLogRepository clusterLimitLogRepository;
 
   private final TblMasterZoneRepository tblMasterZoneRepository;
+  private final DesTalukRepository desTalukRepository;
+  private final DistrictMasterRepository districtMasterRepository;
 
   private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
 
@@ -64,7 +69,7 @@ public class AdminManage {
         zones = tblMasterZoneRepository.findByDistId(idValue);
       } else if ("Directorate".equalsIgnoreCase(type)) {
         // If type is DIRECTORATE, use appropriate repository method (change if needed)
-        zones = tblMasterZoneRepository.findAll();
+        zones = tblMasterZoneRepository.findByDistId(idValue);
       } else {
         throw new IllegalArgumentException("Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
       }
@@ -72,17 +77,38 @@ public class AdminManage {
       if (zones == null || zones.isEmpty()) {
         throw new IllegalArgumentException("No zones found for the given ID.");
       }
-
+      System.out.println("kkkkkkkkkkkkkkkkkkkk");
       // Directly map all zones to the response DTO
       List<ZoneListResponse> zoneList = zones.stream()
-              .map(zone -> new ZoneListResponse(
-                      zone.getZoneId(),
-                      zone.getZoneCode(),
-                      zone.getZoneNameEn(),
-                      zone.getZoneNameMal()))
-              .collect(Collectors.toList());
+              .map(zone -> {
+                // Fetch taluk
 
+                Optional<DesTaluk> taluk = desTalukRepository.findById(zone.getDesTalukId());
+                String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("Unknown Taluk");
+
+
+
+                // Fetch district
+                Optional<DistrictMaster> district = districtMasterRepository.findById(Long.valueOf(zone.getDistId()));
+                String districtName = district.map(DistrictMaster::getDist_name_en).orElse("Unknown District");
+
+                // Build response
+                return new ZoneListResponse(
+                        zone.getZoneId(),
+                        zone.getZoneCode(),
+                        zone.getZoneNameEn(),
+                        zone.getZoneNameMal(),
+                        zone.getDesTalukId(),
+                        zone.getDesDistId(),
+                        talukName,
+                        districtName
+                );
+              })
+              .collect(Collectors.toList());
+      zoneList.sort(Comparator.comparing(ZoneListResponse::getDesTalukId).reversed());
+      zoneList.sort(Comparator.comparing(ZoneListResponse::getDesDistId).reversed());
       return zoneList;
+
     } catch (Exception e) {
       throw new IllegalArgumentException("Something went wrong while fetching zones", e);
     }
@@ -205,5 +231,4 @@ public class AdminManage {
       return clusterLimitLogRepository.save(log);
     }
   }
-
 }

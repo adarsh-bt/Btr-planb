@@ -70,7 +70,7 @@ public class ClusterService {
 
     //        Optional<UserZoneAssignment> userOpt =
     // userZoneAssignmentRepositoty.findByUserId(userId);
-    System.out.println("okk "+zone_Id);
+    System.out.println("okk " + zone_Id);
     Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zone_Id);
     if (zone.isEmpty()) {
       throw new NoSuchElementException("User not found");
@@ -79,7 +79,7 @@ public class ClusterService {
     //        UserZoneAssignment user = userOpt.get();
 
     Long zoneId = Long.valueOf(zone.get().getZoneId());
-    System.out.println("zone id  "+zoneId);
+    System.out.println("zone id  " + zoneId);
     // Step 1: Get CCE plot assignments with fallback awareness
     Set<Long> assignedClusterIds = new HashSet<>();
     String cceMessage = null;
@@ -224,7 +224,7 @@ public class ClusterService {
       plotInfo.put("cluster_plot_id", data.getCluDetailId());
       plotInfo.put("svno", plot.getResvno() + "/" + plot.getResbdno());
       plotInfo.put("area", area);
-      plotInfo.put("actual_area",plot.getTotCent());
+      plotInfo.put("actual_area",data.getPlot().getTotCent());
 
       // Add plot to label group
       labelToPlotsMap.computeIfAbsent(label, k -> new ArrayList<>()).add(plotInfo);

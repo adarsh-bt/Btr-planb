@@ -72,13 +72,18 @@ public class TblBtrDataService {
         int agriYear = LocalDate.now().getYear();
 
 // In Kerala or India, agri year may start in June — adjust accordingly
-        LocalDate startDate = LocalDate.of(agriYear, 6, 1);
-        LocalDate endDate = startDate.plusYears(1).minusDays(1); // May 31 of next year
+        // Start of agri year: 1st June at 00:00
+        LocalDateTime startDateTime = LocalDate.of(agriYear, 6, 1).atStartOfDay();
+
+// End of agri year: 31st May at 23:59:59
+        LocalDateTime endDateTime = startDateTime.plusYears(1).minusSeconds(1);
 
         Optional<Integer> maxClusterNumberOpt = clusterMasterRepository
-                .findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(lbcode, landType, startDate, endDate);
+                .findMaxClusterNumberByDateRange(startDateTime, endDateTime);
 
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+
+
 
 
         // 4️⃣ Save ClusterMaster
@@ -187,16 +192,16 @@ public class TblBtrDataService {
             else if (typeId == 4) {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
-                entity.setTpno(dto.getTpno());
-                entity.setTbsubdivisionno(dto.getTbsubdivisionno());
+                entity.setTp_no(dto.getTpno());
+                entity.setTb_subdivision_no(dto.getTbsubdivisionno());
                 entity.setBtrtype(nonBtr.get());
             }
             // Type 5 → dcode to totcent + ownername, address, mainno, subno
             // but not resvno/resbdno
             else if (typeId == 5) {
                 entity.setOwnername(dto.getOwnername());
-                entity.setMainno(dto.getMainno());
-                entity.setSubno(dto.getSubno());
+               // entity.setMainno(dto.getMainno());
+                //entity.setSubno(dto.getSubno());
                 entity.setBtrtype(nonBtr.get());
             }
         }

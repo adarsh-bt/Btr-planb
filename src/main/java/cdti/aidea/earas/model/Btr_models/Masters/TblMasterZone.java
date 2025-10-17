@@ -1,15 +1,18 @@
 package cdti.aidea.earas.model.Btr_models.Masters;
 
+import cdti.aidea.earas.model.Btr_models.TblBtrType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @Table(name = "tbl_master_zone")
+
 public class TblMasterZone {
 
   @Id
@@ -29,8 +32,10 @@ public class TblMasterZone {
   @Column(name = "des_taluk_id", nullable = false)
   private Integer desTalukId;
 
+
   @Column(name = "des_dist_id", nullable = false)
   private Integer desDistId;
+
 
   @Column(name = "is_active", nullable = false)
   private Boolean isActive;
@@ -40,4 +45,9 @@ public class TblMasterZone {
 
   @Column(name = "dist_id")
   private Integer distId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "btr_type_id", referencedColumnName = "btr_type_id")
+  private TblBtrType btrType;
+
 }

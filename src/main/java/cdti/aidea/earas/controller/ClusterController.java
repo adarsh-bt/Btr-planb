@@ -6,6 +6,7 @@ import cdti.aidea.earas.contract.FormEntryDto.CropReplaceClusterResponse;
 import cdti.aidea.earas.contract.FormEntryDto.KeyPlotClusterDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterIdRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.DeleteClusterPlotRequest;
+import cdti.aidea.earas.contract.RequestsDTOs.PlotSaveMobileAppRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.SaveClusterRequestDTO;
 import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.service.ClusterService;
@@ -214,6 +215,28 @@ public class ClusterController {
     }
     return ResponseEntity.ok(clusters);
   }
+
+
+  @PostMapping("/single/save-plot")
+  public ResponseEntity<?> savePlotFromMobile(
+
+          @RequestBody PlotSaveMobileAppRequest request) {
+
+    try {
+      Map<String, Object> result = clusterService.savePlotFromMobile(request);
+      return ResponseEntity.ok(result);
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+              .body(Collections.singletonMap("error", e.getMessage()));
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body(Collections.singletonMap("error", "Internal error: " + e.getMessage()));
+    }
+  }
+
+
+//  @PostMapping("/cluster-plot-save")
+//  public
 
   //    Reject the Cluster
   //    @PostMapping("/reject-cluster/{keyPlotId}")

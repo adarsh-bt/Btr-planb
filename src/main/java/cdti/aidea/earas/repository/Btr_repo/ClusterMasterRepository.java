@@ -4,6 +4,7 @@ import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,17 +46,13 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
 
   List<ClusterMaster> findByKeyPlotIn(List<KeyPlots> keyPlots);
 
+
+  // In ClusterMasterRepository
   @Query("SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm " +
-          "JOIN cm.keyPlot kp " +
-          "JOIN kp.btrData bd " +
-          "WHERE bd.lbcode = :lbcode " +
-          "AND kp.landType = :landType " +
-          "AND kp.agriStartYear BETWEEN :startDate AND :endDate")
-  Optional<Integer> findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(
-          @Param("lbcode") String lbcode,
-          @Param("landType") String landType,
-          @Param("startDate") LocalDate startDate,
-          @Param("endDate") LocalDate endDate);
+          "WHERE cm.createdAt >= :startDate AND cm.createdAt <= :endDate")
+  Optional<Integer> findMaxClusterNumberByDateRange(
+          @Param("startDate") LocalDateTime startDate,
+          @Param("endDate") LocalDateTime endDate);
 
 
 }

@@ -27,6 +27,7 @@ public class ClusterFormRowDTO {
   private Integer tbsubdivisionno;
   private Integer houseno;
   private Integer mainno;
+//  private String
   private String subno;
   private Long btrtype;
 }

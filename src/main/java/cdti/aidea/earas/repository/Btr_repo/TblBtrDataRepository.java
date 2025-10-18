@@ -97,6 +97,7 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
 
   List<TblBtrData> findByLbcode(String lbcode);
 
+
   boolean existsByResvnoAndResbdno(Integer resvno, String resbdno);
-    boolean existsByResbdno(String resbdno);
+  boolean existsByResbdno(String resbdno);
 }

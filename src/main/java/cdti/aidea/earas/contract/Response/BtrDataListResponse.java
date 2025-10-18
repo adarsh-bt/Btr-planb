@@ -21,6 +21,13 @@ public class BtrDataListResponse {
   private String lbname;
 
   private String ltype;
+  private String owner_name;
+  private String address;
+  private Integer tp_no;
+  private Integer tp_subdivion_no;
+  private Integer house_no;
+  private Integer main_no;
+  private String sub_main_no;
   private String totalCent;
   //    private Double nhect;
   //    private Double nare;

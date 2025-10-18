@@ -40,7 +40,7 @@ public class ClusterController {
   @GetMapping("/user-cluster-summary/{userId}")
   public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummary(
       @PathVariable Integer userId) {
-    System.out.println("is  "+ userId);
+    System.out.println("is  " + userId);
     try {
       UserClusterSummaryResponse response = clusterService.getUserClusterSummary(userId);
       return ResponseEntity.ok(response);
@@ -215,8 +215,7 @@ public class ClusterController {
     }
     return ResponseEntity.ok(clusters);
   }
-
-
+  
   @PostMapping("/single/save-plot")
   public ResponseEntity<?> savePlotFromMobile(
 

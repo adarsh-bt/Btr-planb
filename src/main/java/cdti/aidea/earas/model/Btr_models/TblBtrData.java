@@ -39,10 +39,7 @@ public class TblBtrData {
   private Double totCent;
   @Column(name = "owner_name")
   private String ownername;
-    @Column(name = "tp_no")
-  private Integer tpno;
-    @Column(name = "tb_subdivision_no")
-  private Integer tbsubdivisionno;
+
   @Column(name = "land_owner_address")
   private String address;
   @Column(name = "house_number")
@@ -57,11 +54,17 @@ public class TblBtrData {
 
   //    private String remarks;
   //       private Double area;
-     private LocalDateTime insertionTime;
-     private LocalDateTime updationTime;
+  private LocalDateTime insertionTime;
+  private LocalDateTime updationTime;
 
-     private LocalDate agreStartYear;
-     private LocalDate agreEndYear;
+  private LocalDate agreStartYear;
+  private LocalDate agreEndYear;
+  private Integer old_survey_number;
+  private String old_subdivision_number;
+  private Integer ward_number;
+  private  String cl_no;
+  private Integer tp_no;
+  private Integer tb_subdivision_no;
   //    private Boolean reject;
   //
   //    private String reson;

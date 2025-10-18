@@ -43,8 +43,6 @@ public class ClusterFormData {
       columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
   private LocalDateTime createdAt = LocalDateTime.now();
 
-  ;
-
   @Column(name = "updated_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
   private LocalDateTime updatedAt = LocalDateTime.now();
 

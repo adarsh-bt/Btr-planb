@@ -32,3 +32,4 @@ public class DesTaluk implements Serializable {
   @Column(name = "is_active", nullable = false)
   private boolean isActive;
 }
+

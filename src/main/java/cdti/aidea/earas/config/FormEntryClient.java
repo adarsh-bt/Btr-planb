@@ -1,9 +1,6 @@
 package cdti.aidea.earas.config;
 
-import cdti.aidea.earas.contract.FormEntryDto.AvailableCcePlotFetchRequest;
-import cdti.aidea.earas.contract.FormEntryDto.AvailableCcePlotRejectionRequest;
-import cdti.aidea.earas.contract.FormEntryDto.CceAssignmentRequest;
-import cdti.aidea.earas.contract.FormEntryDto.Response;
+import cdti.aidea.earas.contract.FormEntryDto.*;
 import java.util.Map;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
@@ -31,4 +28,7 @@ public interface FormEntryClient {
   @PostMapping("/earas-form1-entry/available-cce-plot-details/rejection")
   ResponseEntity<Response> availableCcePlotRejection(
       @RequestBody AvailableCcePlotRejectionRequest request);
+
+  @PostMapping("/earas-form1-entry/available-cce-plot-details/cce-plot-rejection")
+  ResponseEntity<Response> ccePlotRejection(@RequestBody CcePlotRejectionRequest request);
 }

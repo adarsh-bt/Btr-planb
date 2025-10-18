@@ -80,7 +80,8 @@ public class Zone_Service {
                           zone.getZoneId(),
                           zone.getZoneCode(),
                           zone.getZoneNameEn(),
-                          zone.getZoneNameMal()))
+                          zone.getZoneNameMal(),
+                              0,0,null,null))
               .collect(Collectors.toList());
 
       return zoneList;
@@ -212,7 +213,6 @@ public class Zone_Service {
     }
   }
 
-
   public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(
           Integer zone_id, int page, int size, String filter) {
     // Fetch user and zone data
@@ -232,7 +232,7 @@ public class Zone_Service {
     System.out.println(lsgcodes);
 
     //        List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
-    List<TblBtrDataOld> allData = tblBtrDataOldRepository.findAllByLsgcodeIn(lsgcodes);
+    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
 
     List<String> landType =
             allData.stream()
@@ -242,7 +242,7 @@ public class Zone_Service {
     System.out.println("land Type  " + landType);
 
     List<String> LbcodeList =
-            allData.stream().map(TblBtrDataOld::getLbcode).distinct().collect(Collectors.toList());
+            allData.stream().map(TblBtrData::getLbcode).distinct().collect(Collectors.toList());
     System.out.println("Lbcode " + LbcodeList);
     List<TblLocalBody> localBodies_full = localBodyRepository.findAllByCodeApiIn(LbcodeList);
 
@@ -269,19 +269,19 @@ public class Zone_Service {
                                                                                                     Sort.by("ltype") // 5. Land Type
                                                                                             ))))));
 
-    Page<TblBtrDataOld> pageResult;
+    Page<TblBtrData> pageResult;
 
     if (filter == null || filter.isEmpty()) {
-      pageResult = tblBtrDataOldRepository.findByLsgcodeInWithOrder(lsgcodes, pageable);
+      pageResult = tblBtrDataRepository.findByLsgcodeInWithOrder(lsgcodes, pageable);
     } else {
       // For filtered queries, you might need a similar ORDER BY clause
       pageResult =
-              tblBtrDataOldRepository.findByLsgcodeInWithNamesFilter(lsgcodes, filter, pageable);
+              tblBtrDataRepository.findByLsgcodeInWithNamesFilter(lsgcodes, filter, pageable);
     }
 
     double totalArea =
             pageResult.getContent().stream()
-                    .mapToDouble(TblBtrDataOld::getArea) // Assuming nsqm is the field you want to sum up
+                    .mapToDouble(TblBtrData::getTotCent) // Assuming nsqm is the field you want to sum up
                     .sum();
 
     // Prepare a map for village codes and names
@@ -294,7 +294,7 @@ public class Zone_Service {
     Map<String, String> localBodyNameMap = new HashMap<>();
     List<String> lbCodes =
             pageResult.getContent().stream()
-                    .map(TblBtrDataOld::getLbcode)
+                    .map(TblBtrData::getLbcode)
                     .distinct()
                     .collect(Collectors.toList());
 
@@ -310,7 +310,7 @@ public class Zone_Service {
     double totalWetArea = 0;
     double totalDryArea = 0;
 
-    for (TblBtrDataOld data : allData) {
+    for (TblBtrData data : allData) {
       String ltype = data.getLtype();
       if (ltype != null) {
         ltype = ltype.trim(); // <-- Trim whitespace here
@@ -318,7 +318,7 @@ public class Zone_Service {
       //            double nsqm = data.getNsqm() != null ? data.getNsqm() : 0;
       //            double nare = data.getNare() != null ? data.getNare() : 0;
       //            double nhect = data.getNhect() != null ? data.getNhect() : 0;
-      double areas = data.getArea() != null ? data.getArea() : 0;
+      double areas = data.getTotCent() != null ? data.getTotCent() : 0;
 
       if (landTypeClassificationMap.containsKey(ltype)) {
         String classification = landTypeClassificationMap.get(ltype);
@@ -350,7 +350,7 @@ public class Zone_Service {
                             myTable -> {
 
                               BigDecimal bd =
-                                      new BigDecimal(myTable.getArea()).setScale(2, RoundingMode.HALF_UP);
+                                      new BigDecimal(myTable.getTotCent()).setScale(2, RoundingMode.HALF_UP);
 
                               String formatted = bd.toPlainString(); // "10.00"
 
@@ -363,6 +363,13 @@ public class Zone_Service {
                                       myTable.getLtype(),
                                       localBodyNameMap.get(myTable.getLbcode()),
                                       myTable.getLtype(),
+                                      myTable.getOwnername(),
+                                      myTable.getAddress(),
+                                      myTable.getTp_no(),
+                                      myTable.getTb_subdivision_no(),
+                                      myTable.getHouseno(),
+                                      myTable.getOld_survey_number(),
+                                      myTable.getOld_subdivision_number(),
                                       formatted);
                             })
                     .collect(Collectors.toList());
@@ -378,7 +385,6 @@ public class Zone_Service {
             totalWetAreas,
             totalDryAreas);
   }
-
 
   //    public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(UUID userId, int page,
   // int size, String filter) {
@@ -553,7 +559,7 @@ public class Zone_Service {
     System.out.println("villages " + villages_names);
 
     List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
-    System.out.println("sss >> "+allData);
+
     Map<String, String> landTypeClassificationMap =
             landTypeClassificationService.getLandTypeClassificationMap();
 
@@ -584,6 +590,7 @@ public class Zone_Service {
             localBodyType ->
                     localBodyTypeMap.put(localBodyType.getId().intValue(), localBodyType.getName()));
 
+
     Map<String, List<TblBtrData>> panchayathDataMap =
             allData.stream().collect(Collectors.groupingBy(TblBtrData::getLbcode));
 
@@ -594,13 +601,14 @@ public class Zone_Service {
     double totalDryAreaZone = 0;
     double totalPlotCount=0;
 
-    Map<String, List<String>> lbcodeToVillageNamesMap = new HashMap<>();
-    lbcodeToVillageNamesMap.put("01108", Arrays.asList("KILIMANOOR"));
-    lbcodeToVillageNamesMap.put("01113", Arrays.asList("NAGAROOR", "VELLALLOOR"));
+//    Map<String, List<String>> lbcodeToVillageNamesMap = new HashMap<>();
+//    lbcodeToVillageNamesMap.put("01108", Arrays.asList("KILIMANOOR"));
+//    lbcodeToVillageNamesMap.put("01113", Arrays.asList("NAGAROOR", "VELLALLOOR"));
+//
+//    Map<String, List<String>> lbcodeToBlockCodesMap = new HashMap<>();
+//    lbcodeToBlockCodesMap.put("01108", Arrays.asList("029", "030"));
+//    lbcodeToBlockCodesMap.put("01113", Arrays.asList("037", "038"));
 
-    Map<String, List<String>> lbcodeToBlockCodesMap = new HashMap<>();
-    lbcodeToBlockCodesMap.put("01108", Arrays.asList("029", "030"));
-    lbcodeToBlockCodesMap.put("01113", Arrays.asList("037", "038"));
 
     // Loop through each panchayath data and calculate values
     for (Map.Entry<String, List<TblBtrData>> entry : panchayathDataMap.entrySet()) {
@@ -652,8 +660,25 @@ public class Zone_Service {
       data.put("Wet_plot", wetCount);
       data.put("dry_plot", dryCount);
       data.put("t_plot", total_keyplots);
-      data.put("villages", lbcodeToVillageNamesMap.getOrDefault(lbcode, new ArrayList<>()));
-      data.put("blocks", lbcodeToBlockCodesMap.getOrDefault(lbcode, new ArrayList<>()));
+      Set<Integer> vcodeSet = panchayathData.stream()
+              .map(TblBtrData::getVcode)
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+
+      List<TblMasterVillage> villages = tblMasterVillageRepository.findAllById(vcodeSet);
+
+      List<String> villageNames = villages.stream()
+              .map(TblMasterVillage::getVillageNameEn)
+              .distinct()
+              .toList();
+
+      Set<String> bcodeSet = panchayathData.stream()
+              .map(TblBtrData::getBcode)
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+
+      data.put("villages", villageNames); // ✅ Clean village names
+      data.put("blocks", new ArrayList<>(bcodeSet));
 
       // 🔍 Add localbody type name
       TblLocalBody matchingLocalBody =
@@ -680,7 +705,7 @@ public class Zone_Service {
                     .sum();
 
     //    var zone = zone_id;
-    Optional<DistrictMaster> district_name = districtMasterRepository.findById(1L);
+    Optional<DistrictMaster> district_name = districtMasterRepository.findById(Long.valueOf(zone.get().getDistId()));
     Optional<DesTaluk> taluk = desTalukRepository.findById(zone.get().getDesTalukId());
 
     String districtName = district_name.map(DistrictMaster::getDist_name_en).orElse("");
@@ -690,12 +715,15 @@ public class Zone_Service {
     String localBodyLabel = "";
     String localbodyType = "";
 
+
     Optional<ZoneLocalbodyBlockMapping> localbody_type =
-            zoneLocalbodyBlockMappingRepository.findByZone(zone.get().getZoneId());
+            zoneLocalbodyBlockMappingRepository.findByZoneAndIsValid(zone.get().getZoneId(), true);
+
     System.out.println(" rr> >  "+localbody_type);
     if (localbody_type.isPresent()) {
       if (localbody_type.get().getBlockPanchayatMunicipalArea() == 1) {
-        System.out.println("jjj  "+localbody_type.get().getBlockPanchayatMunicipalArea());
+
+        System.out.println("----------");
         Optional<MasterBlock> localbody =
                 masterBlockRepository.findById(localbody_type.get().getBlockDetails());
         localBodyLabel = localbody.map(MasterBlock::getBlockName).orElse("");
@@ -722,6 +750,7 @@ public class Zone_Service {
             zoneName,
             panchayathResponses,
             new ArrayList<>(localBodyNameMap.keySet()),
+            //  505,
             totalPlotCount ,
             overallTotalArea,
             totalWetAreaZone,

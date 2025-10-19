@@ -912,7 +912,7 @@ public class ClusterService {
 
 
     // Set LSG code from village master (if available)
-    if (keyPlotBtr.getBtrtype().getBTypeId() != 2) {
+    if (btrData.getVcode() == null) {
       tblMasterVillageRepository.findById(request.getVillage())
               .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
     }

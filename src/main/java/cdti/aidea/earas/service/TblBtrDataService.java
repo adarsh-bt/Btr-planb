@@ -37,7 +37,7 @@ public class TblBtrDataService {
         if (!requiredErrors.isEmpty()) {
             throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
         }
-
+        System.out.println("jjj   ");
         // ✅ Validate duplicates
         ValidationErrorResponse duplicateError = validateDuplicate(dto);
         if (duplicateError != null) {
@@ -117,7 +117,7 @@ public class TblBtrDataService {
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
         List<ValidationErrorResponse> allErrors = new ArrayList<>();
-
+        System.out.println("test "+dtoList);
         for (TblBtrDataDTO dto : dtoList) {
             // Required validation
             List<String> requiredErrors = validateRequiredFields(dto);
@@ -128,10 +128,13 @@ public class TblBtrDataService {
             }
 
             // Duplicate validation
+            System.out.println("DTo >>   "+dto.getBtrtype());
+            if(dto.getBtrtype() == 1){
+                System.out.println("tpy 1  ");
             ValidationErrorResponse duplicateError = validateDuplicate(dto);
             if (duplicateError != null) {
                 allErrors.add(duplicateError);
-            }
+            }}
         }
 
 
@@ -179,6 +182,7 @@ public class TblBtrDataService {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setHouseno(dto.getHouseno());
+                entity.setWard_number(dto.getWardno());
                 entity.setBtrtype(nonBtr.get());
             }
             // Type 3 → dcode to totcent + ownername, address
@@ -224,6 +228,7 @@ public class TblBtrDataService {
 
     // ---------------- Duplicate Validation ----------------
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
+        System.out.println("ssss   ");
         boolean exists =
                 tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
                         dto.getDcode(),

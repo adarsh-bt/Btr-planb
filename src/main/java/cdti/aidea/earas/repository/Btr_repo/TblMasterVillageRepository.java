@@ -18,8 +18,9 @@ public interface TblMasterVillageRepository extends JpaRepository<TblMasterVilla
   Optional<TblMasterVillage> findByLsgCode(Integer lsgCode);
 
   Optional<TblMasterVillage> findFirstByLsgCode(Integer lsgCode);
+  Optional<TblMasterVillage> findByVillageId(Integer villageId);
 
-  // NEW METHOD: Villages by Zone and LocalBody
+    // NEW METHOD: Villages by Zone and LocalBody
   @Query(
       value =
           """

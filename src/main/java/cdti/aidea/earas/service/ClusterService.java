@@ -879,7 +879,7 @@ public class ClusterService {
     // 1. Get KeyPlot and its associated data
     KeyPlots keyPlot = keyPlotsRepository.findById(request.getKeyplotId())
             .orElseThrow(() -> new RuntimeException("KeyPlot not found with ID: " + request.getKeyplotId()));
-
+    System.out.println("request   "+request);
     TblBtrData keyPlotBtr = keyPlot.getBtrData();
     if (keyPlotBtr == null) {
       throw new RuntimeException("KeyPlot does not have associated BTR data.");
@@ -892,7 +892,16 @@ public class ClusterService {
     btrData.setTotCent(request.getArea());
     btrData.setBcode(request.getBcode());
     btrData.setVcode(request.getVillage());
+    btrData.setOldsvno(request.getOld_survey_number());
+    btrData.setOldsubno(request.getOld_subdivision_number());
+    btrData.setWard_number(request.getWard_number());
+    btrData.setTpno(request.getTp_no());
+    btrData.setTbsubdivisionno(request.getTb_subdivision_no());
+    btrData.setOwnername(request.getOwnername());
+    btrData.setHouseno(request.getHouseno());
+    btrData.setAddress(request.getAddress());
 
+   // btrData.setCl_no(request.getCl_no());
     // Copy values from keyplot BTR
     btrData.setDcode(keyPlotBtr.getDcode());
     btrData.setTcode(keyPlotBtr.getTcode());
@@ -900,9 +909,13 @@ public class ClusterService {
     btrData.setLbcode(keyPlotBtr.getLbcode());
     btrData.setBtrtype(keyPlotBtr.getBtrtype());
 
+
+
     // Set LSG code from village master (if available)
-    tblMasterVillageRepository.findById(request.getVillage())
-            .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
+    if (keyPlotBtr.getBtrtype().getBTypeId() != 2) {
+      tblMasterVillageRepository.findById(request.getVillage())
+              .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
+    }
 
     // Save BTR data
     TblBtrData savedBtr = tblBtrDataRepository.save(btrData);

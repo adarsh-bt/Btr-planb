@@ -96,8 +96,8 @@ public class BtrExportService {
                       data.getTpno(),
                       data.getTbsubdivisionno(),
                       data.getHouseno(),
-                      data.getMainno(),
-                      data.getSubno(),
+                      data.getOldsvno(),
+                      data.getOldsubno(),
                       //                            BigDecimal.valueOf(totalCent).setScale(2,
                       // RoundingMode.HALF_UP).doubleValue()
                       formatted);

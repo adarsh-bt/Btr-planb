@@ -1102,7 +1102,7 @@ public class KeyPlots_Service {
                                             .doubleValue(),
                                     plot.getBcode(),
                                     villageNameMal,
-                                    plot.getWard_number(),
+                                    plot.getWardnumber(),
                                     plot.getHouseno(),
                                     plot.getOwnername(),
                                     plot.getAddress(),

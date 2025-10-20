@@ -70,8 +70,8 @@ public class TblBtrData {
 
      private LocalDate agreStartYear;
      private LocalDate agreEndYear;
-
-    private Integer ward_number;
+  @Column(name = "ward_number")
+    private Integer wardnumber;
     private  String cl_no;
 
 

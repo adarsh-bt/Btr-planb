@@ -14,6 +14,59 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
   // vcode, String bcode, Integer resvno);
   boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
       Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+  boolean existsByDcodeAndLbcodeAndWardnumberAndHouseno(
+          Integer dcode,
+          String lbcode,
+          Integer wardNumber,
+          Integer houseno
+  );
+
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+          Integer dcode,
+          Integer tcode,
+          Integer vcode,
+          String bcode,
+          Integer tpno,
+          Integer tbsubdivisionno
+  );
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
+          Integer dcode,
+          Integer tcode,
+          Integer vcode,
+          String bcode,
+          Integer tpno
+
+  );
+
+
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
+          Integer dcode,
+          Integer tcode,
+          Integer vcode,
+          String bcode,
+          Integer oldsvno,
+          String oldsubno
+  );
+
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
+          Integer dcode,
+          Integer tcode,
+          Integer vcode,
+          String bcode,
+          Integer oldsvno
+
+  );
+  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
+          Integer dcode,
+          Integer tcode,
+          String lbcode,
+          Integer vcode,
+          String bcode,
+          String ownername,
+          String address,
+          Double totCent
+  );
+
 
   Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);

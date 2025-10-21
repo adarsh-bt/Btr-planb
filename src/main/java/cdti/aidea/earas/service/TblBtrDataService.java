@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-// import org.apache.poi.sl.draw.geom;
+import org.apache.poi.sl.draw.geom.GuideIf;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,11 +38,11 @@ public class TblBtrDataService {
             throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
         }
 
-    // ✅ Validate duplicates
-    ValidationErrorResponse duplicateError = validateDuplicate(dto);
-    if (duplicateError != null) {
-      throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
-    }
+        // ✅ Validate duplicates
+        ValidationErrorResponse duplicateError = validateDuplicate(dto);
+        if (duplicateError != null) {
+            throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
+        }
 
         // 1️⃣ Save TblBtrData
         TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
@@ -83,7 +83,6 @@ public class TblBtrDataService {
                 .findMaxClusterNumberByZoneAndDateRange(zone.getZoneId(), startDateTime, endDateTime);
 
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
-
 
 
 
@@ -175,35 +174,35 @@ public class TblBtrDataService {
             if (typeId == 1) {
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 2 → dcode to totcent + ownername, address, houseno > House List
+            // Type 2 → dcode to totcent + ownername, address, houseno
             else if (typeId == 2) {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setHouseno(dto.getHouseno());
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 3 → dcode to totcent + ownername, address >  Cultivators List
+            // Type 3 → dcode to totcent + ownername, address
             // but not resvno/resbdno
             else if (typeId == 3) {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setBtrtype(nonBtr.get());
             }
-            // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno > Thandaper Number
+            // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno
             // (mapped to mainno and subno)
             else if (typeId == 4) {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
-                entity.setTp_no(dto.getTpno());
-                entity.setTb_subdivision_no(dto.getTbsubdivisionno());
+                entity.setTpno(dto.getTpno());
+                entity.setTbsubdivisionno(dto.getTbsubdivisionno());
                 entity.setBtrtype(nonBtr.get());
             }
             // Type 5 → dcode to totcent + ownername, address, mainno, subno
             // but not resvno/resbdno
             else if (typeId == 5) {
                 entity.setOwnername(dto.getOwnername());
-                entity.setOld_survey_number(dto.getMainno());
-                entity.setOld_subdivision_number(dto.getSubno());
+               // entity.setMainno(dto.getMainno());
+                //entity.setSubno(dto.getSubno());
                 entity.setBtrtype(nonBtr.get());
             }
         }
@@ -253,7 +252,6 @@ public class TblBtrDataService {
 
         if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
         if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
-
         if (dto.getVcode() == null) errors.add("Village code (vcode) is required.");
         if (dto.getBcode() == null || dto.getBcode().trim().isEmpty())
             errors.add("Block code (bcode) is required.");
@@ -282,8 +280,8 @@ public class TblBtrDataService {
               cleanedResbdno);
     } else {
       exists =
-          tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-              dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getResvno(),dto.getResbdno());
+          tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+              dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getResvno());
     }
 
     if (exists.isPresent()) {

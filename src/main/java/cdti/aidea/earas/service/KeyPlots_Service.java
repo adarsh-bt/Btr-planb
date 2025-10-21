@@ -44,80 +44,80 @@ import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
 @RequiredArgsConstructor
 @Slf4j
 public class KeyPlots_Service {
-  private final ModelMapper modelMapper;
-  private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
-  private final KeyPlotsRepository keyPlotsRepository;
-  private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
-  private final TblMasterVillageRepository tblMasterVillageRepository;
-  private final TblBtrDataRepository tblBtrDataRepository;
-  private final LocalBodyRepository localBodyRepository;
-  private final TblBtrRepository tblBtrRepository;
-  private final LandTypeClassificationService landTypeClassificationService;
-  private final ClusterMasterRepository clusterMasterRepository;
-  private final ClusterFormDataRepository clusterFormDataRepository;
-  private final CceCropService cceCropService;
-  private final FormEntryClient formEntryClient;
-  private final ClusterLimitLogRepository clusterLimitLogRepository;
-  private final TblMasterZoneRepository tblMasterZoneRepository;
+    private final ModelMapper modelMapper;
+    private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
+    private final KeyPlotsRepository keyPlotsRepository;
+    private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
+    private final TblMasterVillageRepository tblMasterVillageRepository;
+    private final TblBtrDataRepository tblBtrDataRepository;
+    private final LocalBodyRepository localBodyRepository;
+    private final TblBtrRepository tblBtrRepository;
+    private final LandTypeClassificationService landTypeClassificationService;
+    private final ClusterMasterRepository clusterMasterRepository;
+    private final ClusterFormDataRepository clusterFormDataRepository;
+    private final CceCropService cceCropService;
+    private final FormEntryClient formEntryClient;
+    private final ClusterLimitLogRepository clusterLimitLogRepository;
+    private final TblMasterZoneRepository tblMasterZoneRepository;
 
-  @PersistenceContext private EntityManager entityManager;
+    @PersistenceContext private EntityManager entityManager;
 
-  public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
-      Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
-    List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
-    System.out.println(">>>>>>> ");
-    return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
-  }
+    public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
+        Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
+        List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
+        System.out.println(">>>>>>> ");
+        return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
+    }
 
-  private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(KeyPlots keyPlot) {
-    TblBtrData plot = keyPlot.getBtrData();
-    String syNo = plot.getResvno() + "/" + plot.getResbdno();
-    String villageBlock = plot.getBcode();
-    double area = plot.getTotCent();
-    String lbcode = plot.getLbcode();
+    private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(KeyPlots keyPlot) {
+        TblBtrData plot = keyPlot.getBtrData();
+        String syNo = plot.getResvno() + "/" + plot.getResbdno();
+        String villageBlock = plot.getBcode();
+        double area = plot.getTotCent();
+        String lbcode = plot.getLbcode();
 
-    String panchayath =
-        localBodyRepository
-            .findByCodeApi(lbcode)
-            .map(TblLocalBody::getLocalbodyNameEn)
-            .orElse(lbcode); // fallback if name not found
+        String panchayath =
+                localBodyRepository
+                        .findByCodeApi(lbcode)
+                        .map(TblLocalBody::getLocalbodyNameEn)
+                        .orElse(lbcode); // fallback if name not found
 
-    String landType = keyPlot.getLandType();
+        String landType = keyPlot.getLandType();
 
-    Optional<TblMasterVillage> village =
-        tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+        Optional<TblMasterVillage> village =
+                tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
 
-    // Fetch related SidePlotDTOs
-    List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
-    Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
-    String villageName = village.map(TblMasterVillage::getVillageNameEn).orElse("Unknown");
-    Integer villageId = village.map(TblMasterVillage::getVillageId).orElse(null);
-      Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
-      BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
-      BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
-      BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
-    Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-    return new KeyPlotDetailsResponse(
-        keyPlot.getId(),
-        keyPlot.getBtrData().getDcode(),
-        keyPlot.getBtrData().getTcode(),
-        cluster.get().getCluMasterId(),
-        keyPlot.getBtrData().getBtrtype().getBTypeId(),
-        keyPlot.getBtrData().getBtrtype().getBTypeName(),
-        villageName,
-        villageId,
-        villageBlock,
-        panchayath,
-        lbcode,
-        status.get().getStatus(),
-        clustermax,
-        clustermin,
-        tsoclusterlimit,
-        syNo,
-        area,
-        landType,
-        sidePlots);
-  }
+        // Fetch related SidePlotDTOs
+        List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
+        Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
+        String villageName = village.map(TblMasterVillage::getVillageNameEn).orElse("Unknown");
+        Integer villageId = village.map(TblMasterVillage::getVillageId).orElse(null);
+        Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
+        BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+        BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+        BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
+        Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
+        return new KeyPlotDetailsResponse(
+                keyPlot.getId(),
+                keyPlot.getBtrData().getDcode(),
+                keyPlot.getBtrData().getTcode(),
+                cluster.get().getCluMasterId(),
+                keyPlot.getBtrData().getBtrtype().getBTypeId(),
+                keyPlot.getBtrData().getBtrtype().getBTypeName(),
+                villageName,
+                villageId,
+                villageBlock,
+                panchayath,
+                lbcode,
+                status.get().getStatus(),
+                clustermax,
+                clustermin,
+                tsoclusterlimit,
+                syNo,
+                area,
+                landType,
+                sidePlots);
+    }
 
 //    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
 //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
@@ -634,7 +634,7 @@ public class KeyPlots_Service {
 //            Long btrId = (Long) row.get("id");
 //            row.put("plot_id", dryPlotIdMap.get(btrId));
 //        });
-//// 👉 Add this
+    //// 👉 Add this
 //        List<KeyPlots> allSavedKeyPlots = new ArrayList<>();
 //        allSavedKeyPlots.addAll(savedWetKeyPlots);
 //        allSavedKeyPlots.addAll(savedDryKeyPlots);
@@ -679,8 +679,8 @@ public class KeyPlots_Service {
             keyPlots.add(keyPlot);
         }
 
-    return keyPlots;
-  }
+        return keyPlots;
+    }
 
     private void saveClustersForKeyPlots(List<KeyPlots> savedKeyPlots, AtomicInteger clusterCounter) {
         List<ClusterMaster> clusterList = new ArrayList<>();
@@ -960,48 +960,48 @@ public class KeyPlots_Service {
 //        return newPlotMap;
 //    }
 
-  @Transactional
-  public Map<String, Object> rejectAndReplaceKeyplot(UUID keyPlotId, KeyPlotRejectRequest request) {
-    // 1. Find the keyplot
-    KeyPlots rejectedKeyPlot =
-        keyPlotsRepository
-            .findById(keyPlotId)
-            .orElseThrow(
-                () -> new EntityNotFoundException("Keyplot not found with ID: " + keyPlotId));
+    @Transactional
+    public Map<String, Object> rejectAndReplaceKeyplot(UUID keyPlotId, KeyPlotRejectRequest request) {
+        // 1. Find the keyplot
+        KeyPlots rejectedKeyPlot =
+                keyPlotsRepository
+                        .findById(keyPlotId)
+                        .orElseThrow(
+                                () -> new EntityNotFoundException("Keyplot not found with ID: " + keyPlotId));
 
-    // 2. Update keyplot fields
-    rejectedKeyPlot.setIsRejected(true);
-    rejectedKeyPlot.setReason(request.getReason());
-    rejectedKeyPlot.setRejectDate(LocalDate.now());
-    rejectedKeyPlot.setCreated_by(request.getUserId());
-    rejectedKeyPlot.setStatus(false);
-    keyPlotsRepository.save(rejectedKeyPlot);
+        // 2. Update keyplot fields
+        rejectedKeyPlot.setIsRejected(true);
+        rejectedKeyPlot.setReason(request.getReason());
+        rejectedKeyPlot.setRejectDate(LocalDate.now());
+        rejectedKeyPlot.setCreated_by(request.getUserId());
+        rejectedKeyPlot.setStatus(false);
+        keyPlotsRepository.save(rejectedKeyPlot);
 
-    // 3. Find and reject cluster linked to this keyplot
-    ClusterMaster cluster =
-        clusterMasterRepository
-            .findByKeyPlotId(rejectedKeyPlot.getId())
-            .orElseThrow(
-                () ->
-                    new EntityNotFoundException("Cluster not found for KeyPlot ID: " + keyPlotId));
+        // 3. Find and reject cluster linked to this keyplot
+        ClusterMaster cluster =
+                clusterMasterRepository
+                        .findByKeyPlotId(rejectedKeyPlot.getId())
+                        .orElseThrow(
+                                () ->
+                                        new EntityNotFoundException("Cluster not found for KeyPlot ID: " + keyPlotId));
 
-    cluster.setIsReject(true);
-    cluster.setStatus("rejected");
-    cluster.setIs_active(false);
-    cluster.setInvestigatorRemark(request.getReasonForCluster());
-    cluster.setUpdatedAt(LocalDateTime.now());
-    clusterMasterRepository.save(cluster);
+        cluster.setIsReject(true);
+        cluster.setStatus("rejected");
+        cluster.setIs_active(false);
+        cluster.setInvestigatorRemark(request.getReasonForCluster());
+        cluster.setUpdatedAt(LocalDateTime.now());
+        clusterMasterRepository.save(cluster);
 
-    // 4. Build response
-    Map<String, Object> response = new HashMap<>();
-    response.put("message", "KeyPlot and its Cluster rejected successfully");
-    response.put("keyPlotId", rejectedKeyPlot.getId());
-    response.put("clusterId", cluster.getCluMasterId());
-    return response;
-  }
+        // 4. Build response
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "KeyPlot and its Cluster rejected successfully");
+        response.put("keyPlotId", rejectedKeyPlot.getId());
+        response.put("clusterId", cluster.getCluMasterId());
+        return response;
+    }
 
-  public KeyPlotDetailsResponse getKeyPlotDetails(UUID plotId) {
-    Optional<KeyPlots> keyPlotOpt = keyPlotsRepository.findById(plotId);
+    public KeyPlotDetailsResponse getKeyPlotDetails(UUID plotId) {
+        Optional<KeyPlots> keyPlotOpt = keyPlotsRepository.findById(plotId);
 
         if (keyPlotOpt.isEmpty()) {
             throw new NoSuchElementException("Plot ID not found: " + plotId);
@@ -1101,15 +1101,7 @@ public class KeyPlots_Service {
                                             .setScale(2, RoundingMode.HALF_UP)
                                             .doubleValue(),
                                     plot.getBcode(),
-                                    villageNameMal,
-                                    plot.getOwnername(),
-                                    plot.getAddress(),
-                                    plot.getTp_no(),
-                                    plot.getTb_subdivision_no(),
-                                    plot.getHouseno(),
-                                    plot.getOld_survey_number(),
-                                    plot.getOld_subdivision_number(),
-                                    plot.getBtrtype().getBTypeId()
+                                    villageNameMal
 
                             );
                         }, Collectors.toList())

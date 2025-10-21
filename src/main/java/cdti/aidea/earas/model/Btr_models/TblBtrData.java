@@ -17,12 +17,15 @@ public class TblBtrData {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
   private Integer dcode;
   private Integer tcode;
   private Integer vcode;
   private String bcode;
+
   private Integer resvno;
   private String resbdno;
+
   private String lbtype;
   private String lbcode;
   private String govpriv;
@@ -39,15 +42,23 @@ public class TblBtrData {
   private Double totCent;
   @Column(name = "owner_name")
   private String ownername;
+  @Column(name = "tp_no")
+  private Integer tpno;
+  @Column(name = "tb_subdivision_no")
+  private Integer tbsubdivisionno;
 
   @Column(name = "land_owner_address")
   private String address;
+
   @Column(name = "house_number")
   private Integer houseno;
-  @Column(name = "main_number")
-  private Integer mainno;
-  @Column(name = "sub_main_number")
-  private String subno;
+
+  @Column(name = "old_survey_number")
+  private Integer oldsvno;
+
+  @Column(name = "old_subdivision_number")
+  private String oldsubno;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "non_btr_type_id")
   private TblNonBtr btrtype;
@@ -59,12 +70,11 @@ public class TblBtrData {
 
   private LocalDate agreStartYear;
   private LocalDate agreEndYear;
-  private Integer old_survey_number;
-  private String old_subdivision_number;
+
   private Integer ward_number;
   private  String cl_no;
-  private Integer tp_no;
-  private Integer tb_subdivision_no;
+
+
   //    private Boolean reject;
   //
   //    private String reson;

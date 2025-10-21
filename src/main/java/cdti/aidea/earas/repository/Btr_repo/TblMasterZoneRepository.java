@@ -12,9 +12,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TblMasterZoneRepository extends JpaRepository<TblMasterZone, Integer> {
   List<TblMasterZone> findByDesTalukId(Integer desTalukId);
+
   List<TblMasterZone> findByDistId(Integer desDistId);
+    Optional<TblMasterZone> findByZoneId(Integer zoneId);
 
   @Query("SELECT z FROM TblMasterZone z WHERE z.zoneId = :zoneId AND z.isActive = true")
   Optional<TblMasterZone> findActiveZoneById(@Param("zoneId") Integer zoneId);
-    Optional<TblMasterZone> findByZoneId(Integer zoneId);
 }

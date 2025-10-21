@@ -31,7 +31,7 @@ public class Zone_Service {
   private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
   private final TblMasterVillageRepository tblMasterVillageRepository;
   private final LocalBodyRepository localBodyRepository;
-//  private final TblBtrRepository tblBtrRepository;
+  //  private final TblBtrRepository tblBtrRepository;
   private final TblBtrDataRepository tblBtrDataRepository;
   private final LandTypeClassificationService landTypeClassificationService;
   private final DistrictMasterRepository districtMasterRepository;
@@ -67,22 +67,22 @@ public class Zone_Service {
       List<Long> assignedZoneIds = userZoneAssignmentRepositoty.findAssignedZoneIds();
       // Filter out the zones that are already assigned
       List<TblMasterZone> availableZones =
-          zones.stream()
-              .filter(zone -> !assignedZoneIds.contains(zone.getZoneId().longValue()))
-              .collect(Collectors.toList());
+              zones.stream()
+                      .filter(zone -> !assignedZoneIds.contains(zone.getZoneId().longValue()))
+                      .collect(Collectors.toList());
 
       // Map the available zones to the response DTO
       List<ZoneListResponse> zoneList =
-          availableZones.stream()
-              .map(
-                  zone ->
-                      new ZoneListResponse(
-                          zone.getZoneId(),
-                          zone.getZoneCode(),
-                          zone.getZoneNameEn(),
-                          zone.getZoneNameMal(),
-                              0,0,null,null))
-              .collect(Collectors.toList());
+              availableZones.stream()
+                      .map(
+                              zone ->
+                                      new ZoneListResponse(
+                                              zone.getZoneId(),
+                                              zone.getZoneCode(),
+                                              zone.getZoneNameEn(),
+                                              zone.getZoneNameMal(),
+                                              0,0,null,null))
+                      .collect(Collectors.toList());
 
       return zoneList;
     } catch (Exception e) {
@@ -365,11 +365,11 @@ public class Zone_Service {
                                       myTable.getLtype(),
                                       myTable.getOwnername(),
                                       myTable.getAddress(),
-                                      myTable.getTp_no(),
-                                      myTable.getTb_subdivision_no(),
+                                      myTable.getTpno(),
+                                      myTable.getTbsubdivisionno(),
                                       myTable.getHouseno(),
-                                      myTable.getOld_survey_number(),
-                                      myTable.getOld_subdivision_number(),
+                                      myTable.getOldsvno(),
+                                      myTable.getOldsubno(),
                                       formatted);
                             })
                     .collect(Collectors.toList());

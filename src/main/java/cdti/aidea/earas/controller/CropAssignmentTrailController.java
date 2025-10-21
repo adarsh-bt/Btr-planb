@@ -7,7 +7,6 @@ import cdti.aidea.earas.service.CropAssignmentTrailService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -41,11 +40,8 @@ public class CropAssignmentTrailController {
       Map<String, Object> result = clusterService.getGroupedFormDataByClusterId(clusterId);
       return ResponseEntity.ok(result);
     } catch (Exception e) {
-      Map<String, Object> errorResponse = Map.of(
-              "error", e.getMessage(),
-              "clusterId", clusterId,
-              "status", "failed"
-      );
+      Map<String, Object> errorResponse =
+          Map.of("error", e.getMessage(), "clusterId", clusterId, "status", "failed");
       return ResponseEntity.badRequest().body(errorResponse);
     }
   }

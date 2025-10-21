@@ -17,12 +17,15 @@ public class TblBtrData {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  private Integer dcode;
-  private Integer tcode;
-  private Integer vcode;
-  private String bcode;
+
+    private Integer dcode;
+    private Integer tcode;
+    private Integer vcode;
+    private String bcode;
+
   private Integer resvno;
   private String resbdno;
+
   private String lbtype;
   private String lbcode;
   private String govpriv;
@@ -60,7 +63,7 @@ public class TblBtrData {
      private LocalDate agreStartYear;
      private LocalDate agreEndYear;
     private Integer old_survey_number;
-    private Integer old_subdivision_number;
+    private String old_subdivision_number;
     private Integer ward_number;
     private  String cl_no;
     private Integer tp_no;

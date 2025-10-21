@@ -2,7 +2,6 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.common.exception.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
@@ -71,15 +70,15 @@ public class KeyPlotsController {
 //                HttpStatus.OK);
 //    }
 
-//  @GetMapping("/fetch-by-id/{kpId}")
-//  public ResponseEntity<Response> getById(@PathVariable("kpId") UUID kpId) {
-//    return new ResponseEntity<>(
-//        Response.builder()
-//            .payload(keyPlots_Service.getByKpId(kpId))
-//            .message("Key plot details fetched successfully.")
-//            .build(),
-//        HttpStatus.OK);
-//  }
+  @GetMapping("/fetch-by-id/{kpId}")
+  public ResponseEntity<Response> getById(@PathVariable("kpId") UUID kpId) {
+    return new ResponseEntity<>(
+        Response.builder()
+            .payload(keyPlots_Service.getByKpId(kpId))
+            .message("Key plot details fetched successfully.")
+            .build(),
+        HttpStatus.OK);
+  }
     // @PostMapping("/fetch-existing-keyplots")
     // public ResponseEntity<Response> getExistingKeyPlots(@Valid @RequestBody KeyplotsFetchUserIdReq
     // request) {

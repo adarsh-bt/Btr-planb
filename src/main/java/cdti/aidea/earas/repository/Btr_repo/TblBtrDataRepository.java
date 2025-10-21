@@ -16,7 +16,7 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
       Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
 
   Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
 
   // Find records by a list of lsgcodes (pageable)
   Page<TblBtrData> findByLsgcodeIn(List<Integer> lsgcodes, Pageable pageable);
@@ -99,4 +99,7 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
 
   boolean existsByResvnoAndResbdno(Integer resvno, String resbdno);
     boolean existsByResbdno(String resbdno);
+
+  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
 }

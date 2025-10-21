@@ -17,6 +17,8 @@ public class KeyPlotDetailsResponse {
   private Integer dcode;
   private Integer tcode;
   private Long clusterId;
+  private Long btr_id;
+  private String btr_type;
   private String kvillageName;
   private Integer kvillageId;
   private String villageBlock;

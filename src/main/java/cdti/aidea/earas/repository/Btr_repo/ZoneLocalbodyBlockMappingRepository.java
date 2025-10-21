@@ -9,5 +9,5 @@ import org.springframework.stereotype.Repository;
 public interface ZoneLocalbodyBlockMappingRepository
     extends JpaRepository<ZoneLocalbodyBlockMapping, Long> {
 
-  Optional<ZoneLocalbodyBlockMapping> findByZone(Integer zone);
+  Optional<ZoneLocalbodyBlockMapping> findByZoneAndIsValid(Integer zone, Boolean isValid);
 }

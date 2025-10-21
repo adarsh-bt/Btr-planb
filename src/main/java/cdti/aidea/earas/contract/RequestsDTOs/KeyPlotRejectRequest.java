@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class KeyPlotRejectRequest {
-  private UUID userid;
+  private UUID userId;
   private String reason;
-  private Long zone_id;
-  private String reason_for_cluster;
+  private Long zoneId;
+  private String reasonForCluster;
 }

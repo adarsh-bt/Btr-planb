@@ -232,6 +232,7 @@ public class TblBtrDataService {
         System.out.println("ssss   "+dto);
         if (dto.getBtrtype()==1){
             System.out.println("Btr List val"+1);
+
         boolean exists =
                 tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
                         dto.getDcode(),
@@ -240,6 +241,7 @@ public class TblBtrDataService {
                         dto.getBcode(),
                         dto.getResvno(),
                         dto.getResbdno());
+
         if (exists) {
             System.out.println("Btr List val"+1);
             return new ValidationErrorResponse(
@@ -261,6 +263,7 @@ public class TblBtrDataService {
                             dto.getWardno(),
                             dto.getHouseno()
                             );
+
             if (exists) {
                 System.out.println("Hosue List val"+2);
                 return new ValidationErrorResponse(

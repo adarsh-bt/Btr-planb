@@ -29,7 +29,7 @@ public class TblBtrDataService {
     private final TblNonBtrRepository tblNonBtrRepository;
 
     // ---------------- Single Save ----------------
-    // ---------------- Single Save ----------------
+
     @Transactional
     public Map<String, Object> saveData(TblBtrDataDTO dto) {
         // ✅ Validate required fields
@@ -41,6 +41,7 @@ public class TblBtrDataService {
         // ✅ Validate duplicates
         ValidationErrorResponse duplicateError = validateDuplicate(dto);
         if (duplicateError != null) {
+            System.out.println("kl -------------- >        -----------");
             throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
         }
 
@@ -117,19 +118,22 @@ public class TblBtrDataService {
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
         List<ValidationErrorResponse> allErrors = new ArrayList<>();
-
+        System.out.println("test "+dtoList);
         for (TblBtrDataDTO dto : dtoList) {
             // Required validation
             List<String> requiredErrors = validateRequiredFields(dto);
             if (!requiredErrors.isEmpty()) {
                 allErrors.add(
                         new ValidationErrorResponse(
-                                dto.getResvno(), dto.getResbdno(), dto.getTotCent(),String.join(", ", requiredErrors)));
+                                dto.getResvno(), dto.getResbdno(), dto.getWardno(),dto.getHouseno(),dto.getTotCent(),String.join(", ", requiredErrors)));
             }
 
             // Duplicate validation
+            System.out.println("DTo >>   "+dto.getBtrtype());
+
             ValidationErrorResponse duplicateError = validateDuplicate(dto);
             if (duplicateError != null) {
+                System.out.println("tpy not null");
                 allErrors.add(duplicateError);
             }
         }
@@ -179,6 +183,7 @@ public class TblBtrDataService {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setHouseno(dto.getHouseno());
+                entity.setWardnumber(dto.getWardno());
                 entity.setBtrtype(nonBtr.get());
             }
             // Type 3 → dcode to totcent + ownername, address
@@ -201,8 +206,8 @@ public class TblBtrDataService {
             // but not resvno/resbdno
             else if (typeId == 5) {
                 entity.setOwnername(dto.getOwnername());
-               // entity.setMainno(dto.getMainno());
-                //entity.setSubno(dto.getSubno());
+                entity.setOldsvno(dto.getOldsvno());
+                entity.setOldsubno(dto.getOldsubno());
                 entity.setBtrtype(nonBtr.get());
             }
         }
@@ -224,6 +229,9 @@ public class TblBtrDataService {
 
     // ---------------- Duplicate Validation ----------------
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
+        System.out.println("ssss   "+dto);
+        if (dto.getBtrtype()==1){
+            System.out.println("Btr List val"+1);
         boolean exists =
                 tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
                         dto.getDcode(),
@@ -232,17 +240,146 @@ public class TblBtrDataService {
                         dto.getBcode(),
                         dto.getResvno(),
                         dto.getResbdno());
-
         if (exists) {
+            System.out.println("Btr List val"+1);
             return new ValidationErrorResponse(
                     dto.getResvno(),
                     dto.getResbdno(),
+                    dto.getWardno(),
+                    dto.getHouseno(),
                     dto.getTotCent(),
                     "Duplicate entry already exists for resvno="
                             + dto.getResvno()
                             + " and resbdno="
                             + dto.getResbdno());
+        }} else if (dto.getBtrtype()==2) {
+            System.out.println("Hosue List val"+1);
+            boolean exists =
+                    tblBtrDataRepository.existsByDcodeAndLbcodeAndWardnumberAndHouseno(
+                            dto.getDcode(),
+                            dto.getLbcode(),
+                            dto.getWardno(),
+                            dto.getHouseno()
+                            );
+            if (exists) {
+                System.out.println("Hosue List val"+2);
+                return new ValidationErrorResponse(
+                        dto.getResvno(),
+                        dto.getResbdno(),
+                        dto.getWardno(),
+                        dto.getHouseno(),
+                        dto.getTotCent(),
+                        "Duplicate entry already exists for Ward Number="
+                                + dto.getWardno()
+                                + " and Hosue List="
+                                + dto.getHouseno());
+            }
+        }  else if (dto.getBtrtype()==3) {
+            System.out.println("CL List val"+3);
+            boolean exists =
+                    tblBtrDataRepository.existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
+                            dto.getDcode(),
+                            dto.getTcode(),
+                            dto.getLbcode(),
+                            dto.getVcode(),
+                            dto.getBcode(),
+                            dto.getOwnername(),
+                            dto.getAddress(),
+                            dto.getTotCent()
+                    );
+            if (exists) {
+                System.out.println("CL List val"+3);
+                return new ValidationErrorResponse(
+                        dto.getResvno(),
+                        dto.getResbdno(),
+                        dto.getWardno(),
+                        dto.getHouseno(),
+                        dto.getTotCent(),
+                        "Duplicate entry already exists for LandOwner name="
+                                + dto.getOwnername()
+                                + " and landowner Address="
+                                + dto.getAddress());
+            }
         }
+
+        else if (dto.getBtrtype() == 4) {
+            System.out.println("TP List val " + 4);
+
+            boolean exists; // Declare once, before the blocks
+
+            if (dto.getTbsubdivisionno() != null) {
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+                        dto.getDcode(),
+                        dto.getTcode(),
+                        dto.getVcode(),
+                        dto.getBcode(),
+                        dto.getTpno(),
+                        dto.getTbsubdivisionno()
+                );
+            } else {
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
+                        dto.getDcode(),
+                        dto.getTcode(),
+                        dto.getVcode(),
+                        dto.getBcode(),
+                        dto.getTpno()
+                );
+            }
+
+            if (exists) {
+                System.out.println("TP List val " + 4);
+                return new ValidationErrorResponse(
+                        dto.getResvno(),
+                        dto.getResbdno(),
+                        dto.getWardno(),
+                        dto.getHouseno(),
+                        dto.getTotCent(),
+                        "Duplicate entry already exists for Tp No="
+                                + dto.getTpno()
+                                + " and Tp Sub no="
+                                + dto.getTbsubdivisionno()
+                );
+            }
+        } else if (dto.getBtrtype() == 5) {
+            System.out.println("Old survey " + 5);
+
+            boolean exists; // Declare once, before the blocks
+
+            if (dto.getOldsubno() != null) {
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
+                        dto.getDcode(),
+                        dto.getTcode(),
+                        dto.getVcode(),
+                        dto.getBcode(),
+                        dto.getOldsvno(),
+                        dto.getOldsubno()
+                );
+            } else {
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
+                        dto.getDcode(),
+                        dto.getTcode(),
+                        dto.getVcode(),
+                        dto.getBcode(),
+                        dto.getOldsvno()
+                );
+            }
+
+            if (exists) {
+                System.out.println("TP List val " + 5);
+                return new ValidationErrorResponse(
+                        dto.getResvno(),
+                        dto.getResbdno(),
+                        dto.getWardno(),
+                        dto.getHouseno(),
+                        dto.getTotCent(),
+                        "Duplicate entry already exists for Old Survey Number="
+                                + dto.getOldsvno()
+                                + " and Old Subdivion Number="
+                                + dto.getOldsubno()
+                );
+            }
+        }
+
         return null;
     }
 

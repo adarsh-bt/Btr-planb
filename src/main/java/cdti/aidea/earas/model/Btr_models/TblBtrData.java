@@ -18,10 +18,10 @@ public class TblBtrData {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private Integer dcode;
-  private Integer tcode;
-  private Integer vcode;
-  private String bcode;
+    private Integer dcode;
+    private Integer tcode;
+    private Integer vcode;
+    private String bcode;
 
   private Integer resvno;
   private String resbdno;
@@ -42,9 +42,9 @@ public class TblBtrData {
   private Double totCent;
   @Column(name = "owner_name")
   private String ownername;
-  @Column(name = "tp_no")
+    @Column(name = "tp_no")
   private Integer tpno;
-  @Column(name = "tb_subdivision_no")
+    @Column(name = "tb_subdivision_no")
   private Integer tbsubdivisionno;
 
   @Column(name = "land_owner_address")
@@ -65,14 +65,14 @@ public class TblBtrData {
 
   //    private String remarks;
   //       private Double area;
-  private LocalDateTime insertionTime;
-  private LocalDateTime updationTime;
+     private LocalDateTime insertionTime;
+     private LocalDateTime updationTime;
 
-  private LocalDate agreStartYear;
-  private LocalDate agreEndYear;
-
-  private Integer ward_number;
-  private  String cl_no;
+     private LocalDate agreStartYear;
+     private LocalDate agreEndYear;
+  @Column(name = "ward_number")
+    private Integer wardnumber;
+    private  String cl_no;
 
 
   //    private Boolean reject;

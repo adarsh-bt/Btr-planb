@@ -618,10 +618,6 @@ public class ClusterService {
     // 1. Get existing ClusterFormData for this ClusterMaster
     List<ClusterFormData> existingFormData =
         clusterFormDataRepository.findByClusterMaster(savedCluster);
-
-    // Create a map for quick lookup of existing data by a unique key (e.g., plotId + plotLabel)
-    // This assumes plot_id + plotLabel uniquely identifies a side plot entry within a cluster.
-    // If not, you'll need a more robust unique key.
     Map<String, ClusterFormData> existingFormDataMap =
         existingFormData.stream()
             .collect(
@@ -894,7 +890,7 @@ public class ClusterService {
     btrData.setVcode(request.getVillage());
     btrData.setOldsvno(request.getOld_survey_number());
     btrData.setOldsubno(request.getOld_subdivision_number());
-    btrData.setWard_number(request.getWard_number());
+    btrData.setWardnumber(request.getWard_number());
     btrData.setTpno(request.getTp_no());
     btrData.setTbsubdivisionno(request.getTb_subdivision_no());
     btrData.setOwnername(request.getOwnername());
@@ -912,7 +908,7 @@ public class ClusterService {
 
 
     // Set LSG code from village master (if available)
-    if (keyPlotBtr.getBtrtype().getBTypeId() != 2) {
+    if (btrData.getVcode() == null) {
       tblMasterVillageRepository.findById(request.getVillage())
               .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
     }

@@ -25,9 +25,10 @@ public class TblBtrDataDTO {
   private UUID user_id;
   private double totCent;
   private String address;
+  private Integer wardno;
   private Integer houseno;
-  private Integer mainno;
-  private String subno;
+  private Integer oldsvno;
+  private String oldsubno;
   private Long btrtype;
   private String ownername;
   private Integer tpno;

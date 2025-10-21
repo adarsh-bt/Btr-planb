@@ -886,8 +886,14 @@ public class ClusterService {
     btrData.setResvno(request.getSvNo());
     btrData.setResbdno(request.getSubNo());
     btrData.setTotCent(request.getArea());
-    btrData.setBcode(request.getBcode());
-    btrData.setVcode(request.getVillage());
+
+    System.out.println("request>> "+keyPlot.getBtrData().getBtrtype().getBTypeId());
+    if(request.getVillage() != null){
+      btrData.setVcode(request.getVillage());
+      btrData.setBcode(request.getBcode());
+    }
+
+
     btrData.setOldsvno(request.getOld_survey_number());
     btrData.setOldsubno(request.getOld_subdivision_number());
     btrData.setWardnumber(request.getWard_number());
@@ -905,13 +911,11 @@ public class ClusterService {
     btrData.setLbcode(keyPlotBtr.getLbcode());
     btrData.setBtrtype(keyPlotBtr.getBtrtype());
 
-
-
     // Set LSG code from village master (if available)
-    if (btrData.getVcode() == null) {
-      tblMasterVillageRepository.findById(request.getVillage())
-              .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
-    }
+//    if (btrData == null) {
+//      tblMasterVillageRepository.findById(request.getVillage())
+//              .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
+//    }
 
     // Save BTR data
     TblBtrData savedBtr = tblBtrDataRepository.save(btrData);

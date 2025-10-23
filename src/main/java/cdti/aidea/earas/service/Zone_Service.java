@@ -365,11 +365,11 @@ public class Zone_Service {
                                       myTable.getLtype(),
                                       myTable.getOwnername(),
                                       myTable.getAddress(),
-                                      myTable.getTp_no(),
-                                      myTable.getTb_subdivision_no(),
+                                      myTable.getTpno(),
+                                      myTable.getTbsubdivisionno(),
                                       myTable.getHouseno(),
-                                      myTable.getOld_survey_number(),
-                                      myTable.getOld_subdivision_number()  ,
+                                      myTable.getOldsvno(),
+                                      myTable.getOldsubno()  ,
                                       formatted);
                             })
                     .collect(Collectors.toList());

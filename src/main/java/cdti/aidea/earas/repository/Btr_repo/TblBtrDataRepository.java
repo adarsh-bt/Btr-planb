@@ -10,96 +10,153 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
-  //  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvno(Integer dcode, Integer tcode, Integer
-  // vcode, String bcode, Integer resvno);
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+    //  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvno(Integer dcode, Integer tcode, Integer
+    // vcode, String bcode, Integer resvno);
+   // boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+    //        Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+    boolean existsByDcodeAndLbcodeAndWardnumberAndHouseno(
+            Integer dcode,
+            String lbcode,
+            Integer wardNumber,
+            Integer houseno
+    );
 
-  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+    boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+            Integer dcode,
+            Integer tcode,
+            Integer vcode,
+            String bcode,
+            Integer tpno,
+            Integer tbsubdivisionno
+    );
+    boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
+            Integer dcode,
+            Integer tcode,
+            Integer vcode,
+            String bcode,
+            Integer tpno
 
-  // Find records by a list of lsgcodes (pageable)
-  Page<TblBtrData> findByLsgcodeIn(List<Integer> lsgcodes, Pageable pageable);
+    );
 
-  // Find all records by a list of lsgcodes
-  List<TblBtrData> findAllByLsgcodeIn(List<Integer> lsgcodes);
 
-  // Custom query to filter based on multiple fields
-  @Query(
-      "SELECT b FROM TblBtrData b WHERE b.lsgcode IN :lsgcodes AND "
-          + "(CAST(b.bcode AS string) LIKE %:filter% OR "
-          + "CAST(b.resvno AS string) LIKE %:filter% OR "
-          + "CAST(b.resbdno AS string) LIKE %:filter% OR "
-          + "b.ltype LIKE %:filter%)")
-  Page<TblBtrData> findByLsgcodeInAndFilter(
-      @Param("lsgcodes") List<Integer> lsgcodes, @Param("filter") String filter, Pageable pageable);
+    boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
+            Integer dcode,
+            Integer tcode,
+            Integer vcode,
+            String bcode,
+            Integer oldsvno,
+            String oldsubno
+    );
 
-  List<TblBtrData> findAllByLbcodeAndLtype(String lbcode, String ltype);
+    boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
+            Integer dcode,
+            Integer tcode,
+            Integer vcode,
+            String bcode,
+            Integer oldsvno
 
-  List<TblBtrData> findAllByLbcode(String lbcode);
+    );
+    boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
+            Integer dcode,
+            Integer tcode,
+            String lbcode,
+            Integer vcode,
+            String bcode,
+            String ownername,
+            String address,
+            Double totCent
+    );
 
-  List<TblBtrData> findAllByLbcodeAndResvnoAndLtype(String lbcode, Integer resvno, String ltype);
 
-  List<TblBtrData> findAllByLbcodeAndResvno(String lbcode, Integer resvno);
-  //    Optional<TblBtrDataOld> findByLbcodeAndResvnoAndResbdno(String lbcode, Integer resvno,
-  // Integer resbdno);
-  Optional<TblBtrData> findByLbcodeAndResvnoAndResbdnoAndLtype(
-      String lbcode, Integer resvno, String resbdno, String ltype);
+    Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+            Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
 
-  Optional<TblBtrData> findByResvnoAndResbdno(Integer resvno, String resbdno);
+    // Find records by a list of lsgcodes (pageable)
+    Page<TblBtrData> findByLsgcodeIn(List<Integer> lsgcodes, Pageable pageable);
 
-  List<TblBtrData> findByLsgcodeAndBcodeAndLtype(Integer lsgcode, String bcode, String ltype);
+    // Find all records by a list of lsgcodes
+    List<TblBtrData> findAllByLsgcodeIn(List<Integer> lsgcodes);
 
-  List<TblBtrData> findByLsgcodeAndBcode(Integer lsgcode, String bcode);
+    // Custom query to filter based on multiple fields
+    @Query(
+            "SELECT b FROM TblBtrData b WHERE b.lsgcode IN :lsgcodes AND "
+                    + "(CAST(b.bcode AS string) LIKE %:filter% OR "
+                    + "CAST(b.resvno AS string) LIKE %:filter% OR "
+                    + "CAST(b.resbdno AS string) LIKE %:filter% OR "
+                    + "b.ltype LIKE %:filter%)")
+    Page<TblBtrData> findByLsgcodeInAndFilter(
+            @Param("lsgcodes") List<Integer> lsgcodes, @Param("filter") String filter, Pageable pageable);
 
-  List<TblBtrData> findByLsgcodeAndBcodeAndLtypeAndResvno(
-      Integer lsgcode, String bcode, String ltype, Integer resvno);
+    List<TblBtrData> findAllByLbcodeAndLtype(String lbcode, String ltype);
 
-  List<TblBtrData> findByLsgcodeAndBcodeAndLtypeAndResvnoBetween(
-      Integer lsgcode, String bcode, String ltype, Integer start, Integer end);
+    List<TblBtrData> findAllByLbcode(String lbcode);
 
-  List<TblBtrData> findByLsgcodeAndBcodeAndResvnoBetween(
-      Integer lsgcode, String bcode, Integer start, Integer end);
+    List<TblBtrData> findAllByLbcodeAndResvnoAndLtype(String lbcode, Integer resvno, String ltype);
 
-  @Query(
-      "SELECT b FROM TblBtrData b "
-          + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
-          + "WHERE b.lsgcode IN :lsgcodes "
-          + "ORDER BY lb.localbodyNameEn ASC, "
-          + "b.lsgcode ASC, "
-          + "b.bcode ASC, "
-          + "b.resvno ASC, "
-          + "b.resbdno ASC, "
-          + "b.ltype DESC")
-  Page<TblBtrData> findByLsgcodeInWithOrder(List<Integer> lsgcodes, Pageable pageable);
+    List<TblBtrData> findAllByLbcodeAndResvno(String lbcode, Integer resvno);
+    //    Optional<TblBtrDataOld> findByLbcodeAndResvnoAndResbdno(String lbcode, Integer resvno,
+    // Integer resbdno);
+    Optional<TblBtrData> findByLbcodeAndResvnoAndResbdnoAndLtype(
+            String lbcode, Integer resvno, String resbdno, String ltype);
 
-  @Query(
-      "SELECT b FROM TblBtrData b "
-          + "JOIN TblMasterVillage v ON b.lsgcode = v.lsgCode "
-          + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
-          + "WHERE b.lsgcode IN :lsgcodes AND ("
-          + "LOWER(v.villageNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
-          + "LOWER(lb.localbodyNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
-          + "CAST(b.bcode AS string) LIKE CONCAT('%', :filter, '%') OR "
-          + "CAST(b.resvno AS string) LIKE CONCAT('%', :filter, '%') OR "
-          + "CAST(b.resbdno AS string) LIKE CONCAT('%', :filter, '%') OR "
-          + "LOWER(b.ltype) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
-          + "CONCAT(CAST(b.resvno AS string), '/', CAST(b.resbdno AS string)) LIKE CONCAT('%', :filter, '%')"
-          + ") "
-          + "ORDER BY lb.localbodyNameEn ASC, "
-          + "v.villageNameEn ASC, "
-          + "b.bcode ASC, "
-          + "b.resvno ASC, "
-          + "b.resbdno ASC, "
-          + "b.ltype DESC")
-  Page<TblBtrData> findByLsgcodeInWithNamesFilter(
-      @Param("lsgcodes") List<Integer> lsgcodes, @Param("filter") String filter, Pageable pageable);
+    Optional<TblBtrData> findByResvnoAndResbdno(Integer resvno, String resbdno);
 
-  List<TblBtrData> findByLbcode(String lbcode);
+    List<TblBtrData> findByLsgcodeAndBcodeAndLtype(Integer lsgcode, String bcode, String ltype);
 
-  boolean existsByResvnoAndResbdno(Integer resvno, String resbdno);
+    List<TblBtrData> findByLsgcodeAndBcode(Integer lsgcode, String bcode);
+
+    List<TblBtrData> findByLsgcodeAndBcodeAndLtypeAndResvno(
+            Integer lsgcode, String bcode, String ltype, Integer resvno);
+
+    List<TblBtrData> findByLsgcodeAndBcodeAndLtypeAndResvnoBetween(
+            Integer lsgcode, String bcode, String ltype, Integer start, Integer end);
+
+    List<TblBtrData> findByLsgcodeAndBcodeAndResvnoBetween(
+            Integer lsgcode, String bcode, Integer start, Integer end);
+
+    @Query(
+            "SELECT b FROM TblBtrData b "
+                    + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
+                    + "WHERE b.lsgcode IN :lsgcodes "
+                    + "ORDER BY lb.localbodyNameEn ASC, "
+                    + "b.lsgcode ASC, "
+                    + "b.bcode ASC, "
+                    + "b.resvno ASC, "
+                    + "b.resbdno ASC, "
+                    + "b.ltype DESC")
+    Page<TblBtrData> findByLsgcodeInWithOrder(List<Integer> lsgcodes, Pageable pageable);
+
+    @Query(
+            "SELECT b FROM TblBtrData b "
+                    + "JOIN TblMasterVillage v ON b.lsgcode = v.lsgCode "
+                    + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
+                    + "WHERE b.lsgcode IN :lsgcodes AND ("
+                    + "LOWER(v.villageNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                    + "LOWER(lb.localbodyNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                    + "CAST(b.bcode AS string) LIKE CONCAT('%', :filter, '%') OR "
+                    + "CAST(b.resvno AS string) LIKE CONCAT('%', :filter, '%') OR "
+                    + "CAST(b.resbdno AS string) LIKE CONCAT('%', :filter, '%') OR "
+                    + "LOWER(b.ltype) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                    + "CONCAT(CAST(b.resvno AS string), '/', CAST(b.resbdno AS string)) LIKE CONCAT('%', :filter, '%')"
+                    + ") "
+                    + "ORDER BY lb.localbodyNameEn ASC, "
+                    + "v.villageNameEn ASC, "
+                    + "b.bcode ASC, "
+                    + "b.resvno ASC, "
+                    + "b.resbdno ASC, "
+                    + "b.ltype DESC")
+    Page<TblBtrData> findByLsgcodeInWithNamesFilter(
+            @Param("lsgcodes") List<Integer> lsgcodes, @Param("filter") String filter, Pageable pageable);
+
+    List<TblBtrData> findByLbcode(String lbcode);
+
+    boolean existsByResvnoAndResbdno(Integer resvno, String resbdno);
     boolean existsByResbdno(String resbdno);
 
-  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
-      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
+    Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+            Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
+
+    boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno, String resbdno);
+    boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno);
+
 }

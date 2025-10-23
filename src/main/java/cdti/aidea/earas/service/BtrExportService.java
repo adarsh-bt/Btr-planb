@@ -93,11 +93,11 @@ public class BtrExportService {
                       data.getLtype(),
                       data.getOwnername(),
                       data.getAddress(),
-                      data.getTp_no(),
-                      data.getTb_subdivision_no(),
+                      data.getTpno(),
+                      data.getTbsubdivisionno(),
                       data.getHouseno(),
-                      data.getOld_survey_number(),
-                      data.getOld_subdivision_number(),
+                      data.getOldsvno(),
+                      data.getOldsubno(),
                       //                            BigDecimal.valueOf(totalCent).setScale(2,
                       // RoundingMode.HALF_UP).doubleValue()
                       formatted);

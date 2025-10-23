@@ -618,10 +618,6 @@ public class ClusterService {
     // 1. Get existing ClusterFormData for this ClusterMaster
     List<ClusterFormData> existingFormData =
         clusterFormDataRepository.findByClusterMaster(savedCluster);
-
-    // Create a map for quick lookup of existing data by a unique key (e.g., plotId + plotLabel)
-    // This assumes plot_id + plotLabel uniquely identifies a side plot entry within a cluster.
-    // If not, you'll need a more robust unique key.
     Map<String, ClusterFormData> existingFormDataMap =
         existingFormData.stream()
             .collect(
@@ -879,7 +875,7 @@ public class ClusterService {
     // 1. Get KeyPlot and its associated data
     KeyPlots keyPlot = keyPlotsRepository.findById(request.getKeyplotId())
             .orElseThrow(() -> new RuntimeException("KeyPlot not found with ID: " + request.getKeyplotId()));
-
+    System.out.println("request   "+request);
     TblBtrData keyPlotBtr = keyPlot.getBtrData();
     if (keyPlotBtr == null) {
       throw new RuntimeException("KeyPlot does not have associated BTR data.");
@@ -890,13 +886,19 @@ public class ClusterService {
     btrData.setResvno(request.getSvNo());
     btrData.setResbdno(request.getSubNo());
     btrData.setTotCent(request.getArea());
-    btrData.setBcode(request.getBcode());
-    btrData.setVcode(request.getVillage());
-    btrData.setOld_survey_number(request.getOld_survey_number());
-    btrData.setOld_subdivision_number(request.getOld_subdivision_number());
-    btrData.setWard_number(request.getWard_number());
-    btrData.setTp_no(request.getTp_no());
-    btrData.setTb_subdivision_no(request.getTb_subdivision_no());
+
+    System.out.println("request>> "+keyPlot.getBtrData().getBtrtype().getBTypeId());
+    if(request.getVillage() != null){
+      btrData.setVcode(request.getVillage());
+      btrData.setBcode(request.getBcode());
+    }
+
+
+    btrData.setOldsvno(request.getOld_survey_number());
+    btrData.setOldsubno(request.getOld_subdivision_number());
+    btrData.setWardnumber(request.getWard_number());
+    btrData.setTpno(request.getTp_no());
+    btrData.setTbsubdivisionno(request.getTb_subdivision_no());
     btrData.setOwnername(request.getOwnername());
     btrData.setHouseno(request.getHouseno());
     btrData.setAddress(request.getAddress());
@@ -909,11 +911,11 @@ public class ClusterService {
     btrData.setLbcode(keyPlotBtr.getLbcode());
     btrData.setBtrtype(keyPlotBtr.getBtrtype());
 
-
-
     // Set LSG code from village master (if available)
-    tblMasterVillageRepository.findById(request.getVillage())
-            .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
+//    if (btrData == null) {
+//      tblMasterVillageRepository.findById(request.getVillage())
+//              .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
+//    }
 
     // Save BTR data
     TblBtrData savedBtr = tblBtrDataRepository.save(btrData);

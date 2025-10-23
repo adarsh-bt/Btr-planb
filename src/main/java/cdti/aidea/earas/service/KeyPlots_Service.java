@@ -1101,8 +1101,15 @@ public class KeyPlots_Service {
                                             .setScale(2, RoundingMode.HALF_UP)
                                             .doubleValue(),
                                     plot.getBcode(),
-                                    villageNameMal
-
+                                    villageNameMal,
+                                    plot.getWardnumber(),
+                                    plot.getHouseno(),
+                                    plot.getOwnername(),
+                                    plot.getAddress(),
+                                    plot.getTpno(),
+                                    plot.getTbsubdivisionno(),
+                                    plot.getOldsvno(),
+                                    plot.getOldsubno()
                             );
                         }, Collectors.toList())
                 ));

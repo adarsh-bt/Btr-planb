@@ -22,7 +22,7 @@ public class PlotSaveMobileAppRequest {
     private String subNo; // resbdno
     private Double actual;
     private Double area;
-   private UUID userId;
+    private UUID userId;
     private Integer old_survey_number;
     private String old_subdivision_number;
     private Integer ward_number;

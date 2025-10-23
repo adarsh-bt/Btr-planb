@@ -8,8 +8,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ValidationErrorResponse {
-  private Integer resvno;
-  private String resbdno;
-  private Double totalcent;
-  private String message;
+    private Integer resvno;
+    private String resbdno;
+    private Integer wardno;
+    private Integer houseno;
+    private Double totalcent;
+    private String message;
 }

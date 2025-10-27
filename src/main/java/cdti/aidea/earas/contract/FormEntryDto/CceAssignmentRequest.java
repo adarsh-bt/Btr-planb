@@ -12,7 +12,8 @@ public class CceAssignmentRequest {
   private UUID plotId;
   private Long clusterId;
   private Integer zoneId;
-  //    private Long btrId;
+  private Long btrId;
+  private String lbCode;
   private Long cropId;
   private String cceSourceType;
   private UUID addedBy;

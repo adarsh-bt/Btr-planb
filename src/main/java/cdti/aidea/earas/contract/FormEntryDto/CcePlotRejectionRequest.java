@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 public class CcePlotRejectionRequest {
   private UUID oldPlotId;
   private Long oldClusterId;
-  private String remarks;
+  private String reson;
   private UUID userId;
 }

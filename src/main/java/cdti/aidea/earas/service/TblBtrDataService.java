@@ -234,9 +234,10 @@ public class TblBtrDataService {
             System.out.println("Btr List val"+1);
 
         boolean exists =
-                tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+                tblBtrDataRepository.existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvnoAndResbdno(
                         dto.getDcode(),
                         dto.getTcode(),
+                        dto.getLbcode(),
                         dto.getVcode(),
                         dto.getBcode(),
                         dto.getResvno(),
@@ -403,74 +404,140 @@ public class TblBtrDataService {
         return errors;
     }
 
-  public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
-    String cleanedResbdno =
-        dto.getResbdno() != null ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
 
-    Optional<TblBtrData> exists;
+    public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
+        String cleanedResbdno = dto.getResbdno() != null ?
+                dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
 
-    if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
-      exists =
-          tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-              dto.getDcode(),
-              dto.getTcode(),
-              dto.getVcode(),
-              dto.getBcode(),
-              dto.getResvno(),
-              cleanedResbdno);
-    } else {
-      exists =
-          tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
-              dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getResvno());
+        List<TblBtrData> plots;
+        TblMasterZone zone = tblMasterZoneRepository.findById(dto.getZoneId())
+                .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+        System.out.println("dist " + zone.getDistId() + " taluk : " + zone.getDesTalukId());
+
+        // Handle both cases: with and without subdivision
+        if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
+            // Case 1: User provided both survey number AND subdivision
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+                    zone.getDistId(),
+                    zone.getDesTalukId(),
+                    dto.getVcode(),
+                    dto.getBcode(),
+                    dto.getResvno(),
+                    cleanedResbdno);
+
+            if (plots.isEmpty()) {
+                // If exact match not found, check if survey number exists with any subdivision
+                List<TblBtrData> surveyOnlyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+                        zone.getDistId(),
+                        zone.getDesTalukId(),
+                        dto.getVcode(),
+                        dto.getBcode(),
+                        dto.getResvno());
+
+                if (!surveyOnlyPlots.isEmpty()) {
+                    return createSurveyWithSubdivisionsResponse(surveyOnlyPlots, dto.getResvno());
+                }
+                return null; // No plot found at all
+            }
+        } else {
+            // Case 2: User provided only survey number (no subdivision)
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+                    zone.getDistId(),
+                    zone.getDesTalukId(),
+                    dto.getVcode(),
+                    dto.getBcode(),
+                    dto.getResvno());
+
+            if (plots.isEmpty()) {
+                return null; // No plot found
+            }
+
+            // If multiple subdivisions exist for this survey number, show options
+            if (plots.size() > 1) {
+                return createSurveyWithSubdivisionsResponse(plots, dto.getResvno());
+            }
+        }
+
+        // Calculate remaining area for single plot case
+        return calculateRemainingAreaForPlot(plots.get(0), dto.getResvno(), cleanedResbdno);
     }
 
-    if (exists.isPresent()) {
-      TblBtrData plot = exists.get();
+    private ValidationResponse createSurveyWithSubdivisionsResponse(List<TblBtrData> plots, Integer resvno) {
+        // Collect all available subdivisions for this survey number
+        List<String> availableSubdivisions = plots.stream()
+                .map(plot -> plot.getResbdno() != null ? plot.getResbdno() : "")
+                .distinct()
+                .collect(Collectors.toList());
 
-      int currentYear = java.time.LocalDate.now().getYear();
-      int nextYear = currentYear + 1;
-
-      List<ClusterFormData> clusterDataList =
-          clusterFormDataRepository.findByPlotAndCreatedAtBetween(
-              plot,
-              java.time.LocalDate.of(currentYear, 7, 1).atStartOfDay(),
-              java.time.LocalDate.of(nextYear, 6, 30).atTime(23, 59, 59));
-
-      double enumeratedSum =
-          clusterDataList.stream()
-              .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
-              .sum();
-
-      Double totalCent = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
-      Double remainingArea = totalCent - enumeratedSum;
-
-      if (remainingArea <= 0) {
-        return new ValidationResponse(
-            plot.getId(),
-            plot.getResvno(),
-            plot.getResbdno(),
-            totalCent,
-            "This plot cannot be selected for this agricultural year",
-            remainingArea);
-      } else if (remainingArea > 0 && !clusterDataList.isEmpty()) {
-        return new ValidationResponse(
-            plot.getId(),
-            plot.getResvno(),
-            plot.getResbdno(),
-            totalCent,
-            "Remaining area is available for this plot and not used in this agricultural year",
-            remainingArea);
-      } else {
+        String subdivisionsList = String.join(", ", availableSubdivisions);
 
         return new ValidationResponse(
-            plot.getId(),
-            plot.getResvno(),
-            plot.getResbdno(),
-            totalCent,
-            "Duplicate entry already exists",
-            remainingArea);
-      }
+                null,
+                resvno,
+                null, // No specific subdivision selected
+                calculateTotalArea(plots),
+                "Survey number found with multiple subdivisions. Available: " + subdivisionsList + ". Please select one.",
+                -1.0, // Negative value indicates subdivision selection needed
+                availableSubdivisions // New field to pass available options
+        );
     }
-    return null;
-  }
+
+    private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer resvno, String resbdno) {
+        int currentYear = java.time.LocalDate.now().getYear();
+        int nextYear = currentYear + 1;
+
+        double totalEnumerated = 0.0;
+        double totalArea = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
+
+        List<ClusterFormData> clusterDataList = clusterFormDataRepository.findByPlotAndCreatedAtBetween(
+                plot,
+                java.time.LocalDate.of(currentYear, 7, 1).atStartOfDay(),
+                java.time.LocalDate.of(nextYear, 6, 30).atTime(23, 59, 59));
+
+        totalEnumerated += clusterDataList.stream()
+                .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
+                .sum();
+
+        double remainingArea = totalArea - totalEnumerated;
+
+        if (remainingArea <= 0) {
+            return new ValidationResponse(
+                    plot.getId(),
+                    resvno,
+                    resbdno,
+                    totalArea,
+                    "This plot cannot be selected for this agricultural year (no remaining area)",
+                    remainingArea,
+                    null
+            );
+        } else if (remainingArea > 0 && totalEnumerated > 0) {
+            return new ValidationResponse(
+                    plot.getId(),
+                    resvno,
+                    resbdno,
+                    totalArea,
+                    "Remaining area available for reuse in this agricultural year",
+                    remainingArea,
+                    null
+            );
+        } else {
+            return new ValidationResponse(
+                    plot.getId(),
+                    resvno,
+                    resbdno,
+                    totalArea,
+                    "Duplicate entry already exists but has available area",
+                    remainingArea,
+                    null
+            );
+        }
+    }
+
+    private Double calculateTotalArea(List<TblBtrData> plots) {
+        return plots.stream()
+                .mapToDouble(plot -> plot.getTotCent() != null ? plot.getTotCent() : 0.0)
+                .sum();
+    }
+
 }

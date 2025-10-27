@@ -27,36 +27,52 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
 
   Optional<ClusterMaster> findByKeyPlot(KeyPlots plot);
 
+//  @Query(
+  ////      "SELECT cm FROM ClusterMaster cm "
+  ////          + "JOIN cm.keyPlot kp "
+  ////          + "JOIN kp.zone.zoneId uza "
+  ////          + "WHERE uza = :zoneId "
+  ////          + "AND (:landType = 'Wet / Dry' OR kp.landType = :landType) "
+  ////          + "AND (:landType = 'Wet / Dry' OR kp.landType IN ('Wet', 'Dry')) "
+  ////          + "AND cm.clusterNumber > :currentClusterNumber "
+  ////          + "AND cm.is_active = true "
+  ////          + "AND cm.isReject = false "
+  ////          + "ORDER BY cm.clusterNumber ASC")
+  ////  List<ClusterMaster> findNextClusterFlexibleLandType(
+  ////      @Param("zoneId") int zoneId,
+  ////      @Param("landType") String landType,
+  ////      @Param("currentClusterNumber") int currentClusterNumber);
+
+
   @Query(
-      "SELECT cm FROM ClusterMaster cm "
-          + "JOIN cm.keyPlot kp "
-          + "JOIN kp.zone.zoneId uza "
-          + "WHERE uza = :zoneId "
-          + "AND (:landType = 'Wet / Dry' OR kp.landType = :landType) "
-          + "AND (:landType = 'Wet / Dry' OR kp.landType IN ('Wet', 'Dry')) "
-          + "AND cm.clusterNumber > :currentClusterNumber "
-          + "AND cm.is_active = true "
-          + "AND cm.isReject = false "
-          + "ORDER BY cm.clusterNumber ASC")
+          "SELECT cm FROM ClusterMaster cm "
+                  + "JOIN cm.keyPlot kp "
+                  + "JOIN kp.zone z "  // Join the zone entity, not zoneId
+                  + "WHERE z.zoneId = :zoneId "  // Then filter by zoneId
+                  + "AND (:landType = 'Wet / Dry' OR kp.landType = :landType) "
+                  + "AND cm.clusterNumber > :currentClusterNumber "
+                  + "AND cm.is_active = true "
+                  + "AND cm.isReject = false "
+                  + "ORDER BY cm.clusterNumber ASC")
   List<ClusterMaster> findNextClusterFlexibleLandType(
-      @Param("zoneId") int zoneId,
-      @Param("landType") String landType,
-      @Param("currentClusterNumber") int currentClusterNumber);
+          @Param("zoneId") int zoneId,
+          @Param("landType") String landType,
+          @Param("currentClusterNumber") int currentClusterNumber);
 
   List<ClusterMaster> findByKeyPlotIn(List<KeyPlots> keyPlots);
 
   @Query(
-      "SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm "
-          + "JOIN cm.keyPlot kp "
-          + "JOIN kp.btrData bd "
-          + "WHERE bd.lbcode = :lbcode "
-          + "AND kp.landType = :landType "
-          + "AND kp.agriStartYear BETWEEN :startDate AND :endDate")
+          "SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm "
+                  + "JOIN cm.keyPlot kp "
+                  + "JOIN kp.btrData bd "
+                  + "WHERE bd.lbcode = :lbcode "
+                  + "AND kp.landType = :landType "
+                  + "AND kp.agriStartYear BETWEEN :startDate AND :endDate")
   Optional<Integer> findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(
-      @Param("lbcode") String lbcode,
-      @Param("landType") String landType,
-      @Param("startDate") LocalDate startDate,
-      @Param("endDate") LocalDate endDate);
+          @Param("lbcode") String lbcode,
+          @Param("landType") String landType,
+          @Param("startDate") LocalDate startDate,
+          @Param("endDate") LocalDate endDate);
 
   @Query("SELECT MAX(c.clusterNumber) FROM ClusterMaster c " +
           "WHERE c.zone.zoneId = :zoneId " +

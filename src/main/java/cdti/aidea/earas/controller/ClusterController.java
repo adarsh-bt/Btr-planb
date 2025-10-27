@@ -9,6 +9,7 @@ import cdti.aidea.earas.contract.RequestsDTOs.DeleteClusterPlotRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.PlotSaveMobileAppRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.SaveClusterRequestDTO;
 import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.service.ClusterService;
 import cdti.aidea.earas.service.KeyPlots_Service;
 import jakarta.validation.Valid;
@@ -121,17 +122,18 @@ public class ClusterController {
       @RequestParam String blockCode,
       @RequestParam(required = false) Integer resvnoStart,
       @RequestParam(required = false) Integer resvnoEnd) {
+
     System.out.println(
-        "resvnoStart: "
-            + resvnoStart
-            + ", resvnoEnd: "
-            + resvnoEnd
-            + " "
-            + kpId
-            + " "
-            + villageId
-            + " "
-            + blockCode);
+            "resvnoStart: "
+                    + resvnoStart
+                    + ", resvnoEnd: "
+                    + resvnoEnd
+                    + " "
+                    + kpId
+                    + " "
+                    + villageId
+                    + " "
+                    + blockCode);
 
     ResbdnoListReponse response =
         clusterService.getResbdnoAreaList(kpId, villageId, blockCode, resvnoStart, resvnoEnd);
@@ -215,7 +217,7 @@ public class ClusterController {
     }
     return ResponseEntity.ok(clusters);
   }
-  
+
   @PostMapping("/single/save-plot")
   public ResponseEntity<?> savePlotFromMobile(
 
@@ -232,6 +234,7 @@ public class ClusterController {
               .body(Collections.singletonMap("error", "Internal error: " + e.getMessage()));
     }
   }
+
 
 
 //  @PostMapping("/cluster-plot-save")

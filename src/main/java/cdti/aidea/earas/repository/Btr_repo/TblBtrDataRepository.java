@@ -12,8 +12,11 @@ import org.springframework.data.repository.query.Param;
 public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
   //  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvno(Integer dcode, Integer tcode, Integer
   // vcode, String bcode, Integer resvno);
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+      Integer dcode, Integer tcode,String lbcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+
+  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvno(
+          Integer dcode, Integer tcode, String lbcode, Integer vcode, String bcode, Integer resvno);
   boolean existsByDcodeAndLbcodeAndWardnumberAndHouseno(
           Integer dcode,
           String lbcode,
@@ -68,7 +71,10 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
   );
 
 
-  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+//  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+//          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
 
   // Find records by a list of lsgcodes (pageable)
@@ -153,6 +159,9 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
   boolean existsByResvnoAndResbdno(Integer resvno, String resbdno);
     boolean existsByResbdno(String resbdno);
 
-  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
-      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
+//  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+//      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
+List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+        Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
+
 }

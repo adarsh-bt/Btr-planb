@@ -21,111 +21,111 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class BtrExportService {
 
-  private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
-  private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
-  private final TblMasterVillageRepository tblMasterVillageRepository;
-  private final TblBtrRepository tblBtrRepository;
-  private final LocalBodyRepository localBodyRepository;
-  private final LandTypeClassificationService landTypeClassificationService;
-  private final TblBtrDataOldRepository tblBtrDataOldRepository;
-  private final TblMasterZoneRepository tblMasterZoneRepository;
+    private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
+    private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
+    private final TblMasterVillageRepository tblMasterVillageRepository;
+    private final TblBtrRepository tblBtrRepository;
+    private final LocalBodyRepository localBodyRepository;
+    private final LandTypeClassificationService landTypeClassificationService;
+    private final TblBtrDataOldRepository tblBtrDataOldRepository;
+    private final TblMasterZoneRepository tblMasterZoneRepository;
 
 
-  public ByteArrayResource exportUserBtrDataToExcel(Integer zoneId) {
-    // Fetch user zone and related village
-    var zone = tblMasterZoneRepository
-            .findById(zoneId)
-            .orElseThrow(() -> new RuntimeException("Zone not found"));
+    public ByteArrayResource exportUserBtrDataToExcel(Integer zoneId) {
+        // Fetch user zone and related village
+        var zone = tblMasterZoneRepository
+                .findById(zoneId)
+                .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-    var zoneRevenueList =
-        tblZoneRevenueVillageMappingRepository.findByZone(zone.getZoneId());
+        var zoneRevenueList =
+                tblZoneRevenueVillageMappingRepository.findByZone(zone.getZoneId());
 
-    List<Integer> villageIds =
-        zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
+        List<Integer> villageIds =
+                zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
 
-    List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
-    List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
+        List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
+        List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
 
-    List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
+        List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
 
-    // Prepare maps
-    Map<Integer, String> villageMap =
-        villageList.stream()
-            .collect(
-                Collectors.toMap(TblMasterVillage::getLsgCode, TblMasterVillage::getVillageNameEn));
+        // Prepare maps
+        Map<Integer, String> villageMap =
+                villageList.stream()
+                        .collect(
+                                Collectors.toMap(TblMasterVillage::getLsgCode, TblMasterVillage::getVillageNameEn));
 
-    //        neww
+        //        neww
 
-    Map<String, String> localBodyNameMap = new HashMap<>();
+        Map<String, String> localBodyNameMap = new HashMap<>();
 
-    //        new end
-    List<String> lbCodes = allData.stream().map(TblBtrData::getLbcode).distinct().toList();
-    Map<Integer, String> localBodyMap =
-        localBodyRepository.findAllByCodeApiIn(lbCodes).stream()
-            .collect(
-                Collectors.toMap(TblLocalBody::getLocalbodyId, TblLocalBody::getLocalbodyNameEn));
+        //        new end
+        List<String> lbCodes = allData.stream().map(TblBtrData::getLbcode).distinct().toList();
+        Map<Integer, String> localBodyMap =
+                localBodyRepository.findAllByCodeApiIn(lbCodes).stream()
+                        .collect(
+                                Collectors.toMap(TblLocalBody::getLocalbodyId, TblLocalBody::getLocalbodyNameEn));
 
-    Map<String, String> landTypeMap = landTypeClassificationService.getLandTypeClassificationMap();
+        Map<String, String> landTypeMap = landTypeClassificationService.getLandTypeClassificationMap();
 
-    List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbCodes);
-    localBodies.forEach(
-        localBody -> localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn()));
+        List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbCodes);
+        localBodies.forEach(
+                localBody -> localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn()));
 
-    // Transform into response DTO
-    List<BtrDataListResponse> responseDtos =
-        allData.stream()
-            .map(
-                data -> {
-                  double totalCent = data.getTotCent() != null ? data.getTotCent() : 0;
+        // Transform into response DTO
+        List<BtrDataListResponse> responseDtos =
+                allData.stream()
+                        .map(
+                                data -> {
+                                    double totalCent = data.getTotCent() != null ? data.getTotCent() : 0;
 
-                  BigDecimal bd = new BigDecimal(totalCent).setScale(2, RoundingMode.HALF_UP);
+                                    BigDecimal bd = new BigDecimal(totalCent).setScale(2, RoundingMode.HALF_UP);
 
-                  String formatted = bd.toPlainString(); // "10.00"
+                                    String formatted = bd.toPlainString(); // "10.00"
 
-                  return new BtrDataListResponse(
-                      data.getId(),
-                      villageMap.get(data.getLsgcode()),
-                      data.getBcode(),
-                      data.getResvno(),
-                      data.getResbdno(),
-                      data.getLtype(),
-                      localBodyNameMap.getOrDefault(data.getLbcode(), "N/A"),
-                      data.getLtype(),
-                      data.getOwnername(),
-                      data.getAddress(),
-                      data.getTpno(),
-                      data.getTbsubdivisionno(),
-                      data.getHouseno(),
-                      data.getOldsvno(),
-                      data.getOldsubno(),
-                      //                            BigDecimal.valueOf(totalCent).setScale(2,
-                      // RoundingMode.HALF_UP).doubleValue()
-                      formatted);
-                })
-            .sorted(
-                Comparator.comparing(
-                        BtrDataListResponse::getLbname, Comparator.nullsLast(String::compareTo))
-                    .thenComparing(
-                        BtrDataListResponse::getVillageName,
-                        Comparator.nullsLast(String::compareTo))
-                    .thenComparing(BtrDataListResponse::getBcode)
-                    .thenComparing(
-                        row -> {
-                          try {
-                            String[] parts = String.valueOf(row.getResvno()).split("/");
-                            return Integer.parseInt(parts[0]) * 1000
-                                + Integer.parseInt(parts.length > 1 ? parts[1] : "0");
-                          } catch (Exception e) {
-                            return Integer.MAX_VALUE;
-                          }
-                        })
-                    .thenComparing(
-                        BtrDataListResponse::getLtype,
-                        Comparator.nullsLast(Comparator.reverseOrder())))
-            .collect(Collectors.toList());
+                                    return new BtrDataListResponse(
+                                            data.getId(),
+                                            villageMap.get(data.getLsgcode()),
+                                            data.getBcode(),
+                                            data.getResvno(),
+                                            data.getResbdno(),
+                                            data.getLtype(),
+                                            localBodyNameMap.getOrDefault(data.getLbcode(), "N/A"),
+                                            data.getLtype(),
+                                            data.getOwnername(),
+                                            data.getAddress(),
+                                            data.getTpno(),
+                                            data.getTbsubdivisionno(),
+                                            data.getHouseno(),
+                                            data.getOldsvno(),
+                                            data.getOldsubno(),
+                                            //                            BigDecimal.valueOf(totalCent).setScale(2,
+                                            // RoundingMode.HALF_UP).doubleValue()
+                                            formatted);
+                                })
+                        .sorted(
+                                Comparator.comparing(
+                                                BtrDataListResponse::getLbname, Comparator.nullsLast(String::compareTo))
+                                        .thenComparing(
+                                                BtrDataListResponse::getVillageName,
+                                                Comparator.nullsLast(String::compareTo))
+                                        .thenComparing(BtrDataListResponse::getBcode)
+                                        .thenComparing(
+                                                row -> {
+                                                    try {
+                                                        String[] parts = String.valueOf(row.getResvno()).split("/");
+                                                        return Integer.parseInt(parts[0]) * 1000
+                                                                + Integer.parseInt(parts.length > 1 ? parts[1] : "0");
+                                                    } catch (Exception e) {
+                                                        return Integer.MAX_VALUE;
+                                                    }
+                                                })
+                                        .thenComparing(
+                                                BtrDataListResponse::getLtype,
+                                                Comparator.nullsLast(Comparator.reverseOrder())))
+                        .collect(Collectors.toList());
 
-    return ExcelExportUtil.generateExcel(responseDtos);
-  }
+        return ExcelExportUtil.generateExcel(responseDtos);
+    }
 
 //      public ByteArrayResource exportUserBtrDataToExcel(UUID userId) {
 //          // Fetch user zone and related village

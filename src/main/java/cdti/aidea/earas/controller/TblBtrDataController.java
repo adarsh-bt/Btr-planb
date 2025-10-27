@@ -43,7 +43,6 @@ public class TblBtrDataController {
     }
   }
 
-
   @GetMapping("/btypes/active")
   public ResponseEntity<List<TblNonBtr>> getActiveBTypes() {
     List<TblNonBtr> activeBTypes = tblNonBtrRepository.findByIsActiveTrue();

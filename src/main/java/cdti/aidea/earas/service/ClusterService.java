@@ -659,6 +659,15 @@ public class ClusterService {
                       newPlot.setDcode(keyPlotBtrData.getDcode());
                       newPlot.setTcode(keyPlotBtrData.getTcode());
                       newPlot.setVcode(Integer.valueOf(row.getVillage())); // m
+                      newPlot.setBtrtype(keyPlotBtrData.getBtrtype());
+                      newPlot.setAddress(row.getAddress());
+                      newPlot.setOwnername(row.getOwnername());
+                      newPlot.setHouseno(row.getHouseno());
+                      newPlot.setOldsvno(row.getOldsvno());
+                      newPlot.setOldsubno(row.getOldsubno());
+                      newPlot.setTpno(row.getTpno());
+                      newPlot.setTbsubdivisionno(row.getTbsubdivisionno());
+                      newPlot.setWardnumber(row.getWard_number());
                       //
                       // newPlot.setLbtype(keyPlotBtrData.getLbtype());//venda
                       newPlot.setLbcode(keyPlotBtrData.getLbcode());
@@ -1218,4 +1227,61 @@ public class ClusterService {
   //        // For now, these are not mapped to the provided entities.
   //    }
 
+  @Transactional
+  public void updateClusterPlot(Long clusterPlotId, Double enumeratedArea, UUID userId) {
+    // 1. Find the ClusterFormData entity by its primary key
+    ClusterFormData formData = clusterFormDataRepository.findById(clusterPlotId)
+            .orElseThrow(() -> new EntityNotFoundException("ClusterFormData not found with ID: " + clusterPlotId));
+
+    // 2. Update the enumerated area and timestamp
+    formData.setEnumeratedArea(enumeratedArea);
+    formData.setUpdatedAt(LocalDateTime.now());
+    // formData.setUpdatedBy(userId); // Assuming you add an 'updatedBy' field
+
+    clusterFormDataRepository.save(formData);
+
+    // 3. Recalculate total area and update the parent ClusterMaster's status
+    ClusterMaster clusterMaster = formData.getClusterMaster();
+    if (clusterMaster != null) {
+      // Fetch all plots for the cluster to get the new total area
+      double totalEnumeratedArea = clusterFormDataRepository.findByClusterMaster(clusterMaster).stream()
+              .mapToDouble(plot -> plot.getEnumeratedArea() != null ? plot.getEnumeratedArea() : 0.0)
+              .sum();
+
+      // Fetch cluster limits
+      Optional<ClusterLimitLog> activeLimitOpt = clusterLimitLogRepository.findByInActiveTrue();
+      BigDecimal minLimit = activeLimitOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+      BigDecimal maxLimit = activeLimitOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+      BigDecimal tsoLimit = activeLimitOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
+
+      // Determine the new status based on the updated total area
+      String newStatus;
+      BigDecimal totalAreaBD = BigDecimal.valueOf(totalEnumeratedArea);
+
+      if (maxLimit != null && totalAreaBD.compareTo(maxLimit) > 0) {
+        throw new RuntimeException("Update rejected: Maximum cluster area exceeded.");
+      } else if (minLimit != null && totalAreaBD.compareTo(minLimit) < 0) {
+        newStatus = "On Going";
+      } else if (tsoLimit != null && totalAreaBD.compareTo(tsoLimit) < 0) {
+        newStatus = "Under Review";
+        // Optionally create a log entry for the status change
+        if (!"Under Review".equals(clusterMaster.getStatus())) {
+          ClusterApprovalLog log = new ClusterApprovalLog();
+          log.setClusterMaster(clusterMaster);
+          log.setAddedBy(userId);
+          log.setZone(clusterMaster.getZone());
+          log.setRemarks("Cluster is now Under Review after a plot update.");
+          log.setTotalArea(totalAreaBD);
+          clusterApprovalRepository.save(log);
+        }
+      } else {
+        newStatus = "Completed";
+      }
+
+      // 4. Save the updated status on the ClusterMaster
+      clusterMaster.setStatus(newStatus);
+      clusterMaster.setUpdatedAt(LocalDateTime.now());
+      clusterMasterRepository.save(clusterMaster);
+    }
+  }
 }

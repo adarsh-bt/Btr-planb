@@ -256,8 +256,10 @@ private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
 
         if (existsRes) {
             return new ValidationErrorResponse(
-                    dto.getResvno(), dto.getResbdno(),
-                    dto.getWardno(), dto.getHouseno(),
+                    dto.getResvno(),
+                    dto.getResbdno(),
+                    dto.getWardno(),
+                    dto.getHouseno(),
                     dto.getTotCent(),
                     "Duplicate entry already exists for resvno=" + dto.getResvno()
                             + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));

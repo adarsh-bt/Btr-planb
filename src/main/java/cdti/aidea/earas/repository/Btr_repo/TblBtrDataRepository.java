@@ -24,41 +24,6 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
           Integer houseno
   );
 
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
-          Integer dcode,
-          Integer tcode,
-          Integer vcode,
-          String bcode,
-          Integer tpno,
-          Integer tbsubdivisionno
-  );
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
-          Integer dcode,
-          Integer tcode,
-          Integer vcode,
-          String bcode,
-          Integer tpno
-
-  );
-
-
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
-          Integer dcode,
-          Integer tcode,
-          Integer vcode,
-          String bcode,
-          Integer oldsvno,
-          String oldsubno
-  );
-
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
-          Integer dcode,
-          Integer tcode,
-          Integer vcode,
-          String bcode,
-          Integer oldsvno
-
-  );
   boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
           Integer dcode,
           Integer tcode,
@@ -156,7 +121,7 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
 
   List<TblBtrData> findByLbcode(String lbcode);
 
-  boolean existsByResvnoAndResbdno(Integer resvno, String resbdno);
+//  boolean existsByResvnoAndResbdno(Integer resvno, String resbdno);
     boolean existsByResbdno(String resbdno);
 
 //  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
@@ -164,4 +129,44 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
 List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
         Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
 
+  // For BTR type 2 - House List
+  boolean existsByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
+          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, Integer houseno);
+
+  // For BTR type 3 - Cultivators List
+
+
+  // For BTR type 4 - Thandaper Number
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, Integer tbsubdivisionno);
+
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);
+
+  // For BTR type 5 - Old Survey Number
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno, String oldsubno);
+
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno);
+
+  // Query methods to get actual data for remaining area calculation
+  List<TblBtrData> findByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
+          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, Integer houseno);
+
+  List<TblBtrData> findByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
+          Integer dcode, Integer tcode, String lbcode, Integer vcode, String bcode,
+          String ownername, String address, Double totCent);
+
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, Integer tbsubdivisionno);
+
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);
+
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno, String oldsubno);
+
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno);
 }

@@ -4,6 +4,7 @@ import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.Response.ValidationResponse;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.model.Btr_models.*;
+import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import java.time.LocalDate;
@@ -27,6 +28,8 @@ public class TblBtrDataService {
     private final ClusterFormDataRepository clusterFormDataRepository;
     private final TblMasterZoneRepository tblMasterZoneRepository;
     private final TblNonBtrRepository tblNonBtrRepository;
+    private final TblMasterVillageRepository tblMasterVillageRepository;
+
 
     // ---------------- Single Save ----------------
 
@@ -233,29 +236,29 @@ public class TblBtrDataService {
         if (dto.getBtrtype()==1){
             System.out.println("Btr List val"+1);
 
-        boolean exists =
-                tblBtrDataRepository.existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-                        dto.getDcode(),
-                        dto.getTcode(),
-                        dto.getLbcode(),
-                        dto.getVcode(),
-                        dto.getBcode(),
-                        dto.getResvno(),
-                        dto.getResbdno());
+            boolean exists =
+                    tblBtrDataRepository.existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+                            dto.getDcode(),
+                            dto.getTcode(),
+                            dto.getLbcode(),
+                            dto.getVcode(),
+                            dto.getBcode(),
+                            dto.getResvno(),
+                            dto.getResbdno());
 
-        if (exists) {
-            System.out.println("Btr List val"+1);
-            return new ValidationErrorResponse(
-                    dto.getResvno(),
-                    dto.getResbdno(),
-                    dto.getWardno(),
-                    dto.getHouseno(),
-                    dto.getTotCent(),
-                    "Duplicate entry already exists for resvno="
-                            + dto.getResvno()
-                            + " and resbdno="
-                            + dto.getResbdno());
-        }} else if (dto.getBtrtype()==2) {
+            if (exists) {
+                System.out.println("Btr List val"+1);
+                return new ValidationErrorResponse(
+                        dto.getResvno(),
+                        dto.getResbdno(),
+                        dto.getWardno(),
+                        dto.getHouseno(),
+                        dto.getTotCent(),
+                        "Duplicate entry already exists for resvno="
+                                + dto.getResvno()
+                                + " and resbdno="
+                                + dto.getResbdno());
+            }} else if (dto.getBtrtype()==2) {
             System.out.println("Hosue List val"+1);
             boolean exists =
                     tblBtrDataRepository.existsByDcodeAndLbcodeAndWardnumberAndHouseno(
@@ -263,7 +266,7 @@ public class TblBtrDataService {
                             dto.getLbcode(),
                             dto.getWardno(),
                             dto.getHouseno()
-                            );
+                    );
 
             if (exists) {
                 System.out.println("Hosue List val"+2);
@@ -414,13 +417,13 @@ public class TblBtrDataService {
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
         System.out.println("dist " + zone.getDistId() + " taluk : " + zone.getDesTalukId());
-
+        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
         // Handle both cases: with and without subdivision
         if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
             // Case 1: User provided both survey number AND subdivision
             plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
                     zone.getDistId(),
-                    zone.getDesTalukId(),
+                    village.get().getRevTalukId(),
                     dto.getVcode(),
                     dto.getBcode(),
                     dto.getResvno(),
@@ -463,6 +466,189 @@ public class TblBtrDataService {
         return calculateRemainingAreaForPlot(plots.get(0), dto.getResvno(), cleanedResbdno);
     }
 
+
+    public ValidationResponse validateDuplicateForNonBtrCluster(TblBtrDataDTO dto) {
+        TblMasterZone zone = tblMasterZoneRepository.findById(dto.getZoneId())
+                .orElseThrow(() -> new RuntimeException("Zone not found"));
+        System.out.println(">>>>   "+dto);
+        String lbcode = dto.getLbcode() != null ? dto.getLbcode() : getLbcodeFromZone(zone);
+
+        Integer type = Math.toIntExact(dto.getBtrtype());
+        System.out.println("Validating Non-BTR Duplicate for Type: " + type);
+
+        switch (type) {
+            case 2:
+                System.out.println("kkkk");
+                return validateHouseListDuplicate(dto, zone, lbcode);
+            case 3:
+                return validateCultivatorsListDuplicate(dto, zone, lbcode);
+            case 4:
+                return validateThandaperDuplicate(dto, zone, lbcode);
+            case 5:
+                return validateOldSurveyDuplicate(dto, zone, lbcode);
+            default:
+                throw new RuntimeException("Invalid Non-BTR Type: " + type);
+        }
+    }
+
+
+    private ValidationResponse validateHouseListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+        System.out.println(zone.getDistId()+" " +lbcode +" " +dto.getWardno()+" " +dto.getHouseno()+" "+zone);
+        if (dto.getWardno() == null || dto.getHouseno() == null) {
+            throw new RuntimeException("Ward number and House number are required for House List validation");
+        }
+        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+        // Use query method that returns actual data instead of existsBy
+        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
+                zone.getDistId(),  village.get().getRevTalukId(), lbcode, dto.getWardno(), dto.getHouseno());
+
+        if (!plots.isEmpty()) {
+            TblBtrData plot = plots.get(0);
+            return calculateRemainingAreaForPlot(plot, null, "House: Ward " + dto.getWardno() + ", House " + dto.getHouseno());
+        }
+
+        // Optional: check survey number/subdivision (like in BTR)
+        return validateSurveyNumberIfProvided(dto, zone);
+    }
+
+    private ValidationResponse validateCultivatorsListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+        if (dto.getOwnername() == null || dto.getAddress() == null || dto.getTotCent() <= 0) {
+            throw new RuntimeException("Owner name, address, and total area are required for Cultivators List validation");
+        }
+        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+        // Use query method that returns actual data instead of existsBy
+        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
+                zone.getDistId(), village.get().getRevTalukId(), lbcode, dto.getVcode(),
+                dto.getBcode(), dto.getOwnername(), dto.getAddress(), dto.getTotCent());
+
+        if (!plots.isEmpty()) {
+            TblBtrData plot = plots.get(0);
+            return calculateRemainingAreaForPlot(plot, null, "Cultivator: " + dto.getOwnername());
+        }
+
+        // Optional: also validate survey number if provided
+        return validateSurveyNumberIfProvided(dto, zone);
+    }
+
+
+    private ValidationResponse validateThandaperDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+        if (dto.getTpno() == null) {
+            throw new RuntimeException("Thandaper number is required for Thandaper validation");
+        }
+
+        List<TblBtrData> plots;
+        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+        if (dto.getTbsubdivisionno() != null) {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getTpno(), dto.getTbsubdivisionno());
+        } else {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getTpno(),null);
+        }
+
+        if (plots.isEmpty()) return null;
+
+        if (plots.size() > 1 && dto.getTbsubdivisionno() == null) {
+            return createThandaperSubdivisionsResponse(plots, dto.getTpno());
+        }
+
+        TblBtrData plot = plots.get(0);
+        return calculateRemainingAreaForPlot(plot, null,
+                dto.getTbsubdivisionno() != null ? dto.getTbsubdivisionno().toString() : null);
+    }
+
+    private ValidationResponse validateOldSurveyDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+        if (dto.getOldsvno() == null) {
+            throw new RuntimeException("Old survey number is required for Old Survey validation");
+        }
+
+        List<TblBtrData> plots;
+        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+        if (dto.getOldsubno() != null && !dto.getOldsubno().isEmpty()) {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getOldsvno(), dto.getOldsubno());
+        } else {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getOldsvno());
+        }
+
+        if (plots.isEmpty()) return null;
+
+        if (plots.size() > 1 && (dto.getOldsubno() == null || dto.getOldsubno().isEmpty())) {
+            return createOldSurveySubdivisionsResponse(plots, dto.getOldsvno());
+        }
+
+        TblBtrData plot = plots.get(0);
+        return calculateRemainingAreaForPlot(plot, dto.getOldsvno(), dto.getOldsubno());
+    }
+
+
+
+    // Helper method to validate survey number if provided (common for all types)
+    private ValidationResponse validateSurveyNumberIfProvided(TblBtrDataDTO dto, TblMasterZone zone) {
+        if (dto.getResvno() == null) return null;
+
+        String cleanedResbdno = dto.getResbdno() != null ?
+                dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
+
+        List<TblBtrData> surveyPlots;
+        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+        if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
+            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+                    zone.getDistId(),  village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getResvno(), cleanedResbdno);
+        } else {
+            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+                    zone.getDistId(),  village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(), dto.getResvno());
+        }
+
+        if (!surveyPlots.isEmpty()) {
+            if (surveyPlots.size() > 1 && (cleanedResbdno == null || cleanedResbdno.isEmpty())) {
+                return createSurveyWithSubdivisionsResponse(surveyPlots, dto.getResvno());
+            }
+            return calculateRemainingAreaForPlot(surveyPlots.get(0), Integer.valueOf(dto.getResvno().toString()), cleanedResbdno);
+        }
+
+        return null;
+    }
+
+    // Helper methods for subdivision responses
+    private ValidationResponse createThandaperSubdivisionsResponse(List<TblBtrData> plots, Integer tpno) {
+        List<String> subdivisions = plots.stream()
+                .map(plot -> plot.getTbsubdivisionno() != null ? plot.getTbsubdivisionno().toString() : "No Subdivision")
+                .distinct()
+                .collect(Collectors.toList());
+
+        ValidationResponse response = new ValidationResponse();
+        response.setMessage("Multiple subdivisions found for Thandaper number: " + tpno + ". Please select one.");
+        response.setAvailableSubdivisions(subdivisions);
+        response.setTotalcent(plots.get(0).getTotCent());
+        return response;
+    }
+
+    private ValidationResponse createOldSurveySubdivisionsResponse(List<TblBtrData> plots, Integer oldsvno) {
+        List<String> subdivisions = plots.stream()
+                .map(plot -> plot.getOldsubno() != null ? plot.getOldsubno() : "No Subdivision")
+                .distinct()
+                .collect(Collectors.toList());
+
+        ValidationResponse response = new ValidationResponse();
+        response.setMessage("Multiple subdivisions found for Old Survey number: " + oldsvno + ". Please select one.");
+        response.setAvailableSubdivisions(subdivisions);
+        response.setTotalcent(plots.get(0).getTotCent());
+        return response;
+    }
+
+    private String getLbcodeFromZone(TblMasterZone zone) {
+        // Implement logic to get lbcode from zone
+        // This might involve another repository call or mapping
+        return "default_lbcode"; // Replace with actual implementation
+    }
+
     private ValidationResponse createSurveyWithSubdivisionsResponse(List<TblBtrData> plots, Integer resvno) {
         // Collect all available subdivisions for this survey number
         List<String> availableSubdivisions = plots.stream()
@@ -483,7 +669,7 @@ public class TblBtrDataService {
         );
     }
 
-    private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer resvno, String resbdno) {
+    private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer identifier, String subdivision) {
         int currentYear = java.time.LocalDate.now().getYear();
         int nextYear = currentYear + 1;
 
@@ -501,13 +687,17 @@ public class TblBtrDataService {
 
         double remainingArea = totalArea - totalEnumerated;
 
+        // For non-survey cases, identifier might be null
+        Integer resvno = (identifier != null) ? identifier : null;
+        String resbdno = subdivision;
+
         if (remainingArea <= 0) {
             return new ValidationResponse(
                     plot.getId(),
                     resvno,
                     resbdno,
                     totalArea,
-                    "This plot cannot be selected for this agricultural year (no remaining area)",
+                    "This " + getPlotType(plot) + " cannot be selected for this agricultural year (no remaining area)",
                     remainingArea,
                     null
             );
@@ -532,6 +722,16 @@ public class TblBtrDataService {
                     null
             );
         }
+    }
+
+
+    private String getPlotType(TblBtrData plot) {
+        if (plot.getResvno() != null) return "survey plot";
+        if (plot.getTpno() != null) return "thandaper";
+        if (plot.getOldsvno() != null) return "old survey plot";
+        if (plot.getWardnumber() != null && plot.getHouseno() != null) return "house";
+        if (plot.getOwnername() != null) return "cultivator plot";
+        return "plot";
     }
 
     private Double calculateTotalArea(List<TblBtrData> plots) {

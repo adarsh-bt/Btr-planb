@@ -43,6 +43,19 @@ public class TblBtrDataController {
     }
   }
 
+
+  @PostMapping("/validate-duplicate-nonbtr")
+  public ResponseEntity<?> validateDuplicateNonBtr(@RequestBody TblBtrDataDTO dto) {
+    ValidationResponse response = service.validateDuplicateForNonBtrCluster(dto);
+
+    if (response != null) {
+      return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    } else {
+      return ResponseEntity.ok(new PlotDuplicateResponse(false, "No duplicate found."));
+    }
+  }
+
+
   @GetMapping("/btypes/active")
   public ResponseEntity<List<TblNonBtr>> getActiveBTypes() {
     List<TblNonBtr> activeBTypes = tblNonBtrRepository.findByIsActiveTrue();

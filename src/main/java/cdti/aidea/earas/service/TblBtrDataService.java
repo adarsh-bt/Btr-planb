@@ -12,7 +12,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-//import org.apache.poi.sl.draw.geom;
 import org.apache.poi.sl.draw.geom.GuideIf;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +29,7 @@ public class TblBtrDataService {
     private final TblNonBtrRepository tblNonBtrRepository;
 
     // ---------------- Single Save ----------------
-    // ---------------- Single Save ----------------
+
     @Transactional
     public Map<String, Object> saveData(TblBtrDataDTO dto) {
         // ✅ Validate required fields
@@ -42,6 +41,7 @@ public class TblBtrDataService {
         // ✅ Validate duplicates
         ValidationErrorResponse duplicateError = validateDuplicate(dto);
         if (duplicateError != null) {
+            System.out.println("kl -------------- >        -----------");
             throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
         }
 
@@ -86,6 +86,8 @@ public class TblBtrDataService {
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
 
 
+
+
         // 4️⃣ Save ClusterMaster
         ClusterMaster clusterMaster = new ClusterMaster();
         clusterMaster.setKeyPlot(keyPlot);
@@ -116,19 +118,22 @@ public class TblBtrDataService {
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
         List<ValidationErrorResponse> allErrors = new ArrayList<>();
-
+        System.out.println("test "+dtoList);
         for (TblBtrDataDTO dto : dtoList) {
             // Required validation
             List<String> requiredErrors = validateRequiredFields(dto);
             if (!requiredErrors.isEmpty()) {
                 allErrors.add(
                         new ValidationErrorResponse(
-                                dto.getResvno(), dto.getResbdno(), dto.getWardno(), dto.getHouseno(), dto.getTotCent(), String.join(", ", requiredErrors)));
+                                dto.getResvno(), dto.getResbdno(), dto.getWardno(),dto.getHouseno(),dto.getTotCent(),String.join(", ", requiredErrors)));
             }
 
             // Duplicate validation
+            System.out.println("DTo >>   "+dto.getBtrtype());
+
             ValidationErrorResponse duplicateError = validateDuplicate(dto);
             if (duplicateError != null) {
+                System.out.println("tpy not null");
                 allErrors.add(duplicateError);
             }
         }
@@ -178,6 +183,7 @@ public class TblBtrDataService {
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setHouseno(dto.getHouseno());
+                entity.setWardnumber(dto.getWardno());
                 entity.setBtrtype(nonBtr.get());
             }
             // Type 3 → dcode to totcent + ownername, address
@@ -200,8 +206,8 @@ public class TblBtrDataService {
             // but not resvno/resbdno
             else if (typeId == 5) {
                 entity.setOwnername(dto.getOwnername());
-                // entity.setMainno(dto.getMainno());
-                //entity.setSubno(dto.getSubno());
+                entity.setOldsvno(dto.getOldsvno());
+                entity.setOldsubno(dto.getOldsubno());
                 entity.setBtrtype(nonBtr.get());
             }
         }
@@ -219,42 +225,23 @@ public class TblBtrDataService {
 
         return entity;
     }
-// ---------------- Duplicate Validation ----------------
-private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
-    System.out.println("ssss   " + dto);
 
-    // ---------------- Type 1 ----------------
-    if (dto.getBtrtype() == 1) {
-        System.out.println("Btr List val" + 1);
-        boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-                dto.getDcode(), dto.getTcode(), dto.getVcode(),
-                dto.getBcode(), dto.getLbcode(), dto.getResvno(), dto.getResbdno());
 
+    // ---------------- Duplicate Validation ----------------
+    private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
+        System.out.println("ssss   "+dto);
+        if (dto.getBtrtype()==1){
+            System.out.println("Btr List val"+1);
+        boolean exists =
+                tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(                    dto.getDcode(),
+                        dto.getTcode(),
+                        dto.getVcode(),
+                        dto.getBcode(),
+                        dto.getLbcode(),
+                        dto.getResvno(),
+                        dto.getResbdno());
         if (exists) {
-            System.out.println("Btr List val" + 1);
-            return new ValidationErrorResponse(
-                    dto.getResvno(), dto.getResbdno(),
-                    dto.getWardno(), dto.getHouseno(),
-                    dto.getTotCent(),
-                    "Duplicate entry already exists for resvno=" + dto.getResvno()
-                            + " and resbdno=" + dto.getResbdno());
-        }
-
-    } else if (dto.getBtrtype() == 2) {
-        System.out.println("House List val" + 2);
-
-        // --------- Added resvno/resbdno check ----------
-        boolean existsRes = false;
-        if (dto.getResbdno() != null) {
-            existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-                    dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
-                    dto.getResvno(), dto.getResbdno());
-        } else {
-            existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
-                    dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
-        }
-
-        if (existsRes) {
+            System.out.println("Btr List val"+1);
             return new ValidationErrorResponse(
                     dto.getResvno(),
                     dto.getResbdno(),
@@ -265,8 +252,8 @@ private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
                             + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
         }
 
-        boolean exists = tblBtrDataRepository.existsByDcodeAndLbcodeAndWardnumberAndHouseno(
-                dto.getDcode(), dto.getLbcode(), dto.getWardno(), dto.getHouseno());
+//        boolean exists = tblBtrDataRepository.existsByDcodeAndLbcodeAndWardnumberAndHouseno(
+//                dto.getDcode(), dto.getLbcode(), dto.getWardno(), dto.getHouseno());
 
         if (exists) {
             System.out.println("House List val" + 2);
@@ -658,75 +645,74 @@ private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
         return errors;
     }
 
+  public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
+    String cleanedResbdno =
+        dto.getResbdno() != null ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
 
-    public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
-        String cleanedResbdno =
-                dto.getResbdno() != null ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
+    Optional<TblBtrData> exists;
 
-        Optional<TblBtrData> exists;
-
-        if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
-            exists =
-                    tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-                            dto.getDcode(),
-                            dto.getTcode(),
-                            dto.getVcode(),
-                            dto.getBcode(),
-                            dto.getResvno(),
-                            cleanedResbdno);
-        } else {
-        exists =
-                tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
-                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getResvno());
+    if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
+      exists =
+          tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+              dto.getDcode(),
+              dto.getTcode(),
+              dto.getVcode(),
+              dto.getBcode(),
+              dto.getResvno(),
+              cleanedResbdno);
+    } else {
+      exists =
+          tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+              dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getResvno());
     }
 
     if (exists.isPresent()) {
-        TblBtrData plot = exists.get();
+      TblBtrData plot = exists.get();
 
-        int currentYear = java.time.LocalDate.now().getYear();
-        int nextYear = currentYear + 1;
+      int currentYear = java.time.LocalDate.now().getYear();
+      int nextYear = currentYear + 1;
 
-        List<ClusterFormData> clusterDataList =
-                clusterFormDataRepository.findByPlotAndCreatedAtBetween(
-                        plot,
-                        java.time.LocalDate.of(currentYear, 7, 1).atStartOfDay(),
-                        java.time.LocalDate.of(nextYear, 6, 30).atTime(23, 59, 59));
+      List<ClusterFormData> clusterDataList =
+          clusterFormDataRepository.findByPlotAndCreatedAtBetween(
+              plot,
+              java.time.LocalDate.of(currentYear, 7, 1).atStartOfDay(),
+              java.time.LocalDate.of(nextYear, 6, 30).atTime(23, 59, 59));
 
-        double enumeratedSum =
-                clusterDataList.stream()
-                        .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
-                        .sum();
+      double enumeratedSum =
+          clusterDataList.stream()
+              .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
+              .sum();
 
-        Double totalCent = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
-        Double remainingArea = totalCent - enumeratedSum;
+      Double totalCent = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
+      Double remainingArea = totalCent - enumeratedSum;
 
-        if (remainingArea <= 0) {
-            return new ValidationResponse(
-                    plot.getId(),
-                    plot.getResvno(),
-                    plot.getResbdno(),
-                    totalCent,
-                    "This plot cannot be selected for this agricultural year",
-                    remainingArea);
-        } else if (remainingArea > 0 && !clusterDataList.isEmpty()) {
-            return new ValidationResponse(
-                    plot.getId(),
-                    plot.getResvno(),
-                    plot.getResbdno(),
-                    totalCent,
-                    "Remaining area is available for this plot and not used in this agricultural year",
-                    remainingArea);
-        } else {
+      if (remainingArea <= 0) {
+        return new ValidationResponse(
+            plot.getId(),
+            plot.getResvno(),
+            plot.getResbdno(),
+            totalCent,
+            "This plot cannot be selected for this agricultural year",
+            remainingArea);
+      } else if (remainingArea > 0 && !clusterDataList.isEmpty()) {
+        return new ValidationResponse(
+            plot.getId(),
+            plot.getResvno(),
+            plot.getResbdno(),
+            totalCent,
+            "Remaining area is available for this plot and not used in this agricultural year",
+            remainingArea);
+      } else {
 
-            return new ValidationResponse(
-                    plot.getId(),
-                    plot.getResvno(),
-                    plot.getResbdno(),
-                    totalCent,
-                    "Duplicate entry already exists",
-                    remainingArea);
-        }
+        return new ValidationResponse(
+            plot.getId(),
+            plot.getResvno(),
+            plot.getResbdno(),
+            totalCent,
+            "Duplicate entry already exists",
+            remainingArea);
+      }
     }
     return null;
-}
+  }
 }

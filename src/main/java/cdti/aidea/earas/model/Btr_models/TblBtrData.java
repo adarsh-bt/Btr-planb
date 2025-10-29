@@ -63,18 +63,15 @@ public class TblBtrData {
   @JoinColumn(name = "non_btr_type_id")
   private TblNonBtr btrtype;
 
-  //    private String remarks;
-  //       private Double area;
      private LocalDateTime insertionTime;
      private LocalDateTime updationTime;
-
      private LocalDate agreStartYear;
      private LocalDate agreEndYear;
   @Column(name = "ward_number")
     private Integer wardnumber;
     private  String cl_no;
-
-
+    //    private String remarks;
+    //       private Double area;
   //    private Boolean reject;
   //
   //    private String reson;

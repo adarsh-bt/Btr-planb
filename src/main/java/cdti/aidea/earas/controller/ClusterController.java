@@ -4,13 +4,12 @@ import cdti.aidea.earas.contract.FormEntryDto.AvailableCcePlotFetchRequest;
 import cdti.aidea.earas.contract.FormEntryDto.CropReplaceClusterRequest;
 import cdti.aidea.earas.contract.FormEntryDto.CropReplaceClusterResponse;
 import cdti.aidea.earas.contract.FormEntryDto.KeyPlotClusterDTO;
-import cdti.aidea.earas.contract.RequestsDTOs.ClusterIdRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.DeleteClusterPlotRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.PlotSaveMobileAppRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.SaveClusterRequestDTO;
+import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.service.ClusterService;
 import cdti.aidea.earas.service.KeyPlots_Service;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
@@ -121,17 +120,18 @@ public class ClusterController {
       @RequestParam String blockCode,
       @RequestParam(required = false) Integer resvnoStart,
       @RequestParam(required = false) Integer resvnoEnd) {
+
     System.out.println(
-        "resvnoStart: "
-            + resvnoStart
-            + ", resvnoEnd: "
-            + resvnoEnd
-            + " "
-            + kpId
-            + " "
-            + villageId
-            + " "
-            + blockCode);
+            "resvnoStart: "
+                    + resvnoStart
+                    + ", resvnoEnd: "
+                    + resvnoEnd
+                    + " "
+                    + kpId
+                    + " "
+                    + villageId
+                    + " "
+                    + blockCode);
 
     ResbdnoListReponse response =
         clusterService.getResbdnoAreaList(kpId, villageId, blockCode, resvnoStart, resvnoEnd);
@@ -215,7 +215,7 @@ public class ClusterController {
     }
     return ResponseEntity.ok(clusters);
   }
-  
+
   @PostMapping("/single/save-plot")
   public ResponseEntity<?> savePlotFromMobile(
 
@@ -232,6 +232,7 @@ public class ClusterController {
               .body(Collections.singletonMap("error", "Internal error: " + e.getMessage()));
     }
   }
+
 
 
 //  @PostMapping("/cluster-plot-save")
@@ -273,4 +274,23 @@ public class ClusterController {
   //                    .body("Error saving cluster form: " + e.getMessage());
   //        }
   //    }
+
+  @PatchMapping("/update-sideplot/{id}")
+  public ResponseEntity<?> updateClusterPlot(
+          @PathVariable Long id,
+          @Valid @RequestBody UpdateClusterPlotRequest request) {
+    try {
+      clusterService.updateClusterPlot(id, request.getEnumeratedArea(), request.getUserId());
+      return ResponseEntity.ok(Collections.singletonMap("message", "Cluster plot updated successfully."));
+    } catch (EntityNotFoundException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND)
+              .body(Collections.singletonMap("error", e.getMessage()));
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+              .body(Collections.singletonMap("error", e.getMessage()));
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body(Collections.singletonMap("error", "An internal error occurred: " + e.getMessage()));
+    }
+  }
 }

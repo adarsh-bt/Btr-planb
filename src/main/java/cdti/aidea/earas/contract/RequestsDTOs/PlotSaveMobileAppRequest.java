@@ -32,5 +32,4 @@ public class PlotSaveMobileAppRequest {
     private String ownername;
     private String address;
     private Integer houseno;
-
 }

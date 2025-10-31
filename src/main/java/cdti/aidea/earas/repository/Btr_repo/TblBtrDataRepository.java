@@ -134,7 +134,8 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
           Integer dcode, Integer tcode, String lbcode, Integer wardNumber, Integer houseno);
 
   // For BTR type 3 - Cultivators List
-
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno, String resbdno);
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno);
 
   // For BTR type 4 - Thandaper Number
   boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(

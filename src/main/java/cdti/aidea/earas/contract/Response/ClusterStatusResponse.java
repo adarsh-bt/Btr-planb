@@ -15,6 +15,7 @@ public class ClusterStatusResponse {
   private boolean isCce;
   private String village;
   private String localbody;
+  private String lbcode;
   private String blockcode;
   private String survyno;
   private Double area;

@@ -147,7 +147,7 @@ public class ClusterService {
 
       // ⚠️ TblBtrData does not have "area". Use nsqm, nhect, or nare instead
       // Double keyplot_area = cluster.getKeyPlot().getBtrData().getNsqm();
-
+    System.out.println("lbode    "+local_body_code);
       TblLocalBody localBody = localBodyRepository.findByCodeApi(local_body_code).orElse(null);
       String localBodyName = "Local body not found";
       if (localBody != null) {
@@ -185,6 +185,7 @@ public class ClusterService {
               isCce,
               villageName,
               localBodyName,
+              local_body_code,
               keyplot_lbcode,
               keyplot_svno,
               keyplot_area,

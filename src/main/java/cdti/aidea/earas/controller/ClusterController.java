@@ -36,12 +36,12 @@ public class ClusterController {
     return ResponseEntity.ok(result);
   }
 
-  @GetMapping("/user-cluster-summary/{userId}")
+  @GetMapping("/user-cluster-summary/{zoneId}")
   public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummary(
-      @PathVariable Integer userId) {
-    System.out.println("is  " + userId);
+      @PathVariable Integer zoneId) {
+    System.out.println("is  " + zoneId);
     try {
-      UserClusterSummaryResponse response = clusterService.getUserClusterSummary(userId);
+      UserClusterSummaryResponse response = clusterService.getUserClusterSummary(zoneId);
       return ResponseEntity.ok(response);
     } catch (NoSuchElementException e) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND)

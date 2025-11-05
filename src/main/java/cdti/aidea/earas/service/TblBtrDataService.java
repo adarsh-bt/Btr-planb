@@ -236,21 +236,49 @@ public class TblBtrDataService {
         System.out.println("ssss   " + dto);
 
         // ---------------- Type 1 ----------------
+//        if (dto.getBtrtype() == 1) {
+//            System.out.println("Btr List val" + 1);
+//            boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
+//                    dto.getDcode(), dto.getTcode(), dto.getVcode(),
+//                    dto.getBcode(), dto.getLbcode(), dto.getResvno(), dto.getResbdno());
+//
+//            if (exists) {
+//                System.out.println("Btr List val" + 1);
+//                return new ValidationErrorResponse(
+//                        dto.getResvno(), dto.getResbdno(),
+//                        dto.getWardno(), dto.getHouseno(),
+//                        dto.getTotCent(),
+//                        "Duplicate entry already exists for resvno=" + dto.getResvno()
+//                                + " and resbdno=" + dto.getResbdno());
+//            }
+// ---------------- Type 1 ----------------
         if (dto.getBtrtype() == 1) {
             System.out.println("Btr List val" + 1);
-            boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-                    dto.getDcode(), dto.getTcode(), dto.getVcode(),
-                    dto.getBcode(), dto.getLbcode(), dto.getResvno(), dto.getResbdno());
+
+            // --------- Added resvno/resbdno check (same as in types 2–5) ----------
+            boolean exists;
+            if (dto.getResbdno() != null) {
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(),
+                        dto.getBcode(), dto.getLbcode(), dto.getResvno(), dto.getResbdno());
+            } else {
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(),
+                        dto.getBcode(), dto.getLbcode(), dto.getResvno());
+            }
 
             if (exists) {
                 System.out.println("Btr List val" + 1);
                 return new ValidationErrorResponse(
-                        dto.getResvno(), dto.getResbdno(),
-                        dto.getWardno(), dto.getHouseno(),
+                        dto.getResvno(),
+                        dto.getResbdno(),
+                        dto.getWardno(),
+                        dto.getHouseno(),
                         dto.getTotCent(),
                         "Duplicate entry already exists for resvno=" + dto.getResvno()
-                                + " and resbdno=" + dto.getResbdno());
+                                + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
             }
+
 
         } else if (dto.getBtrtype() == 2) {
             System.out.println("House List val" + 2);

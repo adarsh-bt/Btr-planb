@@ -39,8 +39,8 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
 //  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
 //          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
 
-  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,Integer resvno, String resbdno);
 
   // Find records by a list of lsgcodes (pageable)
   Page<TblBtrData> findByLsgcodeIn(List<Integer> lsgcodes, Pageable pageable);
@@ -126,8 +126,8 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
 
 //  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
 //      Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
-List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
-        Integer dcode, Integer tcode, Integer vcode, String bcode, Integer resvno);
+List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
+        Integer dcode, Integer tcode, Integer vcode, String bcode,String lbcode ,Integer resvno);
 
   // For BTR type 2 - House List
   boolean existsByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(

@@ -230,6 +230,9 @@ public class TblBtrDataService {
         return entity;
     }
 
+    private boolean notEmpty(String s) {
+        return s != null && !s.trim().isEmpty();
+    }
 
     // ---------------- Duplicate Validation ----------------
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
@@ -238,6 +241,7 @@ public class TblBtrDataService {
         // ---------------- Type 1 ----------------
         if (dto.getBtrtype() == 1) {
             System.out.println("Btr List val" + 1);
+
             boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
                     dto.getDcode(), dto.getTcode(), dto.getVcode(),
                     dto.getBcode(), dto.getLbcode(), dto.getResvno(), dto.getResbdno());
@@ -257,16 +261,18 @@ public class TblBtrDataService {
 
             // --------- Added resvno/resbdno check ----------
             boolean existsRes = false;
-            if (dto.getResbdno() != null) {
+            System.out.println(dto.getResvno() +" sub div   "+dto.getResbdno() );
+            if (dto.getResbdno() != null && notEmpty(dto.getResbdno())) {
                 existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
                         dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
                         dto.getResvno(), dto.getResbdno());
-            } else {
+            } if (dto.getResvno() != null ){
                 existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
                         dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
             }
 
             if (existsRes) {
+                System.out.println("exits  "+existsRes);
                 return new ValidationErrorResponse(
                         dto.getResvno(),
                         dto.getResbdno(),
@@ -448,21 +454,23 @@ public class TblBtrDataService {
         // Handle both cases: with and without subdivision
         if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
             // Case 1: User provided both survey number AND subdivision
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
                     zone.getDistId(),
                     village.get().getRevTalukId(),
                     dto.getVcode(),
                     dto.getBcode(),
+                    dto.getLbcode(),
                     dto.getResvno(),
                     cleanedResbdno);
 
             if (plots.isEmpty()) {
                 // If exact match not found, check if survey number exists with any subdivision
-                List<TblBtrData> surveyOnlyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+                List<TblBtrData> surveyOnlyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
                         zone.getDistId(),
                         zone.getDesTalukId(),
                         dto.getVcode(),
                         dto.getBcode(),
+                        dto.getLbcode(),
                         dto.getResvno());
 
                 if (!surveyOnlyPlots.isEmpty()) {
@@ -472,11 +480,12 @@ public class TblBtrDataService {
             }
         } else {
             // Case 2: User provided only survey number (no subdivision)
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
                     zone.getDistId(),
                     zone.getDesTalukId(),
                     dto.getVcode(),
                     dto.getBcode(),
+                    dto.getLbcode(),
                     dto.getResvno());
 
             if (plots.isEmpty()) {
@@ -505,7 +514,6 @@ public class TblBtrDataService {
 
         switch (type) {
             case 2:
-                System.out.println("kkkk");
                 return validateHouseListDuplicate(dto, zone, lbcode);
             case 3:
                 return validateCultivatorsListDuplicate(dto, zone, lbcode);
@@ -625,12 +633,12 @@ public class TblBtrDataService {
         List<TblBtrData> surveyPlots;
         Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
         if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
-            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-                    zone.getDistId(),  village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
+                    zone.getDistId(),  village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
                     dto.getResvno(), cleanedResbdno);
         } else {
-            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndResvno(
-                    zone.getDistId(),  village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(), dto.getResvno());
+            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
+                    zone.getDistId(),  village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),dto.getLbcode(), dto.getResvno());
         }
 
         if (!surveyPlots.isEmpty()) {

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -45,7 +46,7 @@ public class TblBtrData {
     @Column(name = "tp_no")
   private Integer tpno;
     @Column(name = "tb_subdivision_no")
-  private Integer tbsubdivisionno;
+  private String tbsubdivisionno;
 
   @Column(name = "land_owner_address")
   private String address;
@@ -70,15 +71,7 @@ public class TblBtrData {
   @Column(name = "ward_number")
     private Integer wardnumber;
     private  String cl_no;
-    //    private String remarks;
-    //       private Double area;
-  //    private Boolean reject;
-  //
-  //    private String reson;
-  //    private String localboy;
-  //
-  //    @Column(columnDefinition = "jsonb")
-  //    private String addonNotes;
-  //
-  //    private Integer fmp;
+    private Boolean isActive;
+    private UUID userId;
+
 }

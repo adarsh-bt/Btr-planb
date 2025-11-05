@@ -32,6 +32,6 @@ public class TblBtrDataDTO {
   private Long btrtype;
   private String ownername;
   private Integer tpno;
-  private Integer tbsubdivisionno;
+  private String tbsubdivisionno;
 
 }

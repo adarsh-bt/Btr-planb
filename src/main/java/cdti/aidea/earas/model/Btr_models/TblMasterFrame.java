@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -15,22 +16,23 @@ import java.time.LocalDateTime;
 public class TblMasterFrame {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private  Long id;
-    @Column(name = "schedule_id")
-    private Integer scheduleId;
+    @Column(name = "frame_id")
+    private Long frameId;
 
-    @Column(name = "zone_id", nullable = false, length = 255)
-    private Integer zoneId;
+    @Column(name = "frame", nullable = false, length = 255)
+    private String frame;
 
-    @Column(name = "season_id", nullable = false)
-    private Integer seasonId;
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive;
 
-    @Column(name = "cluster_type", nullable = false)
-    private String cluster_type;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "start_date")
-    private LocalDateTime startDate;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    @Column(name = "end_date")
-    private LocalDateTime endDate;
+    @Column(name = "user_id")
+    private UUID user_id;
+    @Column(name="remark")
+    private  String remark;
 }

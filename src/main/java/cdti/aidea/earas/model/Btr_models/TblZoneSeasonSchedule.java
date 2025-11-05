@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -26,8 +27,8 @@ public class TblZoneSeasonSchedule {
     @JoinColumn(name = "season_id", referencedColumnName = "id", nullable = false)
     private TblSeasonMaster season;
 
-    @Column(name = "cluster_type", nullable = false, length = 50)
-    private String clusterType;
+//    @Column(name = "cluster_type", nullable = false, length = 50)
+//    private String clusterType;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -49,5 +50,16 @@ public class TblZoneSeasonSchedule {
 
     @Column(name = "remark", length = 255)
     private String remark;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "frame_id", referencedColumnName = "frame_id")
+    private TblMasterFrame frame; // This should point to your MasterFrame entity
+
+    @Column(name = "created_at", updatable = false, insertable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", insertable = false)
+    private LocalDateTime updatedAt;
+
 }
 

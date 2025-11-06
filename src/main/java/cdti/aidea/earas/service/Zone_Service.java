@@ -757,4 +757,60 @@ public class Zone_Service {
             totalDryAreaZone,
             unclassifiedPanchayaths);
   }
+
+  public List<LbCodeResponse> getLocalBodiesByZone(Integer zoneId) {
+
+    // 1️⃣ Get Zone
+    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
+            .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+    // 2️⃣ Get revenue village mappings for the zone
+    List<TblZoneRevenueVillageMapping> zoneRevenueList =
+            tblZoneRevenueVillageMappingRepository.findByZone(zone.getZoneId());
+
+    // 3️⃣ Extract village IDs
+    List<Integer> villageIds = zoneRevenueList.stream()
+            .map(TblZoneRevenueVillageMapping::getRevenueVillage)
+            .toList();
+
+    // 4️⃣ Get all villages for those IDs
+    List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
+
+    // 5️⃣ Extract LSG codes from those villages
+    List<Integer> lsgCodes = villageList.stream()
+            .map(TblMasterVillage::getLsgCode)
+            .toList();
+
+    // 6️⃣ Fetch BTR data (repo returns TblBtrData)
+    List<TblBtrData> btrDataNewList = tblBtrDataRepository.findAllByLsgcodeIn(lsgCodes);
+
+    // 7️⃣ Convert TblBtrData → TblBtrDataOld manually
+    List<TblBtrData> btrDataList = btrDataNewList.stream()
+            .map(btr -> {
+              TblBtrData oldData = new TblBtrData();
+              oldData.setLbcode(btr.getLbcode());
+              oldData.setLsgcode(btr.getLsgcode());
+              oldData.setResvno(btr.getResvno());
+              oldData.setResbdno(btr.getResbdno());
+
+              return oldData;
+            })
+            .toList();
+
+    // 8️⃣ Extract unique LB codes from BTR data
+    List<String> lbCodes = btrDataList.stream()
+            .map(TblBtrData::getLbcode)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+
+    // 9️⃣ Fetch Local Bodies based on LB codes
+    List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbCodes);
+
+    // 🔟 Map to response DTO
+    return localBodies.stream()
+            .map(lb -> new LbCodeResponse(lb.getCodeApi(), lb.getLocalbodyNameEn()))
+            .toList();
+  }
+
 }

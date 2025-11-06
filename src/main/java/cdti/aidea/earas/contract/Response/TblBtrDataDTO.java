@@ -22,7 +22,7 @@ public class TblBtrDataDTO {
   private String resbdno;
   private Integer lsgcode;
   private Integer zoneId; // new field for zone
-  private UUID user_id;
+  //private UUID user_id;
   private double totCent;
   private String address;
   private Integer wardno;

@@ -48,12 +48,12 @@ public class McPlotService {
         entity.setDcode(zone.getDistId());
         entity.setLsgcode(village.getLsgCode());
         // ✅ Added: automatic timestamp and agreement date setup
-        entity.setInsertionTime(LocalDateTime.now());
-        entity.setUpdationTime(LocalDateTime.now());
-
-        LocalDate now = LocalDate.now();
-        entity.setAgreStartYear(LocalDate.of(now.getYear(), 7, 1));   // 01-July-current year
-        entity.setAgreEndYear(LocalDate.of(now.getYear() + 1, 6, 30)); // 30-June-next year
+//        entity.setInsertionTime(LocalDateTime.now());
+//        entity.setUpdationTime(LocalDateTime.now());
+//
+//        LocalDate now = LocalDate.now();
+//        entity.setAgreStartYear(LocalDate.of(now.getYear(), 7, 1));   // 01-July-current year
+//        entity.setAgreEndYear(LocalDate.of(now.getYear() + 1, 6, 30)); // 30-June-next year
         // Save entity to DB
         return tblBtrDataRepository.save(entity);
     }

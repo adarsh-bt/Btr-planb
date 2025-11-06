@@ -5,6 +5,7 @@ import cdti.aidea.earas.contract.Response.PlotDuplicateResponse;
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.Response.TblBtrDetailsResponse;
 import cdti.aidea.earas.contract.Response.ValidationResponse;
+import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.model.Btr_models.TblNonBtr;
 import cdti.aidea.earas.repository.Btr_repo.TblNonBtrRepository;
 import cdti.aidea.earas.service.TblBtrDataService;
@@ -71,4 +72,5 @@ public class TblBtrDataController {
     TblBtrDetailsResponse response = service.getBtrDetails(btrId);
     return ResponseEntity.ok(response);
   }
+
 }

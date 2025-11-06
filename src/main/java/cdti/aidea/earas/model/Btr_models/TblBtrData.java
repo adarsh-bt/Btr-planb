@@ -66,12 +66,13 @@ public class TblBtrData {
 
      private LocalDateTime insertionTime;
      private LocalDateTime updationTime;
-     private LocalDate agreStartYear;
+  private LocalDate agreStartYear;
      private LocalDate agreEndYear;
   @Column(name = "ward_number")
     private Integer wardnumber;
     private  String cl_no;
-    private Boolean isActive;
-    private UUID userId;
+
+//    private Boolean isActive;
+    //private UUID userId;
 
 }

@@ -28,5 +28,22 @@ public class TblZoneSeasonScheduleController {
             @RequestBody ZoneIdFrameIdRequest request) {
         return scheduleService.getSchedulesByZoneAndFrame(request);
     }
+//    @GetMapping("/getPaginated")
+//    public List<TblZoneSeasonScheduleDTO> getPaginatedSchedules(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size) {
+//        return scheduleService.getPaginatedSchedules(page, size);
+//    }
+    @GetMapping("/getPaginated")
+    public List<TblZoneSeasonScheduleDTO> getPaginatedSchedules(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        // ✅ Convert from 1-based to 0-based indexing for service compatibility
+        int adjustedPage = (page > 0) ? page - 1 : 0;
+
+        return scheduleService.getPaginatedSchedules(adjustedPage, size);
+    }
+
 
 }

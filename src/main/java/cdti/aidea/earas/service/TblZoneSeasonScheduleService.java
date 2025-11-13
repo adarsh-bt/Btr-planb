@@ -12,6 +12,9 @@ import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
 import cdti.aidea.earas.repository.Btr_repo.TblSeasonMasterRepository;
 import cdti.aidea.earas.repository.Btr_repo.TblZoneSeasonScheduleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -131,6 +134,33 @@ public class TblZoneSeasonScheduleService {
             return dto;
         }).collect(Collectors.toList());
     }
+    // ✅ ✨ NEW PAGINATION LOGIC ADDED HERE ✨
+    public List<TblZoneSeasonScheduleDTO> getPaginatedSchedules(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<TblZoneSeasonSchedule> pagedResult = scheduleRepo.findAll(pageable);
+
+        return pagedResult.getContent().stream().map(entity -> {
+            TblZoneSeasonScheduleDTO dto = new TblZoneSeasonScheduleDTO();
+            dto.setScheduleId(entity.getScheduleId());
+            dto.setZoneId(entity.getZone().getZoneId());
+            dto.setSeasonId(entity.getSeason().getId());
+            dto.setStartDate(entity.getStartDate());
+            dto.setEndDate(entity.getEndDate());
+            dto.setExtendedDate(entity.getExtendedDate());
+            dto.setYear(entity.getYear());
+            dto.setUuid(entity.getUuid());
+            dto.setIsActive(entity.getIsActive());
+            dto.setRemark(entity.getRemark());
+            dto.setZoneNameEn(entity.getZone() != null ? entity.getZone().getZoneNameEn() : null);
+            dto.setSeasonName(entity.getSeason() != null ? entity.getSeason().getSeasonName() : null);
+            dto.setFrameId(entity.getFrame() != null ? entity.getFrame().getFrameId() : null);
+            dto.setFrameName(entity.getFrame() != null ? entity.getFrame().getFrame() : null);
+            dto.setCreatedAt(entity.getCreatedAt());
+            dto.setUpdatedAt(entity.getUpdatedAt());
+            return dto;
+        }).collect(Collectors.toList());
+    }
     // ✅ New method: Get schedules by Zone ID and Frame ID using request DTO
     public List<TblZoneSeasonScheduleDTO> getSchedulesByZoneAndFrame(ZoneIdFrameIdRequest request) {
         Integer zoneId = request.getZoneId();
@@ -159,6 +189,4 @@ public class TblZoneSeasonScheduleService {
             return dto;
         }).collect(Collectors.toList());
     }
-
-
 }

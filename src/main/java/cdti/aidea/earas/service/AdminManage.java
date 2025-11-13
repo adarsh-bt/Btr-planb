@@ -49,6 +49,7 @@ public class AdminManage {
                     entity.getKeyplotsLimit(),
                     entity.getIsEdited(),
                     entity.getIsActive(),
+                    entity.getIn_active(),
                     entity.getAddedBy(),
                     entity.getEditPermitter(),
                     entity.getRemarks(),
@@ -115,6 +116,25 @@ public class AdminManage {
   }
 
 
+  public List<ClusterLimitRequest> getAllClusterLimits() {
+    List<ClusterLimitLog> entity = clusterLimitLogRepository.findAll();
+
+    return entity.stream()
+            .map(entitys -> new ClusterLimitRequest(
+                    entitys.getId(),
+                    entitys.getClusterMin(),
+                    entitys.getClusterMax(),
+                    entitys.getTsoApprovalLimit(),
+//                    entity.getIsEdited(),
+                    entitys.getAddedBy(),
+                    entitys.getRemarks(),
+                    entitys.getAgriStartYear(),
+                    entitys.getAgriEndYear(),
+                    entitys.getInActive()
+            ))
+            .collect(Collectors.toList());
+  }
+
   public KeyplotsLimitLog saveOrUpdateKeyplotsLimit(KeyplotsLimitLogRequest request) {
     KeyplotsLimitLog log;
 
@@ -140,13 +160,15 @@ public class AdminManage {
 
     } else {
       // === CREATE PATH ===
-      LocalDate agriStart = LocalDate.now();
-      LocalDate agriEnd = agriStart.plusYears(1).minusDays(1);
+      int year = LocalDate.now().getYear();
+
+      LocalDate agriStart = LocalDate.of(year, 7, 1);
+      LocalDate agriEnd = LocalDate.of(year + 1, 6, 30);
 
       // ❗ Prevent duplicate active agri year
       boolean exists = repository.existsByAgriStartYearAndIsActive(agriStart, true);
       if (exists) {
-        throw new IllegalStateException("A record already exists for the current agri year: " + agriStart);
+        throw new RuntimeException("A record already exists for the current agri year: " + agriStart +" To "+agriEnd);
       }
 
       log = new KeyplotsLimitLog();
@@ -195,9 +217,13 @@ public class AdminManage {
       log.setUpdatedAt(LocalDateTime.now());
       return clusterLimitLogRepository.save(log);
     } else {
-      LocalDate agriStart = LocalDate.now();
-      LocalDate agriEnd = agriStart.plusYears(1).minusDays(1);
+//      LocalDate agriStart = LocalDate.now();
+//      LocalDate agriEnd = agriStart.plusYears(1).minusDays(1);
 
+      int year = LocalDate.now().getYear();
+
+      LocalDate agriStart = LocalDate.of(year, 7, 1);
+      LocalDate agriEnd = LocalDate.of(year + 1, 6, 30);
       int startYear = agriStart.getYear();
       int endYear = agriEnd.getYear();
 

@@ -43,6 +43,13 @@ public class Admincontroller {
     return ResponseEntity.ok(saved);
   }
 
+  @GetMapping("/cluster-limits")
+  public List<ClusterLimitRequest> getAllClusterLimits() {
+    return adminManage.getAllClusterLimits();
+  }
+
+
+
   @GetMapping("/zones/{type}/{id}")
   public ResponseEntity<List<ZoneListResponse>> getById(
       @PathVariable("type") String type, @PathVariable("id") String id) {

@@ -86,11 +86,10 @@ public class ClusterService {
     String cceMessage = null;
 
     CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(zoneId);
-
     if (cceResult.isFallbackUsed()) {
       cceMessage = "CCE data not available currently.";
     }
-
+    System.out.println();
     List<AvailableCcePlotResponse> assignedCcePlots = cceResult.getPlots();
     assignedClusterIds =
         assignedCcePlots.stream()
@@ -103,6 +102,7 @@ public class ClusterService {
     Map<Long, Set<String>> clusterCropMap = new HashMap<>();
 
     for (AvailableCcePlotResponse plot : assignedCcePlots) {
+      System.out.println();
       if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
         clusterCropMap
             .computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())

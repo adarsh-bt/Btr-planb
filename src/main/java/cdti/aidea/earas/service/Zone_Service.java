@@ -1,6 +1,7 @@
 package cdti.aidea.earas.service;
 
 // import cdti.aidea.earas.model.*;
+import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.*;
@@ -42,6 +43,7 @@ public class Zone_Service {
   private final ZoneLocalbodyBlockMappingRepository zoneLocalbodyBlockMappingRepository;
   private final MasterBlockRepository masterBlockRepository;
   private final LocalBodyTypeRepository localBodyTypeRepository;
+  private final TblWorkAllocationRepository tblWorkAllocationRepository;
 
   public List<ZoneListResponse> UserZonesByType(String type, Integer idValue) {
     try {
@@ -812,5 +814,7 @@ public class Zone_Service {
             .map(lb -> new LbCodeResponse(lb.getCodeApi(), lb.getLocalbodyNameEn()))
             .toList();
   }
+
+
 
 }

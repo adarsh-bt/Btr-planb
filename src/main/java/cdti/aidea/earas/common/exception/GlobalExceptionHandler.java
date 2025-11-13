@@ -88,4 +88,12 @@ public class GlobalExceptionHandler {
     response.put("message", ex.getMessage());
     return new ResponseEntity<>(response, ex.getStatusCode());
   }
+
+  @ExceptionHandler(IllegalStateException.class)
+  public ResponseEntity<Map<String, String>> handleIllegalStateException(IllegalStateException ex) {
+    Map<String, String> response = new HashMap<>();
+    response.put("message", ex.getMessage()); // ✅ send real backend message
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+  }
+
 }

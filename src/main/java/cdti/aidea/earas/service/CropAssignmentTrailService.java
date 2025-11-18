@@ -88,7 +88,7 @@ public class CropAssignmentTrailService {
                 .cluster(cluster)
                 .keyPlot(keyPlot)
                 .zoneId(saveDto.getZoneId())
-                .landType(saveDto.getLandType())
+                .landType(keyPlot.getLandType())
                 .isRejected(saveDto.getIsRejected() != null ? saveDto.getIsRejected() : false)
                 .rejectionReason(saveDto.getRejectionReason())
                 .isLimitExceeded(

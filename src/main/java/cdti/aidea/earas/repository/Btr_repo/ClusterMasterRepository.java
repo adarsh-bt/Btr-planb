@@ -47,17 +47,19 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
   @Query(
           "SELECT cm FROM ClusterMaster cm "
                   + "JOIN cm.keyPlot kp "
-                  + "JOIN kp.zone z "  // Join the zone entity, not zoneId
-                  + "WHERE z.zoneId = :zoneId "  // Then filter by zoneId
-                  + "AND (:landType = 'Wet / Dry' OR kp.landType = :landType) "
+                  + "JOIN kp.zone z "
+                  + "WHERE z.zoneId = :zoneId "
+                  + "AND (:landType = 'Wet / Dry' OR LOWER(kp.landType) = LOWER(:landType)) "
                   + "AND cm.clusterNumber > :currentClusterNumber "
                   + "AND cm.is_active = true "
                   + "AND cm.isReject = false "
-                  + "ORDER BY cm.clusterNumber ASC")
+                  + "ORDER BY cm.clusterNumber ASC"
+  )
   List<ClusterMaster> findNextClusterFlexibleLandType(
           @Param("zoneId") int zoneId,
           @Param("landType") String landType,
           @Param("currentClusterNumber") int currentClusterNumber);
+
 
   List<ClusterMaster> findByKeyPlotIn(List<KeyPlots> keyPlots);
 

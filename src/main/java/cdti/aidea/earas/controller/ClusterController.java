@@ -184,7 +184,7 @@ public class ClusterController {
 
     } catch (Exception e) {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body("Error saving cluster form: " + e.getMessage());
+          .body(e.getMessage());
     }
   }
 

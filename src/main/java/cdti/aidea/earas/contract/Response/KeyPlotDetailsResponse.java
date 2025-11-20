@@ -29,6 +29,14 @@ public class KeyPlotDetailsResponse {
   private BigDecimal clusterMin;
   private BigDecimal clusterMean;
   private String syNo;
+  private String ownerName;
+  private String address;
+  private Integer wardNo;
+  private Integer houseNo;
+  private Integer tpno;
+  private Integer tpSubNo;
+  private Integer oldsuvNo;
+  private String oldsubNo;
   private double areaCents;
   private String landType;
   private List<SidePlotDTO> sidePlots;

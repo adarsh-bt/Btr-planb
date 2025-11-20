@@ -7,9 +7,12 @@ import cdti.aidea.earas.contract.Response.LbCodeResponse;
 import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
+import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
 import cdti.aidea.earas.service.BtrExportService;
 import cdti.aidea.earas.service.Zone_Service;
 import jakarta.validation.Valid;
+
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -30,7 +33,7 @@ public class UserZoneController {
 
   private final Zone_Service zoneService;
   private final BtrExportService btrExportService;
-
+  private final TblMasterZoneRepository tblMasterZoneRepository;
 
   //    if array
 
@@ -44,16 +47,35 @@ public class UserZoneController {
 
   @GetMapping("/export")
   public ResponseEntity<ByteArrayResource> exportBtrData(@RequestParam Integer zoneId) {
+
+    // Fetch zone data
+    var zone = tblMasterZoneRepository.findById(zoneId)
+            .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+    String zoneName = zone.getZoneNameEn().replace(" ", "_"); // Safe filename
+
+    // Get current + next year
+    int currentYear = LocalDate.now().getYear();
+    int nextYear = currentYear + 1;
+
+    // Construct filename
+    String fileName = currentYear + "_" + nextYear + "_" + zoneName + ".xlsx";
+
+    System.out.println("Generated file name: " + fileName);
+
     ByteArrayResource excelFile = btrExportService.exportUserBtrDataToExcel(zoneId);
 
     return ResponseEntity.ok()
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=btr_data.xlsx")
-        .contentType(MediaType.APPLICATION_OCTET_STREAM)
-        .contentLength(excelFile.contentLength())
-        .body(excelFile);
+            .header(HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + fileName)
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .contentLength(excelFile.contentLength())
+            .body(excelFile);
   }
 
-  @GetMapping("/zones/{type}/{id}")
+
+
+    @GetMapping("/zones/{type}/{id}")
   public ResponseEntity<List<ZoneListResponse>> getById(
       @PathVariable("type") String type, @PathVariable("id") String id) {
     try {

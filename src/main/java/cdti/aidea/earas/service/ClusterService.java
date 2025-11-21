@@ -104,6 +104,7 @@ public class ClusterService {
     for (AvailableCcePlotResponse plot : assignedCcePlots) {
       System.out.println();
       if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
+        System.out.println("crop s  >> "+plot.getCropName());
         clusterCropMap
             .computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
             .add(plot.getCropName());

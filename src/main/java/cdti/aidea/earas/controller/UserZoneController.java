@@ -59,7 +59,7 @@ public class UserZoneController {
     int nextYear = currentYear + 1;
 
     // Construct filename
-    String fileName = currentYear + "_" + nextYear + "_" + zoneName + ".xlsx";
+    String fileName = currentYear + "_" + nextYear + "_" + zoneName + "-(" + zone.getBtrType().getBtrType()+ ").xlsx";
 
     System.out.println("Generated file name: " + fileName);
 

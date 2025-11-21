@@ -18,7 +18,7 @@ public interface FormEntryClient {
   @PostMapping("/earas-form1-entry/available-cce-plot-details/save")
   void saveCceAssignment(@RequestBody CceAssignmentRequest assignment);
 
-  @PostMapping("/earas-form1-entry/available-cce-plot-details/fetch-by-zoneId")
+  @PostMapping("/earas-form1-entry/available-cce-plot-details/fetch-by-zoneId-zone")
   Map<String, Object> getAvailableCcePlotsByZoneId(
       @RequestBody AvailableCcePlotFetchRequest request);
 

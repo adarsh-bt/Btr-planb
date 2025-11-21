@@ -131,8 +131,10 @@ public class CropAssignmentTrailService {
             saveDto.getRejectedBy() != null ? saveDto.getRejectedBy() : UUID.randomUUID());
         cceRequest.setAgriStartYear(agriYear);
         cceRequest.setAgriEndYear(agriYear);
-        cceRequest.setIsActive(!Boolean.TRUE.equals(saveDto.getIsRejected()));
-        cceRequest.setIsSelected(Boolean.TRUE.equals(saveDto.getIsCurrentAssignment()));
+//        cceRequest.setIsActive(!Boolean.TRUE.equals(saveDto.getIsRejected()));
+        cceRequest.setIsActive(true);
+//        cceRequest.setIsSelected(Boolean.TRUE.equals(saveDto.getIsCurrentAssignment()));
+        cceRequest.setIsSelected(true);
 
         try {
           formEntryClient.saveCceAssignment(cceRequest);

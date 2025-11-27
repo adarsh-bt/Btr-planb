@@ -16,8 +16,14 @@ public interface UserZoneAssignmentRepositoty extends JpaRepository<UserZoneAssi
 //  Optional<UserZoneAssignment> findByUserId(UUID userId);
 
   Optional<UserZoneAssignment> findByTblMasterZone_ZoneId(Integer zoneId);
+  Optional<UserZoneAssignment> findByTblMasterZone_ZoneIdAndIsActiveTrue(Integer zoneId);
+
 
   Optional<UserZoneAssignment> findByUserIdAndTblMasterZone_ZoneId(UUID userId, Long zoneId);
+  Optional<UserZoneAssignment> findByUserIdAndTblMasterZone_ZoneIdAndIsActiveTrue(
+          UUID userId, Long zoneId
+  );
+
 
   List<UserZoneAssignment> findAllByUserIdAndIsActiveTrue(UUID userId);
 

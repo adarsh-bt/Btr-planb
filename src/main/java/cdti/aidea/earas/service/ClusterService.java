@@ -185,6 +185,7 @@ public class ClusterService {
               keyplotId,
               isCce,
               villageName,
+              cluster.getKeyPlot().getBtrData().getVcode(),
               localBodyName,
               local_body_code,
               keyplot_lbcode,
@@ -249,7 +250,9 @@ public class ClusterService {
           FetchAvailableCceCropsResponse crop = new FetchAvailableCceCropsResponse();
           crop.setCropId(Long.parseLong(map.get("cropId").toString()));
           crop.setCropName(map.get("cropName").toString());
-          crop.setGetCceAvailablePlotId((UUID) map.get("getCceAvailablePlotId"));
+          if (map.get("cceAvailablePlotId") != null) {
+            crop.setCceAvailablePlotId(UUID.fromString(map.get("cceAvailablePlotId").toString()));
+          }
           crops.add(crop);
         }
       }

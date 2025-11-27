@@ -14,5 +14,5 @@ import java.util.UUID;
 public class FetchAvailableCceCropsResponse {
   private Long cropId;
   private String cropName;
-  private UUID getCceAvailablePlotId;
+  private UUID cceAvailablePlotId;
 }

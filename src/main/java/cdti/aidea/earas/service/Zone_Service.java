@@ -117,7 +117,7 @@ public class Zone_Service {
       System.out.println("request "+request);
       // 1. Fetch the current assignment to update
       Optional<UserZoneAssignment> existingAssignment =
-              userZoneAssignmentRepositoty.findByUserIdAndTblMasterZone_ZoneId(request.getUser_id(), zoneId);
+              userZoneAssignmentRepositoty.findByUserIdAndTblMasterZone_ZoneIdAndIsActiveTrue(request.getUser_id(), zoneId);
 
       if (existingAssignment.isEmpty()) {
         throw new IllegalArgumentException("Zone assignment not found for this user and zone");
@@ -173,7 +173,7 @@ public class Zone_Service {
 
       // 2. Check if zone is already assigned to another user
       Optional<UserZoneAssignment> existingZoneAssignment =
-              userZoneAssignmentRepositoty.findByTblMasterZone_ZoneId(request.getZoneId());
+              userZoneAssignmentRepositoty.findByTblMasterZone_ZoneIdAndIsActiveTrue(request.getZoneId());
 
       if (existingZoneAssignment.isPresent()) {
         throw new IllegalArgumentException("Zone is already assigned to another user");

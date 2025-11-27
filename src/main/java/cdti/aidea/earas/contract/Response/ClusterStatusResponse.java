@@ -14,6 +14,7 @@ public class ClusterStatusResponse {
   private UUID keyplotId;
   private boolean isCce;
   private String village;
+  private Integer villageId;
   private String localbody;
   private String lbcode;
   private String blockcode;

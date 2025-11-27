@@ -38,7 +38,7 @@ public class TblBtrDataController {
   @PostMapping("/validate-duplicate")
   public ResponseEntity<?> validateDuplicate(@RequestBody TblBtrDataDTO dto) {
     ValidationResponse response = service.validateDuplicateForCluster(dto);
-
+System.out.println("reqsue "+dto);
     if (response != null) {
       return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     } else {

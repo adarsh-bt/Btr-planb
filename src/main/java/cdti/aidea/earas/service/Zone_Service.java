@@ -66,7 +66,7 @@ public class Zone_Service {
       }
 
       // Fetch all assigned zone IDs
-      List<Long> assignedZoneIds = userZoneAssignmentRepositoty.findAssignedZoneIds();
+      List<Long> assignedZoneIds = userZoneAssignmentRepositoty.findActiveAssignedZoneIds();
       // Filter out the zones that are already assigned
       List<TblMasterZone> availableZones =
               zones.stream()

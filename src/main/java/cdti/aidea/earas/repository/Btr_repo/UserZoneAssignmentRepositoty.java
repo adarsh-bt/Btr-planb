@@ -10,8 +10,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserZoneAssignmentRepositoty extends JpaRepository<UserZoneAssignment, Long> {
-  @Query("SELECT u.tblMasterZone.zoneId FROM UserZoneAssignment u")
-  List<Long> findAssignedZoneIds();
+  @Query("SELECT u.tblMasterZone.zoneId FROM UserZoneAssignment u WHERE u.isActive = true")
+  List<Long> findActiveAssignedZoneIds();
 
 //  Optional<UserZoneAssignment> findByUserId(UUID userId);
 

@@ -89,7 +89,7 @@ public class ClusterService {
     if (cceResult.isFallbackUsed()) {
       cceMessage = "CCE data not available currently.";
     }
-    System.out.println();
+
     List<AvailableCcePlotResponse> assignedCcePlots = cceResult.getPlots();
     assignedClusterIds =
         assignedCcePlots.stream()
@@ -102,9 +102,9 @@ public class ClusterService {
     Map<Long, Set<String>> clusterCropMap = new HashMap<>();
 
     for (AvailableCcePlotResponse plot : assignedCcePlots) {
-      System.out.println();
+      System.out.println(">>>    "+plot);
       if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
-        System.out.println("crop s  >> "+plot.getCropName());
+        System.out.println("crop s  >> "+plot.getCceAvailablePlotId());
         clusterCropMap
             .computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
             .add(plot.getCropName());
@@ -249,6 +249,7 @@ public class ClusterService {
           FetchAvailableCceCropsResponse crop = new FetchAvailableCceCropsResponse();
           crop.setCropId(Long.parseLong(map.get("cropId").toString()));
           crop.setCropName(map.get("cropName").toString());
+          crop.setGetCceAvailablePlotId((UUID) map.get("getCceAvailablePlotId"));
           crops.add(crop);
         }
       }

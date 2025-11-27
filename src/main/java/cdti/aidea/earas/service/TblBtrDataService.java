@@ -456,10 +456,14 @@ public class TblBtrDataService {
         TblMasterZone zone = tblMasterZoneRepository.findById(dto.getZoneId())
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-        System.out.println("dist " + zone.getDistId() + " taluk : " + zone.getDesTalukId());
         Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
         // Handle both cases: with and without subdivision
         if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
+            System.out.println("ssss :  "+ dto.getResvno()+"  : "+cleanedResbdno);
+            System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
+            +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
+
+
             // Case 1: User provided both survey number AND subdivision
             plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
                     zone.getDistId(),
@@ -487,13 +491,17 @@ public class TblBtrDataService {
             }
         } else {
             // Case 2: User provided only survey number (no subdivision)
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
+            System.out.println("only survey  :  "+ dto.getResvno()+"  : "+cleanedResbdno);
+            System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
+                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
                     zone.getDistId(),
                     zone.getDesTalukId(),
                     dto.getVcode(),
                     dto.getBcode(),
                     dto.getLbcode(),
-                    dto.getResvno());
+                    dto.getResvno(),
+                    null);
 
             if (plots.isEmpty()) {
                 return null; // No plot found

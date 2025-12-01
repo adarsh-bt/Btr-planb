@@ -1008,30 +1008,30 @@ public class ClusterService {
       throw  new RuntimeException("Actual area , Enumerate Area and UserId must fill");
     }
     if (keyPlotBtr.getBtrtype().getBTypeId()==1){
-        if (request.getSvNo() == null){
+      if (request.getSvNo() == null){
 
-            throw new RuntimeException("Resurvey number must fill");
-        }
+        throw new RuntimeException("Resurvey number must fill");
+      }
     } else if (keyPlotBtr.getBtrtype().getBTypeId() == 2) {
-        if (request.getWard_number() == null || request.getHouseno() == null) {
-            throw new RuntimeException("Ward number and House number must fill");
-        }
+      if (request.getWard_number() == null || request.getHouseno() == null) {
+        throw new RuntimeException("Ward number and House number must fill");
+      }
     } else if (keyPlotBtr.getBtrtype().getBTypeId() == 3) {
-        if (request.getOwnername() == null || request.getAddress() == null || request.getActual() == null){
-            throw new RuntimeException("Owner name , address and area must fill");
-        }
+      if (request.getOwnername() == null || request.getAddress() == null || request.getActual() == null){
+        throw new RuntimeException("Owner name , address and area must fill");
+      }
     } else if (keyPlotBtr.getBtrtype().getBTypeId() == 4) {
-        if (request.getTp_no() == null){
-            throw new RuntimeException("Tp number number must fill");
-        }
+      if (request.getTp_no() == null){
+        throw new RuntimeException("Tp number number must fill");
+      }
 
     }else if (keyPlotBtr.getBtrtype().getBTypeId() == 5) {
-        if (request.getOld_survey_number() == null){
-            throw new RuntimeException("Old survey number Must fill number must fill");
-        }
+      if (request.getOld_survey_number() == null){
+        throw new RuntimeException("Old survey number Must fill number must fill");
+      }
 
     }
-      {
+    {
 
     }
     // 2. Create new BTR entry from mobile data
@@ -1041,8 +1041,9 @@ public class ClusterService {
     btrData.setTotCent(request.getArea());
 
     System.out.println("request>> "+keyPlot.getBtrData().getBtrtype().getBTypeId());
+    System.out.println("village  "+request.getVillage());
     if(request.getVillage() != null){
-      btrData.setVcode(request.getVillage());
+      btrData.setVcode(Integer.valueOf(request.getVillage()));
       btrData.setBcode(request.getBcode());
     }
 
@@ -1056,7 +1057,7 @@ public class ClusterService {
     btrData.setHouseno(request.getHouseno());
     btrData.setAddress(request.getAddress());
 
-   // btrData.setCl_no(request.getCl_no());
+    // btrData.setCl_no(request.getCl_no());
     // Copy values from keyplot BTR
     btrData.setDcode(keyPlotBtr.getDcode());
     btrData.setTcode(keyPlotBtr.getTcode());
@@ -1064,11 +1065,16 @@ public class ClusterService {
     btrData.setLbcode(keyPlotBtr.getLbcode());
     btrData.setBtrtype(keyPlotBtr.getBtrtype());
 
+    Optional<TblMasterVillage> lsg =
+            tblMasterVillageRepository.findById(request.getVillage());
+    System.out.println("lsg   "+lsg);
+    btrData.setLsgcode(lsg.get().getLsgCode());
+
     // Set LSG code from village master (if available)
-//    if (btrData == null) {
-//      tblMasterVillageRepository.findById(request.getVillage())
-//              .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
-//    }
+    if (btrData.getVcode() == null) {
+      tblMasterVillageRepository.findById(request.getVillage())
+              .ifPresent(v -> btrData.setLsgcode(v.getLsgCode()));
+    }
 
     // Save BTR data
     TblBtrData savedBtr = tblBtrDataRepository.save(btrData);

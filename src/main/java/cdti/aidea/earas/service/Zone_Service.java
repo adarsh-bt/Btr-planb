@@ -102,6 +102,7 @@ public class Zone_Service {
     return assignments.stream()
             .map(a -> new ZoneIdNameResponse(
                     a.getTblMasterZone().getZoneId(),
+                    a.getTblMasterZone().getDistId(),
                     a.getTblMasterZone().getZoneNameEn(), // Use .getZoneNameMal() if needed
                     a.getTblMasterZone().getBtrType().getBtrTypeId(),
                     a.getTblMasterZone().getBtrType().getBtrType()

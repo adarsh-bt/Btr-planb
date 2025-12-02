@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Builder
 @AllArgsConstructor
 @Getter
@@ -17,4 +19,5 @@ public class ZoneIdNameResponse {
   private String zoneName;
   private Integer zone_type_id;
   private String zone_type_name;
+  private List<SeasonResponse> seasons;
 }

@@ -659,7 +659,7 @@ public class ClusterService {
                       newPlot.setResbdno(row.getSubNo());
                       newPlot.setBcode(row.getBcode());
                       newPlot.setTotCent(row.getArea());
-
+                      newPlot.setLtype(keyPlot.getLandType());
                       // Get additional properties from keyPlot for consistency
                       TblBtrData keyPlotBtrData = keyPlot.getBtrData();
                       newPlot.setDcode(keyPlotBtrData.getDcode());
@@ -1047,7 +1047,7 @@ public class ClusterService {
       btrData.setBcode(request.getBcode());
     }
 
-
+    btrData.setLtype(keyPlotBtr.getLtype());
     btrData.setOldsvno(request.getOld_survey_number());
     btrData.setOldsubno(request.getOld_subdivision_number());
     btrData.setWardnumber(request.getWard_number());

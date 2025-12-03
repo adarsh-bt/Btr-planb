@@ -93,7 +93,7 @@ public class ZoneMappingService {
 
     List<TblZoneRevenueVillageMapping> mappings =
         zoneRevenueVillageMappingRepository.findByZone(zoneId);
-
+    System.out.println("fffff");
     List<Integer> villageIds =
         mappings.stream()
             .filter(m -> Boolean.TRUE.equals(m.getIsValid()))

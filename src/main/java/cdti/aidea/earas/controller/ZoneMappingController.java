@@ -37,12 +37,12 @@ public class ZoneMappingController {
   }
 
   // Get Revenue Taluks by Zone
-  @GetMapping("/revenue-taluks/{zoneId}")
-  public ResponseEntity<List<RevenueTalukDto>> getRevenueTaluksByZone(
-          @PathVariable Integer zoneId, @RequestParam(defaultValue = "en") String lang) {
-    List<RevenueTalukDto> result = zoneMappingService.getRevenueTaluksByZone(zoneId, lang);
-    return ResponseEntity.ok(result);
-  }
+//  @GetMapping("/revenue-taluks/{zoneId}")
+//  public ResponseEntity<List<RevenueTalukDto>> getRevenueTaluksByZone(
+//          @PathVariable Integer zoneId, @RequestParam(defaultValue = "en") String lang) {
+//    List<RevenueTalukDto> result = zoneMappingService.getRevenueTaluksByZone(zoneId, lang);
+//    return ResponseEntity.ok(result);
+//  }
 
   // Get Revenue Villages by Zone (with blockCode)
   @GetMapping("/revenue-villages/{zoneId}")

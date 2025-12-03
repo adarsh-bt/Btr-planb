@@ -3,6 +3,9 @@ package cdti.aidea.earas.model.Btr_models.Masters;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @AllArgsConstructor
 @Builder
 @Setter
@@ -20,4 +23,8 @@ public class DistrictMaster {
   private String census_code_2011;
   private String census_code_2001;
   private Integer des_dist_code;
+  private UUID addedBy;
+  private UUID updatedBy;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
 }

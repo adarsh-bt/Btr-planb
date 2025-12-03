@@ -63,9 +63,10 @@ public class KeyPlots_Service {
     @PersistenceContext private EntityManager entityManager;
 
     public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
+        System.out.println("keyplots deatsils   ");
         Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
         List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
-        System.out.println(">>>>>>> ");
+
         return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
     }
 
@@ -1281,8 +1282,14 @@ public class KeyPlots_Service {
                 keyPlotsRepository
                         .findById(kpId)
                         .orElseThrow(() -> new IllegalArgumentException("Id not found: " + kpId));
+        KeyPlotOwnerDetailsResponse response =
+                modelMapper.map(keyPlotDetails, KeyPlotOwnerDetailsResponse.class);
 
-        return modelMapper.map(keyPlotDetails, KeyPlotOwnerDetailsResponse.class);
+        // set static cluster_id = 2
+        Optional<ClusterMaster> clusterMaster = clusterMasterRepository.findByKeyPlotId(kpId);
+
+        response.setCluster_id(clusterMaster.get().getCluMasterId());
+        return response;
     }
 
 //    public Object KeyplotsFormation(UUID userId) {

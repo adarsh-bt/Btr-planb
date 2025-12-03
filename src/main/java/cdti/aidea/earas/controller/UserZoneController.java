@@ -1,7 +1,9 @@
 package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.common.exception.Response;
+import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
+import cdti.aidea.earas.contract.Response.LbCodeResponse;
 import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
@@ -28,6 +30,7 @@ public class UserZoneController {
 
   private final Zone_Service zoneService;
   private final BtrExportService btrExportService;
+
 
   //    if array
 
@@ -152,4 +155,18 @@ public class UserZoneController {
       );
     }
   }
+
+  @GetMapping("/zone-lb/{zoneId}")
+  public ResponseEntity<Response> getLocalBodiesByZone(@PathVariable("zoneId") Integer zoneId) {
+    List<LbCodeResponse> lbList = zoneService.getLocalBodiesByZone(zoneId);
+    return ResponseEntity.ok(
+            Response.builder()
+                    .payload(lbList)
+                    .message("Local bodies fetched successfully.")
+                    .build()
+    );
+  }
+
+
+
 }

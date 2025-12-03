@@ -2,6 +2,9 @@ package cdti.aidea.earas.model.Btr_models.Masters;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -41,4 +44,17 @@ public class TblMasterVillage implements Serializable {
 
   @Column(name = "census_code_2011")
   private String censusCode2011;
+
+  @Column(name = "added_by")
+  private UUID addedBy;
+
+  @Column(name = "updated_by")
+  private  UUID updatedBy;
+
+  @Column(name = "created_at")
+  private LocalDateTime createdAt;
+
+  @Column(name = "updated_at")
+  private  LocalDateTime updatedAt;
+
 }

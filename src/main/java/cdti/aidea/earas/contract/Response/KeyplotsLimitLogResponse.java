@@ -14,6 +14,7 @@ public class KeyplotsLimitLogResponse {
   private Long keyplotsLimit;
   private Boolean isEdited;
   private Boolean isActive;
+  private Boolean inActive;
   private UUID addedBy;
   private UUID editPermitter;
   private String remarks;

@@ -7,6 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.rmi.server.UID;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -31,4 +35,13 @@ public class TblLocalBody {
   private Boolean isActive;
 
   private String lsgCode;
+
+  private UUID addedBy;
+
+  private UUID updatedBy;
+
+  private LocalDateTime createdAt;
+
+  private LocalDateTime updatedAt;
+
 }

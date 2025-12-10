@@ -99,6 +99,7 @@ public class AdminManage {
                         zone.getZoneCode(),
                         zone.getZoneNameEn(),
                         zone.getZoneNameMal(),
+                        zone.getBtrType().getBtrType(),
                         zone.getDesTalukId(),
                         zone.getDesDistId(),
                         talukName,

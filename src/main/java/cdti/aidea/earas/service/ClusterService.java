@@ -194,6 +194,7 @@ public class ClusterService {
               clusterId,
               landType != null ? landType.toLowerCase() : "unknown",
               status,
+              null,
               new ArrayList<>(cropNames) // Pass the crop names list here
               ));
     }
@@ -205,6 +206,131 @@ public class ClusterService {
         // Will be null if CCE data is fetched successfully
         );
   }
+
+
+
+
+  public UserClusterSummaryResponse getClusterSummaryWithExternalStatus(Integer zoneId) {
+
+    // Validate zone
+    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
+            .orElseThrow(() -> new NoSuchElementException("Zone not found"));
+
+    Long zoneKey = Long.valueOf(zone.getZoneId());
+
+    // Fetch clusters from DB
+    List<ClusterMaster> clusters =
+            clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(Math.toIntExact(zoneKey));
+
+    // Fetch external statuses
+    List<ExternalClusterStatusResponse> externalStatus =
+            formEntryClient.fetchClusterStatus(zoneId);
+
+    // Convert to map: clusterId → status
+    Map<Long, String> externalStatusMap = externalStatus.stream()
+            .collect(Collectors.toMap(
+                    ExternalClusterStatusResponse::getClusterId,
+                    ExternalClusterStatusResponse::getStatus
+            ));
+    Map<Long, Long> seasonMap = externalStatus.stream()
+            .collect(Collectors.toMap(
+                    ExternalClusterStatusResponse::getClusterId,
+                    ExternalClusterStatusResponse::getSeasonId
+            ));
+
+
+    // CCE logic (unchanged from your service)
+    CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(zoneKey);
+    String cceMessage = cceResult.isFallbackUsed() ? "CCE data not available currently." : null;
+
+    Map<Long, Set<String>> cropMap = new HashMap<>();
+    for (AvailableCcePlotResponse plot : cceResult.getPlots()) {
+      if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
+        cropMap.computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
+                .add(plot.getCropName());
+      }
+    }
+
+    int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
+
+    List<ClusterStatusResponse> payload = new ArrayList<>();
+
+    for (ClusterMaster cluster : clusters) {
+      Long clusterId = cluster.getCluMasterId();
+
+      // 🔥 Higher priority: external API status
+      String status = externalStatusMap.getOrDefault(clusterId, "Not Started");
+
+      // Count
+      switch (status.toUpperCase()) {
+        case "ON GOING" -> ongoing++;
+        case "UNDER REVIEW" -> underreview++;
+        case "NOT STARTED" -> notStarted++;
+        default -> completed++;
+      }
+
+      // Build response object exactly like existing
+      var keyPlot = cluster.getKeyPlot();
+      var btr = keyPlot.getBtrData();
+
+      String svNo = btr.getResvno() + "/" + btr.getResbdno();
+      String localbodyCode = btr.getLbcode();
+      Double area = btr.getTotCent();
+
+      String villageName = tblMasterVillageRepository
+              .findFirstByLsgCode(btr.getLsgcode())
+              .map(TblMasterVillage::getVillageNameEn)
+              .orElse("Village not found");
+
+      String localBodyName = localBodyRepository.findByCodeApi(localbodyCode)
+              .map(lb -> {
+                String type = localBodyTypeRepository.findById(lb.getLocalbodyType().longValue())
+                        .map(LocalBodyType::getName)
+                        .orElse("");
+                return lb.getLocalbodyNameEn() + " " + type;
+              })
+              .orElse("Local body not found");
+
+      List<String> cropList = new ArrayList<>(cropMap.getOrDefault(clusterId, Set.of()));
+      Long seasonId = seasonMap.getOrDefault(clusterId, null);
+      payload.add(
+              new ClusterStatusResponse(
+                      cluster.getClusterNumber(),
+                      keyPlot.getId(),
+                      !cropList.isEmpty(),
+                      villageName,
+                      btr.getVcode(),
+                      localBodyName,
+                      localbodyCode,
+                      btr.getBcode(),
+                      svNo,
+                      area,
+                      clusterId,
+                      keyPlot.getLandType() != null ? keyPlot.getLandType().toLowerCase() : "unknown",
+                      status,
+                      seasonId,
+                      cropList
+              )
+      );
+    }
+
+    payload.sort(Comparator.comparingInt(ClusterStatusResponse::getClusterNo));
+
+    return new UserClusterSummaryResponse(
+            "Successfully fetched",
+            completed,
+            ongoing,
+            notStarted,
+            underreview,
+            cceMessage,
+            payload
+    );
+  }
+
+
+
+
+
   //    cluster data for App
   public Map<String, Object> getGroupedFormDataByClusterId(Long clusterId) {
     ClusterMaster clusterMaster =
@@ -553,7 +679,7 @@ public class ClusterService {
   public void saveClusterData(
       UUID userid, UUID keyplotId, Integer clusterNo, List<SidePlotDTO> sidePlots) {
 
-    System.out.println(">>>>>>>>>>>>> " + sidePlots);
+
     KeyPlots keyPlot =
         keyPlotsRepository
             .findById(keyplotId)

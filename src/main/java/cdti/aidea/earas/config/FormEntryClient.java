@@ -1,13 +1,12 @@
 package cdti.aidea.earas.config;
 
 import cdti.aidea.earas.contract.FormEntryDto.*;
+
+import java.util.List;
 import java.util.Map;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name = "formEntryClient", url = "http://localhost:9114")
 public interface FormEntryClient {
@@ -31,4 +30,7 @@ public interface FormEntryClient {
 
   @PostMapping("/earas-form1-entry/available-cce-plot-details/cce-plot-rejection")
   ResponseEntity<Response> ccePlotRejection(@RequestBody CcePlotRejectionRequest request);
+
+  @GetMapping("/earas-form1-entry/form1/fetch-cluster-status")
+  List<ExternalClusterStatusResponse> fetchClusterStatus(@RequestParam("zoneId") Integer zoneId);
 }

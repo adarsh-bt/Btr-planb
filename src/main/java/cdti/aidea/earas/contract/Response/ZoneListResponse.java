@@ -16,17 +16,19 @@ public class ZoneListResponse {
   private Integer zoneCode;
   private String zoneNameEn;
   private String zoneNameMal;
+  private String zoneType;
   private int desTalukId;
   private int desDistId;
   private String talukName;
   private String districtName;
 
-  public ZoneListResponse(int zoneId, Integer zoneCode, String zoneNameEn, String zoneNameMal,
+  public ZoneListResponse(int zoneId, Integer zoneCode, String zoneNameEn, String zoneNameMal,String zoneType,
                           int desTalukId, int desDistId, String talukName, String districtName) {
     this.zoneId = zoneId;
     this.zoneCode = zoneCode;
     this.zoneNameEn = zoneNameEn;
     this.zoneNameMal = zoneNameMal;
+    this.zoneType = zoneType;
     this.desTalukId = desTalukId;
     this.desDistId = desDistId;
     this.talukName = talukName;

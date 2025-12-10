@@ -60,6 +60,21 @@ public class ClusterController {
                   Collections.emptyList()));
     }
   }
+
+
+  @GetMapping("/cluster-form-status/{zoneId}")
+  public ResponseEntity<UserClusterSummaryResponse> getClusterSummary(
+          @PathVariable Integer zoneId) {
+
+    UserClusterSummaryResponse response =
+            clusterService.getClusterSummaryWithExternalStatus(zoneId);
+
+    return ResponseEntity.ok(response);
+  }
+
+
+
+
   //    cluster labels for App
   @PostMapping("/cluster-labels")
   public ResponseEntity<Map<String, Object>> getGroupedClusterFormData(

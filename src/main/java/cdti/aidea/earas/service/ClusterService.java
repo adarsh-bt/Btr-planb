@@ -207,9 +207,6 @@ public class ClusterService {
         );
   }
 
-
-
-
   public UserClusterSummaryResponse getClusterSummaryWithExternalStatus(Integer zoneId) {
 
     // Validate zone
@@ -326,10 +323,6 @@ public class ClusterService {
             payload
     );
   }
-
-
-
-
 
   //    cluster data for App
   public Map<String, Object> getGroupedFormDataByClusterId(Long clusterId) {
@@ -754,9 +747,14 @@ public class ClusterService {
     Map<String, ClusterFormData> existingFormDataMap =
         existingFormData.stream()
             .collect(
-                Collectors.toMap(
-                    data -> data.getPlot().getId().toString() + "_" + data.getPlotLabel(),
-                    data -> data));
+                    Collectors.toMap(
+                            data -> data.getPlot().getId().toString() + "_" + data.getPlotLabel(),
+                            data -> data,
+                            (existing, duplicate) -> {
+                              // Keep the latest one OR whichever you want
+                              return existing;  // ignore duplicate
+                            }
+                    ));
 
     // Create a set of submitted unique keys for efficient lookup
     Set<String> submittedKeys = new HashSet<>();

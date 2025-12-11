@@ -39,4 +39,18 @@ public interface KeyPlotsRepository extends JpaRepository<KeyPlots, UUID> {
   //    List<KeyPlots> findByBtrData_IdIn(List<Long> btrDataIds);
 
   List<KeyPlots> findByZone(TblMasterZone zoneId);
+
+  @Query("""
+       SELECT COUNT(k) 
+       FROM KeyPlots k 
+       WHERE k.zone.zoneId = :zoneId
+       AND k.agriStartYear = :agriYearStart 
+       AND k.agriEndYear = :agriYearEnd
+       AND k.isRejected = false
+       """)
+  long countKeyPlotsInYear(
+          @Param("zoneId") Integer zoneId,
+          @Param("agriYearStart") LocalDate agriYearStart,
+          @Param("agriYearEnd") LocalDate agriYearEnd);
+
 }

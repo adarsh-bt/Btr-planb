@@ -49,6 +49,7 @@ public class TblBtrDataService {
             throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
         }
 
+
         // 1️⃣ Save TblBtrData
         TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
 
@@ -58,6 +59,21 @@ public class TblBtrDataService {
                 tblMasterZoneRepository
                         .findById(zoneUuid)
                         .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+        // Compute agriculture year window
+        int agriYear = LocalDate.now().getYear();
+        LocalDate agriYearStart = LocalDate.of(agriYear, 6, 1);
+        LocalDate agriYearEnd = agriYearStart.plusYears(1).minusDays(1);
+
+// Count existing KeyPlots for this zone in this agri year
+        long existingCount = keyPlotsRepository.countKeyPlotsInYear(
+                zone.getZoneId(), agriYearStart, agriYearEnd);
+
+        if (existingCount >= 100) {
+            throw new RuntimeException(
+                    "Maximum limit of 100 KeyPlots reached for this zone in the current agricultural year."
+            );
+        }
 
         // 3️⃣ Save KeyPlots
         KeyPlots keyPlot = new KeyPlots();
@@ -75,13 +91,12 @@ public class TblBtrDataService {
         String lbcode = btrData.getLbcode();
         String landType = btrData.getLtype(); // "Wet" or "Dry"
 
-        int agriYear = LocalDate.now().getYear();
+//        int agriYear = LocalDate.now().getYear();
 
 // In Kerala or India, agri year may start in June — adjust accordingly
         // Start of agri year: 1st June at 00:00
         LocalDateTime startDateTime = LocalDate.of(agriYear, 6, 1).atStartOfDay();
-
-// End of agri year: 31st May at 23:59:59
+        
         LocalDateTime endDateTime = startDateTime.plusYears(1).minusSeconds(1);
 
         Optional<Integer> maxClusterNumberOpt = clusterMasterRepository

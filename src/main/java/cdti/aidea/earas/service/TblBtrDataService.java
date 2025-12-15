@@ -114,6 +114,7 @@ public class TblBtrDataService {
         clusterMaster.setStatus("Not Started");
         clusterMaster.setIsReject(false);
         clusterMaster.setIs_active(true);
+        clusterMaster.setIs_editable(true);
         clusterMaster.setZone(zone);
         clusterMasterRepository.save(clusterMaster);
 

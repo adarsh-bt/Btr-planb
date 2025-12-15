@@ -51,7 +51,8 @@ public class TblBtrData {
   private String address;
 
   @Column(name = "house_number")
-  private Integer houseno;
+//  private Integer houseno;
+  private String houseno;
 
   @Column(name = "old_survey_number")
   private Integer oldsvno;

@@ -31,5 +31,6 @@ public class PlotSaveMobileAppRequest {
     private Integer tb_subdivision_no;
     private String ownername;
     private String address;
-    private Integer houseno;
+//    private Integer houseno;
+    private String houseno;
 }

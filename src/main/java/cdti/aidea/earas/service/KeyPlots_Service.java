@@ -63,14 +63,15 @@ public class KeyPlots_Service {
     @PersistenceContext private EntityManager entityManager;
 
     public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
-        System.out.println("keyplots deatsils   ");
         Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
+
         List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
 
         return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
     }
 
     private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(KeyPlots keyPlot) {
+        System.out.println("keyplost  "+keyPlot);
         TblBtrData plot = keyPlot.getBtrData();
         String syNo = plot.getResvno() + "/" + plot.getResbdno();
         String villageBlock = plot.getBcode();
@@ -82,12 +83,12 @@ public class KeyPlots_Service {
                         .findByCodeApi(lbcode)
                         .map(TblLocalBody::getLocalbodyNameEn)
                         .orElse(lbcode); // fallback if name not found
-
+        System.out.println("panyachth "+panchayath);
         String landType = keyPlot.getLandType();
 
         Optional<TblMasterVillage> village =
                 tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
-
+        System.out.println("expect  :::> "+village);
         // Fetch related SidePlotDTOs
         List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
         Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
@@ -98,6 +99,7 @@ public class KeyPlots_Service {
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
+        System.out.println("ggg  "+cluster.get().getClusterNumber());
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
@@ -111,6 +113,7 @@ public class KeyPlots_Service {
                 panchayath,
                 lbcode,
                 status.get().getStatus(),
+                null,
                 clustermax,
                 clustermin,
                 tsoclusterlimit,
@@ -1056,6 +1059,7 @@ public class KeyPlots_Service {
                 panchayath,
                 lbcode,
                 status.get().getStatus(),
+                cluster.get().getIs_editable(),
                 clustermax,
                 clustermin,
                 tsoclusterlimit,

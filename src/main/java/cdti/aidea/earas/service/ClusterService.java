@@ -148,7 +148,7 @@ public class ClusterService {
 
       // ⚠️ TblBtrData does not have "area". Use nsqm, nhect, or nare instead
       // Double keyplot_area = cluster.getKeyPlot().getBtrData().getNsqm();
-    System.out.println("lbode    "+local_body_code);
+
       TblLocalBody localBody = localBodyRepository.findByCodeApi(local_body_code).orElse(null);
       String localBodyName = "Local body not found";
       if (localBody != null) {
@@ -207,124 +207,171 @@ public class ClusterService {
         );
   }
 
-  public UserClusterSummaryResponse getClusterSummaryWithExternalStatus(Integer zoneId) {
+    private List<SeasonStatusDto> buildSeasonStatus(
+            Long clusterId,
+            Map<Long, List<ExternalClusterStatusResponse>> clusterSeasonMap
+    ) {
+        // 🔥 Expected seasons (hardcoded)
+        List<Long> expectedSeasons = List.of(1L, 2L, 3L);
 
-    // Validate zone
-    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
-            .orElseThrow(() -> new NoSuchElementException("Zone not found"));
+        // Map: seasonId -> status (from API)
+        Map<Long, String> seasonStatusMap =
+                clusterSeasonMap.getOrDefault(clusterId, List.of())
+                        .stream()
+                        .collect(Collectors.toMap(
+                                ExternalClusterStatusResponse::getSeasonId,
+                                ExternalClusterStatusResponse::getStatus
+                        ));
 
-    Long zoneKey = Long.valueOf(zone.getZoneId());
+        List<SeasonStatusDto> result = new ArrayList<>();
 
-    // Fetch clusters from DB
-    List<ClusterMaster> clusters =
-            clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(Math.toIntExact(zoneKey));
+        for (Long seasonId : expectedSeasons) {
+            result.add(
+                    new SeasonStatusDto(
+                            seasonId,
+                            seasonStatusMap.getOrDefault(seasonId, "NOT STARTED")
+                    )
+            );
+        }
 
-    // Fetch external statuses
-    List<ExternalClusterStatusResponse> externalStatus =
-            formEntryClient.fetchClusterStatus(zoneId);
-
-    // Convert to map: clusterId → status
-    Map<Long, String> externalStatusMap = externalStatus.stream()
-            .collect(Collectors.toMap(
-                    ExternalClusterStatusResponse::getClusterId,
-                    ExternalClusterStatusResponse::getStatus
-            ));
-    Map<Long, Long> seasonMap = externalStatus.stream()
-            .collect(Collectors.toMap(
-                    ExternalClusterStatusResponse::getClusterId,
-                    ExternalClusterStatusResponse::getSeasonId
-            ));
-
-
-    // CCE logic (unchanged from your service)
-    CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(zoneKey);
-    String cceMessage = cceResult.isFallbackUsed() ? "CCE data not available currently." : null;
-
-    Map<Long, Set<String>> cropMap = new HashMap<>();
-    for (AvailableCcePlotResponse plot : cceResult.getPlots()) {
-      if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
-        cropMap.computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
-                .add(plot.getCropName());
-      }
+        return result;
     }
 
-    int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
+    public UserClusterSummaryResponse getClusterSummaryWithExternalStatus(Integer zoneId) {
 
-    List<ClusterStatusResponse> payload = new ArrayList<>();
+        // 1️⃣ Validate zone
+        TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
+                .orElseThrow(() -> new NoSuchElementException("Zone not found"));
 
-    for (ClusterMaster cluster : clusters) {
-      Long clusterId = cluster.getCluMasterId();
+        Long zoneKey = Long.valueOf(zone.getZoneId());
 
-      // 🔥 Higher priority: external API status
-      String status = externalStatusMap.getOrDefault(clusterId, "Not Started");
+        // 2️⃣ Fetch clusters
+        List<ClusterMaster> clusters =
+                clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(Math.toIntExact(zoneKey));
 
-      // Count
-      switch (status.toUpperCase()) {
-        case "ON GOING" -> ongoing++;
-        case "UNDER REVIEW" -> underreview++;
-        case "NOT STARTED" -> notStarted++;
-        default -> completed++;
-      }
+        // 3️⃣ Call external API
+        List<ExternalClusterStatusResponse> externalStatus =
+                formEntryClient.fetchClusterStatus(zoneId);
 
-      // Build response object exactly like existing
-      var keyPlot = cluster.getKeyPlot();
-      var btr = keyPlot.getBtrData();
+        // 4️⃣ Group by clusterId
+        Map<Long, List<ExternalClusterStatusResponse>> clusterSeasonMap =
+                externalStatus.stream()
+                        .collect(Collectors.groupingBy(
+                                ExternalClusterStatusResponse::getClusterId
+                        ));
 
-      String svNo = btr.getResvno() + "/" + btr.getResbdno();
-      String localbodyCode = btr.getLbcode();
-      Double area = btr.getTotCent();
+        // 5️⃣ CCE logic (unchanged)
+        CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(zoneKey);
+        String cceMessage = cceResult.isFallbackUsed()
+                ? "CCE data not available currently."
+                : null;
 
-      String villageName = tblMasterVillageRepository
-              .findFirstByLsgCode(btr.getLsgcode())
-              .map(TblMasterVillage::getVillageNameEn)
-              .orElse("Village not found");
+        Map<Long, Set<String>> cropMap = new HashMap<>();
+        for (AvailableCcePlotResponse plot : cceResult.getPlots()) {
+            if (plot.getCropId() != null &&
+                    "random".equalsIgnoreCase(plot.getCceSourceType())) {
+                cropMap.computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
+                        .add(plot.getCropName());
+            }
+        }
 
-      String localBodyName = localBodyRepository.findByCodeApi(localbodyCode)
-              .map(lb -> {
-                String type = localBodyTypeRepository.findById(lb.getLocalbodyType().longValue())
-                        .map(LocalBodyType::getName)
-                        .orElse("");
-                return lb.getLocalbodyNameEn() + " " + type;
-              })
-              .orElse("Local body not found");
+        int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
+        List<ClusterStatusResponse> payload = new ArrayList<>();
 
-      List<String> cropList = new ArrayList<>(cropMap.getOrDefault(clusterId, Set.of()));
-      Long seasonId = seasonMap.getOrDefault(clusterId, null);
-      payload.add(
-              new ClusterStatusResponse(
-                      cluster.getClusterNumber(),
-                      keyPlot.getId(),
-                      !cropList.isEmpty(),
-                      villageName,
-                      btr.getVcode(),
-                      localBodyName,
-                      localbodyCode,
-                      btr.getBcode(),
-                      svNo,
-                      area,
-                      clusterId,
-                      keyPlot.getLandType() != null ? keyPlot.getLandType().toLowerCase() : "unknown",
-                      status,
-                      seasonId,
-                      cropList
-              )
-      );
+        // 6️⃣ Build response per cluster
+        for (ClusterMaster cluster : clusters) {
+
+            Long clusterId = cluster.getCluMasterId();
+
+            // 🔥 Season handling (ALL edge cases)
+            List<SeasonStatusDto> seasonStatusList =
+                    buildSeasonStatus(clusterId, clusterSeasonMap);
+
+            // 🔥 Derive cluster-level status
+            String clusterStatus = "NOT STARTED";
+
+            if (seasonStatusList.stream()
+                    .anyMatch(s -> "ON GOING".equalsIgnoreCase(s.getStatus()))) {
+                clusterStatus = "ON GOING";
+            } else if (seasonStatusList.stream()
+                    .anyMatch(s -> "UNDER REVIEW".equalsIgnoreCase(s.getStatus()))) {
+                clusterStatus = "UNDER REVIEW";
+            } else if (seasonStatusList.stream()
+                    .allMatch(s -> "COMPLETED".equalsIgnoreCase(s.getStatus()))) {
+                clusterStatus = "COMPLETED";
+            }
+
+            // 7️⃣ Count summary
+            switch (clusterStatus) {
+                case "ON GOING" -> ongoing++;
+                case "UNDER REVIEW" -> underreview++;
+                case "NOT STARTED" -> notStarted++;
+                default -> completed++;
+            }
+
+            // 8️⃣ Existing mapping
+            var keyPlot = cluster.getKeyPlot();
+            var btr = keyPlot.getBtrData();
+
+            String svNo = btr.getResvno() + "/" + btr.getResbdno();
+            String localbodyCode = btr.getLbcode();
+            Double area = btr.getTotCent();
+
+            String villageName = tblMasterVillageRepository
+                    .findFirstByLsgCode(btr.getLsgcode())
+                    .map(TblMasterVillage::getVillageNameEn)
+                    .orElse("Village not found");
+
+            String localBodyName = localBodyRepository.findByCodeApi(localbodyCode)
+                    .map(lb -> {
+                        String type = localBodyTypeRepository
+                                .findById(lb.getLocalbodyType().longValue())
+                                .map(LocalBodyType::getName)
+                                .orElse("");
+                        return lb.getLocalbodyNameEn() + " " + type;
+                    })
+                    .orElse("Local body not found");
+            List<String> cropList =
+                    new ArrayList<>(cropMap.getOrDefault(clusterId, Set.of()));
+            payload.add(
+                    new ClusterStatusResponse(
+                            cluster.getClusterNumber(),
+                            keyPlot.getId(),
+                            !cropList.isEmpty(),
+                            villageName,
+                            btr.getVcode(),
+                            localBodyName,
+                            localbodyCode,
+                            btr.getBcode(),
+                            svNo,
+                            area,
+                            clusterId,
+                            keyPlot.getLandType() != null
+                                    ? keyPlot.getLandType().toLowerCase()
+                                    : "unknown",
+                            clusterStatus,
+                            seasonStatusList,
+                            cropList
+                    )
+            );
+        }
+        payload.sort(Comparator.comparingInt(ClusterStatusResponse::getClusterNo));
+
+        // 9️⃣ Final response
+        return new UserClusterSummaryResponse(
+                "Successfully fetched",
+                completed,
+                ongoing,
+                notStarted,
+                underreview,
+                cceMessage,
+                payload
+        );
     }
 
-    payload.sort(Comparator.comparingInt(ClusterStatusResponse::getClusterNo));
 
-    return new UserClusterSummaryResponse(
-            "Successfully fetched",
-            completed,
-            ongoing,
-            notStarted,
-            underreview,
-            cceMessage,
-            payload
-    );
-  }
 
-  //    cluster data for App
+    //    cluster data for App
   public Map<String, Object> getGroupedFormDataByClusterId(Long clusterId) {
     ClusterMaster clusterMaster =
         clusterMasterRepository
@@ -668,206 +715,429 @@ public class ClusterService {
         kpId, lbcode, resvno, resbdno, plot.getTotCent(), plot.getBcode(), plot.getId());
   }
 
+//  @Transactional
+//  public void saveClusterData(
+//      UUID userid, UUID keyplotId, Integer clusterNo, String status, String remarks,List<SidePlotDTO> sidePlots) {
+//
+//
+//    KeyPlots keyPlot =
+//        keyPlotsRepository
+//            .findById(keyplotId)
+//            .orElseThrow(() -> new RuntimeException("KeyPlot not found with ID: " + keyplotId));
+//
+//    Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
+//    BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+//    BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+//    BigDecimal tsoclusterlimit =
+//        currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
+//    ClusterMaster clusterMaster =
+//        clusterMasterRepository
+//            .findByKeyPlotId(keyPlot.getId())
+//            .orElseGet(
+//                () -> {
+//                  // If not found, create new ClusterMaster
+//                  ClusterMaster newCluster = new ClusterMaster();
+//                  newCluster.setKeyPlot(keyPlot);
+//                  //                    newCluster.setClusterNo(clusterNo); // Set the clusterNo
+//                  // here for new master
+//                  newCluster.setStatus("On Going");
+//                  newCluster.setIsReject(false);
+//                  newCluster.setIs_active(true);
+//                  newCluster.setCreatedAt(LocalDateTime.now());
+//                  newCluster.setUpdatedAt(LocalDateTime.now());
+//                  return newCluster;
+//                });
+//
+//    // Update existing ClusterMaster properties
+//    //        clusterMaster.setClusterNo(clusterNo); // Always update clusterNo
+//    double totalEnumeratedArea =
+//        sidePlots.stream()
+//            .flatMap(sp -> sp.getRows().stream())
+//            .mapToDouble(row -> row.getActual() != null ? row.getActual() : 0.0)
+//            .sum();
+//
+//    // 🔹 Decide status based on limits
+//
+//    String status;
+//    System.out.println("total " + totalEnumeratedArea);
+//    if (clustermax != null && BigDecimal.valueOf(totalEnumeratedArea).compareTo(clustermax) > 0) {
+//      throw new RuntimeException("Maximum limit exceeded, please reduce the size.");
+//    } else if (clustermin != null
+//        && BigDecimal.valueOf(totalEnumeratedArea).compareTo(clustermin) < 0) {
+//      status = "On Going";
+//
+//    } else if (tsoclusterlimit != null
+//        && BigDecimal.valueOf(totalEnumeratedArea).compareTo(tsoclusterlimit) < 0) {
+//      status = "Under Review";
+//      ClusterApprovalLog clusterApprovalLog = new ClusterApprovalLog();
+//      clusterApprovalLog.setClusterMaster(clusterMaster);
+//      clusterApprovalLog.setAddedBy(userid);
+//      clusterApprovalLog.setZone(clusterMaster.getZone());
+//      clusterApprovalLog.setRemarks("Cluster is Not meet the approval limit");
+//      clusterApprovalLog.setTotalArea(BigDecimal.valueOf(totalEnumeratedArea));
+//      clusterApprovalRepository.save(clusterApprovalLog);
+//
+//    } else {
+//      status = "Completed";
+//    }
+//
+//    // 🔹 Apply status & save ClusterMaster
+//    clusterMaster.setStatus(status);
+//    clusterMaster.setUpdatedAt(LocalDateTime.now());
+//    ClusterMaster savedCluster = clusterMasterRepository.save(clusterMaster);
+//
+//    // --- Data Management Logic ---
+//
+//    // 1. Get existing ClusterFormData for this ClusterMaster
+//    List<ClusterFormData> existingFormData =
+//        clusterFormDataRepository.findByClusterMaster(savedCluster);
+//    Map<String, ClusterFormData> existingFormDataMap =
+//        existingFormData.stream()
+//            .collect(
+//                    Collectors.toMap(
+//                            data -> data.getPlot().getId().toString() + "_" + data.getPlotLabel(),
+//                            data -> data,
+//                            (existing, duplicate) -> {
+//                              // Keep the latest one OR whichever you want
+//                              return existing;  // ignore duplicate
+//                            }
+//                    ));
+//
+//    // Create a set of submitted unique keys for efficient lookup
+//    Set<String> submittedKeys = new HashSet<>();
+//
+//    // 2. Process submitted side plots: Add new or Update existing
+//    for (SidePlotDTO sidePlot : sidePlots) {
+//      for (ClusterFormRowDTO row : sidePlot.getRows()) {
+//        Long currentPlotId = row.getPlot_id();
+//        System.out.println("village   "+row.getVillage());
+//        String currentPlotLabel = sidePlot.getLabel();
+//        String uniqueKey = currentPlotId.toString() + "_" + currentPlotLabel;
+//        submittedKeys.add(uniqueKey); // Add to submitted keys set
+//
+//        TblBtrData plot =
+//            tblBtrDataRepository
+//                .findById(currentPlotId)
+//                //                        .orElseThrow(() -> new RuntimeException("Plot not found
+//                // for ID: " + currentPlotId));
+//                .orElseGet(
+//                    () -> {
+//                      // Create new TblBtrData if not found
+//                      TblBtrData newPlot = new TblBtrData();
+//                      System.out.println("villages" + row.getVillage());
+//                      // Set basic properties from the row data
+//                      newPlot.setResvno(row.getSvNo());
+//                      newPlot.setResbdno(row.getSubNo());
+//                      newPlot.setBcode(row.getBcode());
+//                      newPlot.setTotCent(row.getArea());
+//                      newPlot.setLtype(keyPlot.getLandType());
+//                      // Get additional properties from keyPlot for consistency
+//                      TblBtrData keyPlotBtrData = keyPlot.getBtrData();
+//                      newPlot.setDcode(keyPlotBtrData.getDcode());
+//                      newPlot.setTcode(keyPlotBtrData.getTcode());
+//                      newPlot.setVcode(Integer.valueOf(row.getVillage())); // m
+//                      newPlot.setBtrtype(keyPlotBtrData.getBtrtype());
+//                      newPlot.setAddress(row.getAddress());
+//                      newPlot.setOwnername(row.getOwnername());
+//                      newPlot.setHouseno(row.getHouseno());
+//                      newPlot.setOldsvno(row.getOldsvno());
+//                      newPlot.setOldsubno(row.getOldsubno());
+//                      newPlot.setTpno(row.getTpno());
+//                      newPlot.setTbsubdivisionno(row.getTbsubdivisionno());
+//                      newPlot.setWardnumber(row.getWard_number());
+//                      //
+//                      // newPlot.setLbtype(keyPlotBtrData.getLbtype());//venda
+//                      newPlot.setLbcode(keyPlotBtrData.getLbcode());
+//                      //
+//                      // newPlot.setGovpriv(keyPlotBtrData.getGovpriv());//venda
+//                      newPlot.setLtype(keyPlotBtrData.getLtype()); // done
+//                      //                            newPlot.setLanduse(keyPlotBtrData.getLanduse());
+//                      // //venda
+//                      Optional<TblMasterVillage> lsg =
+//                          tblMasterVillageRepository.findById(Integer.valueOf(row.getVillage()));
+//                      newPlot.setLsgcode(lsg.get().getLsgCode()); // m
+//
+//                      // Set default values for optional fields
+//                      //                            newPlot.setNhect(0.0);
+//                      //                            newPlot.setNare(0.0);
+//                      //                            newPlot.setNsqm(0.0);
+//                      //                            newPlot.setEast(0.0);
+//                      //                            newPlot.setWest(0.0);
+//                      //                            newPlot.setNorth(0.0);
+//                      //                            newPlot.setSouth(0.0);
+//
+//                      log.info(
+//                          "Creating new TblBtrData for plot_id: {} with svNo: {} and subNo: {}",
+//                          currentPlotId,
+//                          row.getSvNo(),
+//                          row.getSubNo());
+//
+//                      return tblBtrDataRepository.save(newPlot);
+//                    });
+//
+//        Double enumeratedArea = row.getActual();
+//        if (enumeratedArea == null) {
+//          // Handle cases where 'actual' might be null or not a valid number
+//          // Based on your frontend, it looks like 'enumeratedArea' is what's editable.
+//          // Let's assume 'actual' in DTO maps to 'enumeratedArea' in entity.
+//          throw new RuntimeException(
+//              "Enumerated area cannot be null for plot ID: " + currentPlotId);
+//        }
+//
+//        ClusterFormData formData;
+//        if (existingFormDataMap.containsKey(uniqueKey)) {
+//          // Update existing entry
+//          formData = existingFormDataMap.get(uniqueKey);
+//          formData.setEnumeratedArea(enumeratedArea);
+//          formData.setUpdatedAt(LocalDateTime.now());
+//          // Remove from map to mark it as processed
+//          existingFormDataMap.remove(uniqueKey);
+//        } else {
+//          // Add new entry
+//          formData = new ClusterFormData();
+//          formData.setClusterMaster(savedCluster);
+//          formData.setPlot(plot);
+//          formData.setPlotLabel(currentPlotLabel);
+//          formData.setEnumeratedArea(enumeratedArea);
+//          formData.setStatus(true); // Assuming true for new entries
+//          formData.setCreatedAt(LocalDateTime.now());
+//          formData.setUpdatedAt(LocalDateTime.now());
+//          formData.setCreatedBy(userid);
+//        }
+//        clusterFormDataRepository.save(formData); // Save or update
+//      }
+//    }
+//
+//    // 3. Delete old ClusterFormData entries that are no longer submitted
+//    // Any remaining entries in existingFormDataMap were not in the current submission
+//    clusterFormDataRepository.deleteAll(existingFormDataMap.values());
+//  }
+
   @Transactional
   public void saveClusterData(
-      UUID userid, UUID keyplotId, Integer clusterNo, List<SidePlotDTO> sidePlots) {
+          UUID userid,
+          UUID keyplotId,
+          Integer clusterNo,
+          String requestedStatus,   // On Going | Under Review | COMPLETED
+          String remarks,
+          List<SidePlotDTO> sidePlots
+  ) {
 
-
+   System.out.println("status :::  "+requestedStatus);
     KeyPlots keyPlot =
-        keyPlotsRepository
-            .findById(keyplotId)
-            .orElseThrow(() -> new RuntimeException("KeyPlot not found with ID: " + keyplotId));
+            keyPlotsRepository.findById(keyplotId)
+                    .orElseThrow(() ->
+                            new RuntimeException("KeyPlot not found with ID: " + keyplotId));
 
-    Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
-    BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
-    BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
-    BigDecimal tsoclusterlimit =
-        currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
+    // =====================================================
+    // 2️⃣ FETCH ACTIVE LIMIT CONFIG
+    // =====================================================
+    ClusterLimitLog limit =
+            clusterLimitLogRepository.findByInActiveTrue()
+                    .orElseThrow(() ->
+                            new RuntimeException("Cluster limit configuration missing"));
+
+    BigDecimal clusterMin = limit.getClusterMin();
+    BigDecimal clusterMax = limit.getClusterMax();
+    BigDecimal clusterMean = limit.getTsoApprovalLimit();
+
+    // =====================================================
+    // 3️⃣ FETCH / CREATE CLUSTER MASTER
+    // =====================================================
     ClusterMaster clusterMaster =
-        clusterMasterRepository
-            .findByKeyPlotId(keyPlot.getId())
-            .orElseGet(
-                () -> {
-                  // If not found, create new ClusterMaster
-                  ClusterMaster newCluster = new ClusterMaster();
-                  newCluster.setKeyPlot(keyPlot);
-                  //                    newCluster.setClusterNo(clusterNo); // Set the clusterNo
-                  // here for new master
-                  newCluster.setStatus("On Going");
-                  newCluster.setIsReject(false);
-                  newCluster.setIs_active(true);
-                  newCluster.setCreatedAt(LocalDateTime.now());
-                  newCluster.setUpdatedAt(LocalDateTime.now());
-                  return newCluster;
-                });
-
-    // Update existing ClusterMaster properties
-    //        clusterMaster.setClusterNo(clusterNo); // Always update clusterNo
-    double totalEnumeratedArea =
-        sidePlots.stream()
-            .flatMap(sp -> sp.getRows().stream())
-            .mapToDouble(row -> row.getActual() != null ? row.getActual() : 0.0)
-            .sum();
-
-    // 🔹 Decide status based on limits
-
-    String status;
-    System.out.println("total " + totalEnumeratedArea);
-    if (clustermax != null && BigDecimal.valueOf(totalEnumeratedArea).compareTo(clustermax) > 0) {
-      throw new RuntimeException("Maximum limit exceeded, please reduce the size.");
-    } else if (clustermin != null
-        && BigDecimal.valueOf(totalEnumeratedArea).compareTo(clustermin) < 0) {
-      status = "On Going";
-
-    } else if (tsoclusterlimit != null
-        && BigDecimal.valueOf(totalEnumeratedArea).compareTo(tsoclusterlimit) < 0) {
-      status = "Under Review";
-      ClusterApprovalLog clusterApprovalLog = new ClusterApprovalLog();
-      clusterApprovalLog.setClusterMaster(clusterMaster);
-      clusterApprovalLog.setAddedBy(userid);
-      clusterApprovalLog.setZone(clusterMaster.getZone());
-      clusterApprovalLog.setRemarks("Cluster is Not meet the approval limit");
-      clusterApprovalLog.setTotalArea(BigDecimal.valueOf(totalEnumeratedArea));
-      clusterApprovalRepository.save(clusterApprovalLog);
-
-    } else {
-      status = "Completed";
-    }
-
-    // 🔹 Apply status & save ClusterMaster
-    clusterMaster.setStatus(status);
-    clusterMaster.setUpdatedAt(LocalDateTime.now());
-    ClusterMaster savedCluster = clusterMasterRepository.save(clusterMaster);
-
-    // --- Data Management Logic ---
-
-    // 1. Get existing ClusterFormData for this ClusterMaster
-    List<ClusterFormData> existingFormData =
-        clusterFormDataRepository.findByClusterMaster(savedCluster);
-    Map<String, ClusterFormData> existingFormDataMap =
-        existingFormData.stream()
-            .collect(
-                    Collectors.toMap(
-                            data -> data.getPlot().getId().toString() + "_" + data.getPlotLabel(),
-                            data -> data,
-                            (existing, duplicate) -> {
-                              // Keep the latest one OR whichever you want
-                              return existing;  // ignore duplicate
-                            }
-                    ));
-
-    // Create a set of submitted unique keys for efficient lookup
-    Set<String> submittedKeys = new HashSet<>();
-
-    // 2. Process submitted side plots: Add new or Update existing
-    for (SidePlotDTO sidePlot : sidePlots) {
-      for (ClusterFormRowDTO row : sidePlot.getRows()) {
-        Long currentPlotId = row.getPlot_id();
-        System.out.println("village   "+row.getVillage());
-        String currentPlotLabel = sidePlot.getLabel();
-        String uniqueKey = currentPlotId.toString() + "_" + currentPlotLabel;
-        submittedKeys.add(uniqueKey); // Add to submitted keys set
-
-        TblBtrData plot =
-            tblBtrDataRepository
-                .findById(currentPlotId)
-                //                        .orElseThrow(() -> new RuntimeException("Plot not found
-                // for ID: " + currentPlotId));
-                .orElseGet(
-                    () -> {
-                      // Create new TblBtrData if not found
-                      TblBtrData newPlot = new TblBtrData();
-                      System.out.println("villages" + row.getVillage());
-                      // Set basic properties from the row data
-                      newPlot.setResvno(row.getSvNo());
-                      newPlot.setResbdno(row.getSubNo());
-                      newPlot.setBcode(row.getBcode());
-                      newPlot.setTotCent(row.getArea());
-                      newPlot.setLtype(keyPlot.getLandType());
-                      // Get additional properties from keyPlot for consistency
-                      TblBtrData keyPlotBtrData = keyPlot.getBtrData();
-                      newPlot.setDcode(keyPlotBtrData.getDcode());
-                      newPlot.setTcode(keyPlotBtrData.getTcode());
-                      newPlot.setVcode(Integer.valueOf(row.getVillage())); // m
-                      newPlot.setBtrtype(keyPlotBtrData.getBtrtype());
-                      newPlot.setAddress(row.getAddress());
-                      newPlot.setOwnername(row.getOwnername());
-                      newPlot.setHouseno(row.getHouseno());
-                      newPlot.setOldsvno(row.getOldsvno());
-                      newPlot.setOldsubno(row.getOldsubno());
-                      newPlot.setTpno(row.getTpno());
-                      newPlot.setTbsubdivisionno(row.getTbsubdivisionno());
-                      newPlot.setWardnumber(row.getWard_number());
-                      //
-                      // newPlot.setLbtype(keyPlotBtrData.getLbtype());//venda
-                      newPlot.setLbcode(keyPlotBtrData.getLbcode());
-                      //
-                      // newPlot.setGovpriv(keyPlotBtrData.getGovpriv());//venda
-                      newPlot.setLtype(keyPlotBtrData.getLtype()); // done
-                      //                            newPlot.setLanduse(keyPlotBtrData.getLanduse());
-                      // //venda
-                      Optional<TblMasterVillage> lsg =
-                          tblMasterVillageRepository.findById(Integer.valueOf(row.getVillage()));
-                      newPlot.setLsgcode(lsg.get().getLsgCode()); // m
-
-                      // Set default values for optional fields
-                      //                            newPlot.setNhect(0.0);
-                      //                            newPlot.setNare(0.0);
-                      //                            newPlot.setNsqm(0.0);
-                      //                            newPlot.setEast(0.0);
-                      //                            newPlot.setWest(0.0);
-                      //                            newPlot.setNorth(0.0);
-                      //                            newPlot.setSouth(0.0);
-
-                      log.info(
-                          "Creating new TblBtrData for plot_id: {} with svNo: {} and subNo: {}",
-                          currentPlotId,
-                          row.getSvNo(),
-                          row.getSubNo());
-
-                      return tblBtrDataRepository.save(newPlot);
+            clusterMasterRepository.findByKeyPlotId(keyPlot.getId())
+                    .orElseGet(() -> {
+                      ClusterMaster cm = new ClusterMaster();
+                      cm.setKeyPlot(keyPlot);
+                      cm.setStatus("On Going");
+                      cm.setIsReject(false);
+                      cm.setIs_active(true);
+                      cm.setCreatedAt(LocalDateTime.now());
+                      cm.setUpdatedAt(LocalDateTime.now());
+                      return cm;
                     });
 
-        Double enumeratedArea = row.getActual();
-        if (enumeratedArea == null) {
-          // Handle cases where 'actual' might be null or not a valid number
-          // Based on your frontend, it looks like 'enumeratedArea' is what's editable.
-          // Let's assume 'actual' in DTO maps to 'enumeratedArea' in entity.
+    // =====================================================
+    // 4️⃣ CALCULATE TOTAL ENUMERATED AREA (BACKEND TRUTH)
+    // =====================================================
+    double totalEnumeratedArea =
+            sidePlots.stream()
+                    .flatMap(sp -> sp.getRows().stream())
+                    .mapToDouble(r -> r.getActual() != null ? r.getActual() : 0.0)
+                    .sum();
+
+    BigDecimal total = BigDecimal.valueOf(totalEnumeratedArea);
+
+    // =====================================================
+    // 5️⃣ HARD BACKEND VALIDATION (FINAL AUTHORITY)
+    // =====================================================
+    Boolean is_edit;
+    // ❌ ABOVE MAX → STOP
+    if (clusterMax != null && total.compareTo(clusterMax) > 0) {
+      throw new RuntimeException("Maximum limit exceeded.");
+    }
+
+    // 🔹 BELOW MIN → ONLY SAVE (ON GOING)
+    if (clusterMin != null && total.compareTo(clusterMin) < 0) {
+      if (!"On Going".equalsIgnoreCase(requestedStatus)) {
+        throw new RuntimeException(
+                "Below minimum: only Save allowed (Status: On Going).");
+      }
+    }
+
+    // 🔹 BETWEEN MIN & MEAN → SAVE or APPROVAL
+    if (clusterMin != null && clusterMean != null
+            && total.compareTo(clusterMin) >= 0
+            && total.compareTo(clusterMean) < 0) {
+
+      if (!List.of("On Going", "Under Review")
+              .contains(requestedStatus)) {
+        throw new RuntimeException(
+                "Between minimum and mean: Save or Send for Approval only.");
+      }
+
+      if ("Under Review".equalsIgnoreCase(requestedStatus)
+              && (remarks == null || remarks.isBlank())) {
+        throw new RuntimeException(
+                "Remarks required for approval.");
+      }
+    }
+
+    // 🔹 ABOVE MEAN → SAVE or COMPLETED
+    if (clusterMean != null && total.compareTo(clusterMean) >= 0) {
+      if (!List.of("On Going", "Completed")
+              .contains(requestedStatus)) {
+        throw new RuntimeException(
+                "Above mean: Save or Completed only.");
+      }
+    }
+
+    if (
+            "Under Review".equalsIgnoreCase(requestedStatus) ||
+                    "Completed".equalsIgnoreCase(requestedStatus)
+    ) {
+      clusterMaster.setIs_editable(false);
+    }
+
+    clusterMaster.setStatus(requestedStatus);
+    clusterMaster.setUpdatedAt(LocalDateTime.now());
+    ClusterMaster savedCluster =
+            clusterMasterRepository.save(clusterMaster);
+
+    // =====================================================
+    // 7️⃣ APPROVAL LOG (ONLY IF Under Review)
+    // =====================================================
+    if ("Under Review".equalsIgnoreCase(requestedStatus)) {
+      ClusterApprovalLog log = new ClusterApprovalLog();
+      log.setClusterMaster(savedCluster);
+      log.setAddedBy(userid);
+      log.setZone(savedCluster.getZone());
+      log.setRemarks(remarks);
+      log.setTotalArea(total);
+      clusterApprovalRepository.save(log);
+    }
+
+    // =====================================================
+    // 8️⃣ CLUSTER FORM DATA SAVE / UPDATE / DELETE
+    // =====================================================
+    List<ClusterFormData> existingData =
+            clusterFormDataRepository.findByClusterMaster(savedCluster);
+
+    Map<String, ClusterFormData> existingMap =
+            existingData.stream()
+                    .collect(Collectors.toMap(
+                            d -> d.getPlot().getId() + "_" + d.getPlotLabel(),
+                            d -> d,
+                            (a, b) -> a
+                    ));
+
+    Set<String> submittedKeys = new HashSet<>();
+
+    for (SidePlotDTO sidePlot : sidePlots) {
+      for (ClusterFormRowDTO row : sidePlot.getRows()) {
+
+        Long plotId = row.getPlot_id();
+        String label = sidePlot.getLabel();
+        String key = plotId + "_" + label;
+        submittedKeys.add(key);
+
+        // =================================================
+        // 🔥 RESTORED TBLBTR AUTO-CREATION (YOUR OLD LOGIC)
+        // =================================================
+        TblBtrData plot =
+                tblBtrDataRepository.findById(plotId)
+                        .orElseGet(() -> {
+
+                          TblBtrData newPlot = new TblBtrData();
+                          newPlot.setResvno(row.getSvNo());
+                          newPlot.setResbdno(row.getSubNo());
+                          newPlot.setBcode(row.getBcode());
+                          newPlot.setTotCent(row.getArea());
+                          newPlot.setLtype(keyPlot.getLandType());
+
+                          TblBtrData kp = keyPlot.getBtrData();
+                          newPlot.setDcode(kp.getDcode());
+                          newPlot.setTcode(kp.getTcode());
+                          newPlot.setVcode(Integer.valueOf(row.getVillage()));
+                          newPlot.setBtrtype(kp.getBtrtype());
+                          newPlot.setAddress(row.getAddress());
+                          newPlot.setOwnername(row.getOwnername());
+                          newPlot.setHouseno(row.getHouseno());
+                          newPlot.setOldsvno(row.getOldsvno());
+                          newPlot.setOldsubno(row.getOldsubno());
+                          newPlot.setTpno(row.getTpno());
+                          newPlot.setTbsubdivisionno(row.getTbsubdivisionno());
+                          newPlot.setWardnumber(row.getWard_number());
+                          newPlot.setLbcode(kp.getLbcode());
+                          newPlot.setLtype(kp.getLtype());
+
+                          TblMasterVillage village =
+                                  tblMasterVillageRepository
+                                          .findById(Integer.valueOf(row.getVillage()))
+                                          .orElseThrow();
+                          newPlot.setLsgcode(village.getLsgCode());
+
+                          return tblBtrDataRepository.save(newPlot);
+                        });
+
+        if (row.getActual() == null) {
           throw new RuntimeException(
-              "Enumerated area cannot be null for plot ID: " + currentPlotId);
+                  "Enumerated area cannot be null for plot " + plotId);
         }
 
         ClusterFormData formData;
-        if (existingFormDataMap.containsKey(uniqueKey)) {
-          // Update existing entry
-          formData = existingFormDataMap.get(uniqueKey);
-          formData.setEnumeratedArea(enumeratedArea);
+        if (existingMap.containsKey(key)) {
+          formData = existingMap.get(key);
+          formData.setEnumeratedArea(row.getActual());
           formData.setUpdatedAt(LocalDateTime.now());
-          // Remove from map to mark it as processed
-          existingFormDataMap.remove(uniqueKey);
+          existingMap.remove(key);
         } else {
-          // Add new entry
           formData = new ClusterFormData();
           formData.setClusterMaster(savedCluster);
           formData.setPlot(plot);
-          formData.setPlotLabel(currentPlotLabel);
-          formData.setEnumeratedArea(enumeratedArea);
-          formData.setStatus(true); // Assuming true for new entries
+          formData.setPlotLabel(label);
+          formData.setEnumeratedArea(row.getActual());
+          formData.setStatus(true);
           formData.setCreatedAt(LocalDateTime.now());
           formData.setUpdatedAt(LocalDateTime.now());
           formData.setCreatedBy(userid);
         }
-        clusterFormDataRepository.save(formData); // Save or update
+
+        clusterFormDataRepository.save(formData);
       }
     }
 
-    // 3. Delete old ClusterFormData entries that are no longer submitted
-    // Any remaining entries in existingFormDataMap were not in the current submission
-    clusterFormDataRepository.deleteAll(existingFormDataMap.values());
+    // =====================================================
+    // 9️⃣ DELETE REMOVED PLOTS
+    // =====================================================
+    clusterFormDataRepository.deleteAll(existingMap.values());
   }
+
+
 
   @Transactional
   public void deleteClusterFormDataById(Long id) {
+
     ClusterFormData formData =
         clusterFormDataRepository
             .findById(id)

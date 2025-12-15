@@ -21,7 +21,8 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
           Integer dcode,
           String lbcode,
           Integer wardNumber,
-          Integer houseno
+//          Integer houseno
+          String houseno
   );
 
   boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
@@ -131,7 +132,7 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
 
   // For BTR type 2 - House List
   boolean existsByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
-          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, Integer houseno);
+          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, String houseno);
 
   // For BTR type 3 - Cultivators List
   boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno, String resbdno);
@@ -153,7 +154,7 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
 
   // Query methods to get actual data for remaining area calculation
   List<TblBtrData> findByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
-          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, Integer houseno);
+          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, String houseno);
 
   List<TblBtrData> findByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
           Integer dcode, Integer tcode, String lbcode, Integer vcode, String bcode,

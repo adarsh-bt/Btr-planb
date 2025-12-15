@@ -42,6 +42,8 @@ public class ClusterMaster {
   @Column(name = "investigator_remark")
   private String investigatorRemark;
 
+  private Boolean is_editable;
+
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt = LocalDateTime.now();
 

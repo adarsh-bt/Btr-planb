@@ -25,7 +25,8 @@ public class BtrDataListResponse {
   private String address;
   private Integer tp_no;
   private Integer tp_subdivion_no;
-  private Integer house_no;
+//  private Integer house_no;
+  private String house_no;
   private Integer main_no;
   private String sub_main_no;
   private String totalCent;

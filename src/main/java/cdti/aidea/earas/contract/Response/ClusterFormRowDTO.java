@@ -18,7 +18,8 @@ public class ClusterFormRowDTO {
   private String bcode;
   private String village;
   private Integer ward_number;
-  private Integer houseno;
+//  private Integer houseno;
+  private String houseno;
   private String ownername;
   private String address;
   private Integer tpno;

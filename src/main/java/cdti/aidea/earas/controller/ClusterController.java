@@ -193,6 +193,8 @@ public class ClusterController {
           request.getUserId(),
           request.getKeyplotId(),
           request.getClusterNo(),
+          request.getStatus(),
+          request.getRemarks(),
           request.getSidePlots());
       return ResponseEntity.ok(
           Collections.singletonMap("message", "Cluster form saved successfully."));

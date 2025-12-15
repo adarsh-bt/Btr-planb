@@ -26,6 +26,6 @@ public class ClusterStatusResponse {
   private Long clusterId;
   private String clusterType;
   private String status;
-  private Long seasonId;
+  private List<SeasonStatusDto> seasons;
   List<String> cceCrops;
 }

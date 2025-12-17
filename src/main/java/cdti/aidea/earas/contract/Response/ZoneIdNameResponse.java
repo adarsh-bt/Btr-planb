@@ -1,0 +1,23 @@
+package cdti.aidea.earas.contract.Response;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Builder
+@AllArgsConstructor
+@Getter
+@NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ZoneIdNameResponse {
+  private Integer zoneId;
+  private Integer dist_id;
+  private String zoneName;
+  private Integer zone_type_id;
+  private String zone_type_name;
+  private List<SeasonResponse> seasons;
+}

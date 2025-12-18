@@ -1,4 +1,5 @@
 package cdti.aidea.earas.model.Btr_models;
+
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.UUID;

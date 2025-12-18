@@ -44,6 +44,7 @@ public class Zone_Service {
   private final MasterBlockRepository masterBlockRepository;
   private final LocalBodyTypeRepository localBodyTypeRepository;
   private final TblWorkAllocationRepository tblWorkAllocationRepository;
+  private final TblSeasonMasterRepository seasonMasterRepository;
 
   public List<ZoneListResponse> UserZonesByType(String type, Integer idValue) {
     try {
@@ -66,7 +67,7 @@ public class Zone_Service {
       }
 
       // Fetch all assigned zone IDs
-      List<Long> assignedZoneIds = userZoneAssignmentRepositoty.findAssignedZoneIds();
+      List<Long> assignedZoneIds = userZoneAssignmentRepositoty.findActiveAssignedZoneIds();
       // Filter out the zones that are already assigned
       List<TblMasterZone> availableZones =
               zones.stream()
@@ -93,21 +94,40 @@ public class Zone_Service {
   }
 
   public List<ZoneIdNameResponse> getAssignedZones(UUID userId) {
-    List<UserZoneAssignment> assignments = userZoneAssignmentRepositoty.findAllByUserIdAndIsActiveTrue(userId);
+
+    List<UserZoneAssignment> assignments =
+            userZoneAssignmentRepositoty.findAllByUserIdAndIsActiveTrue(userId);
 
     if (assignments.isEmpty()) {
       throw new IllegalArgumentException("User has no assigned zones.");
     }
 
-    return assignments.stream()
-            .map(a -> new ZoneIdNameResponse(
-                    a.getTblMasterZone().getZoneId(),
-                    a.getTblMasterZone().getZoneNameEn(), // Use .getZoneNameMal() if needed
-                    a.getTblMasterZone().getBtrType().getBtrTypeId(),
-                    a.getTblMasterZone().getBtrType().getBtrType()
+    // Fetch all default seasons
+    List<SeasonResponse> seasons = seasonMasterRepository.findAll().stream()
+            .filter(TblSeasonMaster::getIsActive)
+            .map(s -> new SeasonResponse(
+                    s.getId(),
+                    s.getSeasonName(),
+                    s.getDefaultStart(),
+                    s.getDefaultEnd(),
+                    null
             ))
             .collect(Collectors.toList());
+
+    // Map zones + attach seasons
+    return assignments.stream()
+            .map(a -> ZoneIdNameResponse.builder()
+                    .zoneId(a.getTblMasterZone().getZoneId())
+                    .dist_id(a.getTblMasterZone().getDistId())
+                    .zoneName(a.getTblMasterZone().getZoneNameEn())
+                    .zone_type_id(a.getTblMasterZone().getBtrType().getBtrTypeId())
+                    .zone_type_name(a.getTblMasterZone().getBtrType().getBtrType())
+                    .seasons(seasons) // attach seasons list
+                    .build()
+            )
+            .collect(Collectors.toList());
   }
+
 
 
   public UserZoneAssignment updateZoneAssignmentStatus(ZoneAssignedRequset request) {
@@ -117,7 +137,7 @@ public class Zone_Service {
       System.out.println("request "+request);
       // 1. Fetch the current assignment to update
       Optional<UserZoneAssignment> existingAssignment =
-              userZoneAssignmentRepositoty.findByUserIdAndTblMasterZone_ZoneId(request.getUser_id(), zoneId);
+              userZoneAssignmentRepositoty.findByUserIdAndTblMasterZone_ZoneIdAndIsActiveTrue(request.getUser_id(), zoneId);
 
       if (existingAssignment.isEmpty()) {
         throw new IllegalArgumentException("Zone assignment not found for this user and zone");
@@ -173,7 +193,7 @@ public class Zone_Service {
 
       // 2. Check if zone is already assigned to another user
       Optional<UserZoneAssignment> existingZoneAssignment =
-              userZoneAssignmentRepositoty.findByTblMasterZone_ZoneId(request.getZoneId());
+              userZoneAssignmentRepositoty.findByTblMasterZone_ZoneIdAndIsActiveTrue(request.getZoneId());
 
       if (existingZoneAssignment.isPresent()) {
         throw new IllegalArgumentException("Zone is already assigned to another user");

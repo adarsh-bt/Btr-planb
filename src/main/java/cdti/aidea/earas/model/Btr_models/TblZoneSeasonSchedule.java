@@ -1,4 +1,5 @@
 package cdti.aidea.earas.model.Btr_models;
+
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

@@ -1,12 +1,12 @@
 package cdti.aidea.earas.contract.Response;
 
 import lombok.Data;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
 @Data
-public class TblZoneSeasonScheduleDTO {
+public class TblZoneSeasonBulkScheduleADTO {
     private Long scheduleId;
     private Integer zoneId;
     private Long seasonId;
@@ -22,7 +22,8 @@ public class TblZoneSeasonScheduleDTO {
     private String seasonName;
     private Long frameId;
     private String frameName;
+    private Integer officeType;
+    private Integer officeId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
 }

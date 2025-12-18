@@ -15,5 +15,23 @@ public interface TblZoneSeasonScheduleRepository extends JpaRepository<TblZoneSe
 
     // ✅ Pagination support (built-in JPA)
     Page<TblZoneSeasonSchedule> findAll(Pageable pageable);
-}
 
+    // Deactivate existing active schedules for same zone + season + frame
+    List<TblZoneSeasonSchedule>
+    findByZoneZoneIdAndSeasonIdAndFrameFrameIdAndIsActiveTrue(
+            Integer zoneId,
+            Long seasonId,
+            Long frameId
+    );
+
+    List<TblZoneSeasonSchedule> findByZoneZoneIdAndSeasonIdAndIsActiveTrue(
+            Integer zoneId,
+            Long seasonId
+    );
+
+    boolean existsByZoneZoneIdAndSeasonIdAndIsActiveTrue(
+            Integer zoneId,
+            Long seasonId
+    );
+
+}

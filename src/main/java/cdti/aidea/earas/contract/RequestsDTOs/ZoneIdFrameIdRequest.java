@@ -1,4 +1,5 @@
 package cdti.aidea.earas.contract.RequestsDTOs;
+
 import lombok.Data;
 
 @Data

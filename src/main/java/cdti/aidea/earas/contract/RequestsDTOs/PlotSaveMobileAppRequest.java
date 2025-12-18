@@ -18,8 +18,8 @@ public class PlotSaveMobileAppRequest {
     private Integer village;
     private String bcode;
     private String clusterlabel;
-    private Integer svNo; // resvno
-    private String subNo; // resbdno
+    private Integer svNo;
+    private String subNo;
     private Double actual;
     private Double area;
     private UUID userId;

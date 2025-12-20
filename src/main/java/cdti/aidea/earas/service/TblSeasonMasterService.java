@@ -69,7 +69,7 @@ public class TblSeasonMasterService {
         dto.setSeasonName(entity.getSeasonName());
         dto.setDefaultStart(entity.getDefaultStart());
         dto.setDefaultEnd(entity.getDefaultEnd());
-        dto.setUuid(entity.getUuid());
+        dto.setUuid(entity.getUserId());
         dto.setIsActive(entity.getIsActive());
         return dto;
     }

@@ -9,6 +9,7 @@ import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,7 +46,7 @@ public class Zone_Service {
   private final LocalBodyTypeRepository localBodyTypeRepository;
   private final TblWorkAllocationRepository tblWorkAllocationRepository;
   private final TblSeasonMasterRepository seasonMasterRepository;
-
+  private final TblZoneSeasonScheduleRepository ScheduleRepo;
   public List<ZoneListResponse> UserZonesByType(String type, Integer idValue) {
     try {
       List<TblMasterZone> zones = null;
@@ -102,30 +103,95 @@ public class Zone_Service {
       throw new IllegalArgumentException("User has no assigned zones.");
     }
 
-    // Fetch all default seasons
-    List<SeasonResponse> seasons = seasonMasterRepository.findAll().stream()
-            .filter(TblSeasonMaster::getIsActive)
-            .map(s -> new SeasonResponse(
-                    s.getId(),
-                    s.getSeasonName(),
-                    s.getDefaultStart(),
-                    s.getDefaultEnd(),
-                    null
-            ))
-            .collect(Collectors.toList());
+//    // Fetch all default seasons
+//    List<SeasonResponse> seasons = seasonMasterRepository.findAll().stream()
+//            .filter(TblSeasonMaster::getIsActive)
+//            .map(s -> new SeasonResponse(
+//                    s.getId(),
+//                    s.getSeasonName(),
+//                    s.getDefaultStart(),
+//                    s.getDefaultEnd(),
+//                    null
+//            ))
+//            .collect(Collectors.toList());
 
-    // Map zones + attach seasons
-    return assignments.stream()
-            .map(a -> ZoneIdNameResponse.builder()
-                    .zoneId(a.getTblMasterZone().getZoneId())
-                    .dist_id(a.getTblMasterZone().getDistId())
-                    .zoneName(a.getTblMasterZone().getZoneNameEn())
-                    .zone_type_id(a.getTblMasterZone().getBtrType().getBtrTypeId())
-                    .zone_type_name(a.getTblMasterZone().getBtrType().getBtrType())
-                    .seasons(seasons) // attach seasons list
-                    .build()
-            )
-            .collect(Collectors.toList());
+      List<TblSeasonMaster> activeSeasons = seasonMasterRepository.findAll().stream()
+              .filter(TblSeasonMaster::getIsActive)
+              .toList();
+
+
+      // Map zones + attach seasons
+//    return assignments.stream()
+//            .map(a -> ZoneIdNameResponse.builder()
+//                    .zoneId(a.getTblMasterZone().getZoneId())
+//                    .dist_id(a.getTblMasterZone().getDistId())
+//                    .zoneName(a.getTblMasterZone().getZoneNameEn())
+//                    .zone_type_id(a.getTblMasterZone().getBtrType().getBtrTypeId())
+//                    .zone_type_name(a.getTblMasterZone().getBtrType().getBtrType())
+//                    .seasons(seasons) // attach seasons list
+//                    .build()
+//            )
+//            .collect(Collectors.toList());
+
+      return assignments.stream()
+              .map(a -> {
+
+                  Integer zoneId = a.getTblMasterZone().getZoneId();
+
+                  List<SeasonResponse> seasonResponses = activeSeasons.stream()
+                          .map(season -> {
+
+                              // Default dates
+                              LocalDate startDate = season.getDefaultStart();
+                              LocalDate endDate = season.getDefaultEnd();
+                              LocalDate extendedDate = null;
+
+                              // 🔍 Check zone-season schedule
+                              Optional<TblZoneSeasonSchedule> scheduleOpt =
+                                      ScheduleRepo
+                                              .findByZoneZoneIdAndSeasonIdAndIsActiveTrue(
+                                                      zoneId,
+                                                      season.getId()
+                                              )
+                                              .stream()
+                                              .findFirst();
+
+                              if (scheduleOpt.isPresent()) {
+                                  TblZoneSeasonSchedule schedule = scheduleOpt.get();
+
+                                  // 🔁 Compare start dates
+                                  if (!schedule.getStartDate().equals(season.getDefaultStart())) {
+                                      startDate = schedule.getStartDate();
+                                      endDate = schedule.getEndDate();
+
+                                      // replace extended date ONLY if not null
+                                      if (schedule.getExtendedDate() != null) {
+                                          extendedDate = schedule.getExtendedDate();
+                                      }
+                                  }
+                              }
+
+                              return new SeasonResponse(
+                                      season.getId(),
+                                      season.getSeasonName(),
+                                      startDate,
+                                      endDate,
+                                      extendedDate
+                              );
+                          })
+                          .collect(Collectors.toList());
+
+                  return ZoneIdNameResponse.builder()
+                          .zoneId(zoneId)
+                          .dist_id(a.getTblMasterZone().getDistId())
+                          .zoneName(a.getTblMasterZone().getZoneNameEn())
+                          .zone_type_id(a.getTblMasterZone().getBtrType().getBtrTypeId())
+                          .zone_type_name(a.getTblMasterZone().getBtrType().getBtrType())
+                          .seasons(seasonResponses)
+                          .build();
+              })
+              .collect(Collectors.toList());
+
   }
 
 

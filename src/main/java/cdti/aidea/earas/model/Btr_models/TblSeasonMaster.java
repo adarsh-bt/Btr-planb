@@ -24,8 +24,8 @@ public class TblSeasonMaster {
     @Column(name = "default_end", nullable = false)
     private LocalDate defaultEnd;
 
-    @Column(name = "uuid", columnDefinition = "UUID DEFAULT gen_random_uuid()")
-    private UUID uuid;
+    @Column(name = "userid", columnDefinition = "UUID DEFAULT gen_random_uuid()")
+    private UUID userId;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;

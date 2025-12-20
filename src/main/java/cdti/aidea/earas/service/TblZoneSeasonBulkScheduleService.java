@@ -63,7 +63,7 @@ public class TblZoneSeasonBulkScheduleService {
 
             entity.setYear(dto.getYear());
             entity.setRemark(dto.getRemark());
-            entity.setUuid(UUID.randomUUID());
+            entity.setUserId(UUID.randomUUID());
             entity.setIsActive(true);
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());

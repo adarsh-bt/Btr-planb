@@ -8,6 +8,7 @@ import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
 import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
+import cdti.aidea.earas.repository.Btr_repo.TblZoneSeasonScheduleRepository;
 import cdti.aidea.earas.service.BtrExportService;
 import cdti.aidea.earas.service.Zone_Service;
 import jakarta.validation.Valid;

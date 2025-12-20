@@ -69,7 +69,7 @@ public class TblZoneSeasonScheduleService {
             if (dto.getStartDate() != null && dto.getExtendedDate() == null) {
                 entity.setStartDate(dto.getStartDate());
                 entity.setEndDate(defaultEnd);
-                entity.setExtendedDate(defaultEnd);
+                entity.setExtendedDate(null);
             } else if (dto.getStartDate() == null && dto.getExtendedDate() != null) {
                 entity.setStartDate(defaultStart);
                 entity.setEndDate(defaultEnd);
@@ -84,7 +84,7 @@ public class TblZoneSeasonScheduleService {
 
             entity.setYear(dto.getYear());
             entity.setRemark(dto.getRemark());
-            entity.setUuid(UUID.randomUUID());
+            entity.setUserId(UUID.randomUUID());
             entity.setIsActive(true);
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
@@ -104,11 +104,11 @@ public class TblZoneSeasonScheduleService {
             entity.setZone(zone);
             entity.setSeason(season);
 
-            if (dto.getFrameId() != null) {
-                TblMasterFrame frame = masterFrameRepo.findById(dto.getFrameId())
+            //if (dto.getFrameId() != null) {
+                TblMasterFrame frame = masterFrameRepo.findById(3L)
                         .orElseThrow(() -> new RuntimeException("Frame not found"));
                 entity.setFrame(frame);
-            }
+           // }
 
             LocalDate defaultStart = season.getDefaultStart();
             LocalDate defaultEnd = season.getDefaultEnd();
@@ -116,7 +116,7 @@ public class TblZoneSeasonScheduleService {
             if (dto.getStartDate() != null && dto.getExtendedDate() == null) {
                 entity.setStartDate(dto.getStartDate());
                 entity.setEndDate(defaultEnd);
-                entity.setExtendedDate(defaultEnd);
+                entity.setExtendedDate(null);
             } else if (dto.getStartDate() == null && dto.getExtendedDate() != null) {
                 entity.setStartDate(defaultStart);
                 entity.setEndDate(defaultEnd);
@@ -131,7 +131,7 @@ public class TblZoneSeasonScheduleService {
 
             entity.setYear(dto.getYear());
             entity.setRemark(dto.getRemark());
-            entity.setUuid(UUID.randomUUID());
+            entity.setUserId(UUID.randomUUID());
             entity.setIsActive(true);
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
@@ -160,7 +160,7 @@ public class TblZoneSeasonScheduleService {
 
         TblZoneSeasonSchedule saved = scheduleRepo.save(entity);
         dto.setScheduleId(saved.getScheduleId());
-        dto.setUuid(saved.getUuid());
+        dto.setUuid(saved.getUserId());
 
         return dto;
     }
@@ -194,7 +194,7 @@ public class TblZoneSeasonScheduleService {
         dto.setEndDate(entity.getEndDate());
         dto.setExtendedDate(entity.getExtendedDate());
         dto.setYear(entity.getYear());
-        dto.setUuid(entity.getUuid());
+        dto.setUuid(entity.getUserId());
         dto.setIsActive(entity.getIsActive());
         dto.setRemark(entity.getRemark());
         dto.setZoneNameEn(entity.getZone().getZoneNameEn());

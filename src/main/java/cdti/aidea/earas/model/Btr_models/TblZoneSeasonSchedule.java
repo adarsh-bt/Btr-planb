@@ -43,8 +43,8 @@ public class TblZoneSeasonSchedule {
     @Column(name = "year", nullable = false)
     private Integer year;
 
-    @Column(name = "uuid", columnDefinition = "UUID DEFAULT gen_random_uuid()", insertable = false, updatable = false)
-    private UUID uuid;
+    @Column(name = "userid", columnDefinition = "UUID DEFAULT gen_random_uuid()", insertable = false, updatable = false)
+    private UUID userId;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;

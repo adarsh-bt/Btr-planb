@@ -19,4 +19,5 @@
     <include file="/db/changelog/changelog-0.0.14.sql"/>
     <include file="/db/changelog/changelog-0.0.15.sql"/>
     <include file="/db/changelog/changelog-0.0.16.sql"/>
+    <include file="/db/changelog/changelog-0.0.17.sql"/>
 </databaseChangeLog>

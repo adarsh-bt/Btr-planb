@@ -53,4 +53,6 @@ public class ClusterApprovalLog {
 
   @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE")
   private Boolean isActive = true;
+
+  private LocalDateTime approvedDate;
 }

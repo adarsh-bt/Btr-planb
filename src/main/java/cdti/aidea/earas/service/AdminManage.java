@@ -1,22 +1,27 @@
 package cdti.aidea.earas.service;
 
+import cdti.aidea.earas.contract.RequestsDTOs.ClusterApprovalActionDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
+import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
+import cdti.aidea.earas.contract.Response.ClusterApprovalResponseDTO;
+import cdti.aidea.earas.contract.Response.ClusterApprovalTableDTO;
 import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
-import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
-import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
+import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.DesTaluk;
 import cdti.aidea.earas.model.Btr_models.Masters.DistrictMaster;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +42,8 @@ public class AdminManage {
   private final TblMasterZoneRepository tblMasterZoneRepository;
   private final DesTalukRepository desTalukRepository;
   private final DistrictMasterRepository districtMasterRepository;
+  private final ClusterApprovalLogRepository clusterApprovalLogRepository;
+  private final ClusterMasterRepository clusterMasterRepository;
 
   private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
 
@@ -116,6 +123,74 @@ public class AdminManage {
     }
   }
 
+  public List<ClusterApprovalTableDTO> zoneListForClusters(String type, Integer idValue) {
+    List<ClusterApprovalLog> approvalLogs;
+    if ("Taluk".equalsIgnoreCase(type)) {
+      approvalLogs = clusterApprovalLogRepository
+              .findByZone_DesTalukId(idValue);
+    } else if ("District".equalsIgnoreCase(type)) {
+      approvalLogs = clusterApprovalLogRepository
+              .findByZone_DistId(idValue);
+    } else if ("Directorate".equalsIgnoreCase(type)) {
+      approvalLogs = clusterApprovalLogRepository.findAll();
+
+    } else {
+      throw new IllegalArgumentException(
+              "Invalid type. Use 'Taluk', 'District', or 'Directorate'");
+    }
+
+    if (approvalLogs.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    return approvalLogs.stream()
+            .map(this::mapToDTO)
+            .sorted(Comparator
+                    .comparing(ClusterApprovalTableDTO::getDistrictId).reversed()
+                    .thenComparing(ClusterApprovalTableDTO::getTalukId).reversed())
+            .collect(Collectors.toList());
+  }
+
+  @Transactional
+  public ClusterApprovalResponseDTO clusterApprovals(
+          @Valid ClusterApprovalActionDTO request) {
+
+    if (request.getApprovalLogId() == null) {
+      throw new IllegalArgumentException("Approval ID must be provided");
+    }
+
+    ClusterApprovalLog approvalLog = clusterApprovalLogRepository
+            .findById(request.getApprovalLogId())
+            .orElseThrow(() ->
+                    new IllegalArgumentException("Approval Log not found"));
+
+    ClusterMaster clusterMaster = approvalLog.getClusterMaster();
+    if (request.getIs_edit() != null && request.getIs_edit()) {
+      clusterMaster.setIs_editable(true);
+      clusterMaster.setStatus("On Going");
+    }else{
+      clusterMaster.setStatus("Completed");
+    }
+
+    clusterMasterRepository.save(clusterMaster);
+
+    approvalLog.setAdminId(request.getApprover_id());
+    approvalLog.setInApproved(true);
+    approvalLog.setApprovedDate(LocalDateTime.now());
+    approvalLog.setRemarks(request.getRemarks());
+
+    clusterApprovalLogRepository.save(approvalLog);
+
+    // 🔥 RETURN DTO (NOT ENTITY)
+    return new ClusterApprovalResponseDTO(
+            approvalLog.getId(),
+            approvalLog.getInApproved(),
+            approvalLog.getAdminId(),
+            approvalLog.getApprovedDate(),
+            "SUCCESS"
+    );
+  }
+
 
   public List<ClusterLimitRequest> getAllClusterLimits() {
     List<ClusterLimitLog> entity = clusterLimitLogRepository.findAll();
@@ -135,6 +210,53 @@ public class AdminManage {
             ))
             .collect(Collectors.toList());
   }
+
+  private ClusterApprovalTableDTO mapToDTO(ClusterApprovalLog log) {
+
+    TblMasterZone zone = log.getZone();
+    ClusterMaster cluster = log.getClusterMaster();
+
+    // Taluk
+    DesTaluk taluk = desTalukRepository
+            .findById(zone.getDesTalukId())
+            .orElse(null);
+
+    // District
+    DistrictMaster district = districtMasterRepository
+            .findById(Long.valueOf(zone.getDistId()))
+            .orElse(null);
+
+    return new ClusterApprovalTableDTO(
+
+            // Approval
+            log.getId(),
+
+            // Cluster
+            cluster.getCluMasterId(),
+            cluster.getClusterNumber(),
+            cluster.getKeyPlot().getLandType(),
+            // Zone
+            zone.getZoneId(),
+            zone.getZoneNameEn(),
+            // Taluk
+            taluk != null ? taluk.getDesTalukId() : null,
+            taluk != null ? taluk.getDesTalukNameEn() : null,
+            // District
+            district != null ? district.getDist_id() : null,
+            district != null ? district.getDist_name_en() : null,
+            // Area & status
+            log.getTotalArea(),
+            log.getInApproved(),
+            // Audit
+            log.getAddedBy(),
+            log.getAdminId(),
+            log.getRemarks(),
+            cluster.getInvestigatorRemark(),
+            log.getCreatedAt(),
+            log.getApprovedDate()
+    );
+  }
+
 
   public KeyplotsLimitLog saveOrUpdateKeyplotsLimit(KeyplotsLimitLogRequest request) {
     KeyplotsLimitLog log;

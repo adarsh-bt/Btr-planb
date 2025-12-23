@@ -8,6 +8,8 @@ import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
+import cdti.aidea.earas.repository.Btr_repo.projection.ClusterAreaProjection;
+import feign.FeignException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
@@ -71,17 +73,13 @@ public class ClusterService {
 
     //        Optional<UserZoneAssignment> userOpt =
     // userZoneAssignmentRepositoty.findByUserId(userId);
-    System.out.println("okk " + zone_Id);
+
     Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zone_Id);
     if (zone.isEmpty()) {
       throw new NoSuchElementException("User not found");
     }
-
     //        UserZoneAssignment user = userOpt.get();
-
     Long zoneId = Long.valueOf(zone.get().getZoneId());
-    System.out.println("zone id  " + zoneId);
-    // Step 1: Get CCE plot assignments with fallback awareness
     Set<Long> assignedClusterIds = new HashSet<>();
     String cceMessage = null;
 
@@ -89,7 +87,6 @@ public class ClusterService {
     if (cceResult.isFallbackUsed()) {
       cceMessage = "CCE data not available currently.";
     }
-
     List<AvailableCcePlotResponse> assignedCcePlots = cceResult.getPlots();
     assignedClusterIds =
         assignedCcePlots.stream()
@@ -98,27 +95,18 @@ public class ClusterService {
                     plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType()))
             .map(AvailableCcePlotResponse::getClusterId)
             .collect(Collectors.toSet());
-
     Map<Long, Set<String>> clusterCropMap = new HashMap<>();
-
     for (AvailableCcePlotResponse plot : assignedCcePlots) {
-      System.out.println(">>>    "+plot);
       if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
-        System.out.println("crop s  >> "+plot.getCceAvailablePlotId());
         clusterCropMap
             .computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
             .add(plot.getCropName());
       }
     }
-
-    // Step 2: Build cluster summary
-
     List<ClusterMaster> clusters =
         clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(zone.get().getZoneId());
-
     int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
     List<ClusterStatusResponse> payload = new ArrayList<>();
-
     for (ClusterMaster cluster : clusters) {
       Long clusterId = cluster.getCluMasterId();
       UUID keyplotId = cluster.getKeyPlot().getId();
@@ -126,14 +114,13 @@ public class ClusterService {
       boolean isCce = !cropNames.isEmpty();
       String status = cluster.getStatus();
       String landType = cluster.getKeyPlot().getLandType();
-
       String keyplot_svno =
           cluster.getKeyPlot().getBtrData().getResvno()
               + "/"
               + cluster.getKeyPlot().getBtrData().getResbdno();
       String keyplot_lbcode = cluster.getKeyPlot().getBtrData().getBcode();
       String local_body_code = cluster.getKeyPlot().getBtrData().getLbcode();
-      Double keyplot_area = cluster.getKeyPlot().getBtrData().getTotCent();
+//      Double keyplot_area = cluster.getKeyPlot().getBtrData().getTotCent();
       // code by k:
       //            String keyplot_svno = cluster.getKeyPlot().getBtrData().getResvno() + "/" +
       // cluster.getKeyPlot().getBtrData().getResbdno();
@@ -178,8 +165,21 @@ public class ClusterService {
         case "Under Review" -> underreview++;
         default -> completed++;
       }
-
-      payload.add(
+        List<Long> clusterIds =
+                clusters.stream()
+                        .map(ClusterMaster::getCluMasterId)
+                        .toList();
+        Map<Long, Double> clusterAreaMap =
+                clusterFormDataRepository
+                        .findTotalAreaByClusterIds(clusterIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                ClusterAreaProjection::getClusterId,
+                                ClusterAreaProjection::getTotalArea
+                        ));
+        Double clusterTotalArea =
+                clusterAreaMap.getOrDefault(clusterId, 0.0);
+        payload.add(
           new ClusterStatusResponse(
               cluster.getClusterNumber(),
               keyplotId,
@@ -190,7 +190,7 @@ public class ClusterService {
               local_body_code,
               keyplot_lbcode,
               keyplot_svno,
-              keyplot_area,
+                  clusterTotalArea,
               clusterId,
               landType != null ? landType.toLowerCase() : "unknown",
               status,
@@ -249,9 +249,15 @@ public class ClusterService {
         List<ClusterMaster> clusters =
                 clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(Math.toIntExact(zoneKey));
 
-        // 3️⃣ Call external API
-        List<ExternalClusterStatusResponse> externalStatus =
-                formEntryClient.fetchClusterStatus(zoneId);
+        // 3️⃣ Call external API (SAFE)
+        List<ExternalClusterStatusResponse> externalStatus;
+        try {
+            externalStatus = formEntryClient.fetchClusterStatus(zoneId);
+        } catch (FeignException.InternalServerError ex) {
+            // Business meaning: no form entry exists
+            log.warn("No form entry found for zoneId {}. Treating all clusters as NOT STARTED", zoneId);
+            externalStatus = Collections.emptyList();
+        }
 
         // 4️⃣ Group by clusterId
         Map<Long, List<ExternalClusterStatusResponse>> clusterSeasonMap =
@@ -283,7 +289,7 @@ public class ClusterService {
 
             Long clusterId = cluster.getCluMasterId();
 
-            // 🔥 Season handling (ALL edge cases)
+            // 🔥 Season handling (ALL edge cases covered)
             List<SeasonStatusDto> seasonStatusList =
                     buildSeasonStatus(clusterId, clusterSeasonMap);
 
@@ -296,8 +302,9 @@ public class ClusterService {
             } else if (seasonStatusList.stream()
                     .anyMatch(s -> "UNDER REVIEW".equalsIgnoreCase(s.getStatus()))) {
                 clusterStatus = "UNDER REVIEW";
-            } else if (seasonStatusList.stream()
-                    .allMatch(s -> "COMPLETED".equalsIgnoreCase(s.getStatus()))) {
+            } else if (!seasonStatusList.isEmpty() &&
+                    seasonStatusList.stream()
+                            .allMatch(s -> "COMPLETED".equalsIgnoreCase(s.getStatus()))) {
                 clusterStatus = "COMPLETED";
             }
 
@@ -331,8 +338,10 @@ public class ClusterService {
                         return lb.getLocalbodyNameEn() + " " + type;
                     })
                     .orElse("Local body not found");
+
             List<String> cropList =
                     new ArrayList<>(cropMap.getOrDefault(clusterId, Set.of()));
+
             payload.add(
                     new ClusterStatusResponse(
                             cluster.getClusterNumber(),
@@ -355,6 +364,7 @@ public class ClusterService {
                     )
             );
         }
+
         payload.sort(Comparator.comparingInt(ClusterStatusResponse::getClusterNo));
 
         // 9️⃣ Final response
@@ -368,7 +378,6 @@ public class ClusterService {
                 payload
         );
     }
-
 
 
     //    cluster data for App
@@ -1021,6 +1030,7 @@ public class ClusterService {
 
     clusterMaster.setStatus(requestedStatus);
     clusterMaster.setUpdatedAt(LocalDateTime.now());
+    clusterMaster.setInvestigatorRemark(remarks);
     ClusterMaster savedCluster =
             clusterMasterRepository.save(clusterMaster);
 
@@ -1032,7 +1042,7 @@ public class ClusterService {
       log.setClusterMaster(savedCluster);
       log.setAddedBy(userid);
       log.setZone(savedCluster.getZone());
-      log.setRemarks(remarks);
+//      log.setRemarks(remarks);
       log.setTotalArea(total);
       clusterApprovalRepository.save(log);
     }

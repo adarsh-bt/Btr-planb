@@ -1,5 +1,6 @@
 package cdti.aidea.earas.contract.Response;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 

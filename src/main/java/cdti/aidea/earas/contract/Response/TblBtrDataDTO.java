@@ -34,5 +34,6 @@ public class TblBtrDataDTO {
   private String ownername;
   private Integer tpno;
   private Integer tbsubdivisionno;
+  private Long clusterId;
 
 }

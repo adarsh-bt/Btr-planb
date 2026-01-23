@@ -82,6 +82,17 @@ public class ClusterService {
     Long zoneId = Long.valueOf(zone.get().getZoneId());
     Set<Long> assignedClusterIds = new HashSet<>();
     String cceMessage = null;
+      Optional<ClusterLimitLog> currentActiveOpt =
+              clusterLimitLogRepository.findByInActiveTrue();
+
+      BigDecimal clusterMin =
+              currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+
+      BigDecimal clusterMax =
+              currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+
+      BigDecimal tsoClusterLimit =
+              currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
 
     CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(zoneId);
     if (cceResult.isFallbackUsed()) {
@@ -202,7 +213,7 @@ public class ClusterService {
     payload.sort(Comparator.comparingInt(ClusterStatusResponse::getClusterNo));
 
     return new UserClusterSummaryResponse(
-        "Successfully fetched", completed, ongoing, notStarted, underreview, cceMessage, payload
+        "Successfully fetched", completed, ongoing, notStarted, underreview,clusterMin,clusterMax,tsoClusterLimit,cceMessage, payload
         // Will be null if CCE data is fetched successfully
         );
   }
@@ -283,6 +294,17 @@ public class ClusterService {
 
         int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
         List<ClusterStatusResponse> payload = new ArrayList<>();
+        Optional<ClusterLimitLog> currentActiveOpt =
+                clusterLimitLogRepository.findByInActiveTrue();
+
+        BigDecimal clusterMin =
+                currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+
+        BigDecimal clusterMax =
+                currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+
+        BigDecimal tsoClusterLimit =
+                currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
 
         // 6️⃣ Build response per cluster
         for (ClusterMaster cluster : clusters) {
@@ -374,6 +396,9 @@ public class ClusterService {
                 ongoing,
                 notStarted,
                 underreview,
+                clusterMin,
+                clusterMax,
+                tsoClusterLimit,
                 cceMessage,
                 payload
         );
@@ -1259,104 +1284,6 @@ public class ClusterService {
     return new CropReplaceClusterResponse(
             nextCluster.getCluMasterId(), nextCluster.getKeyPlot().getId(), "Success");
   }
-//  public CropReplaceClusterResponse getNextCluster(CropReplaceClusterRequest request) {
-//    // 1. Fetch zone assignment
-////    Optional<UserZoneAssignment> zoneAssignmentOpt =
-////        userZoneAssignmentRepositoty.findByUserIdAndTblMasterZone_ZoneId(
-////            request.getUserId(), request.getZoneId());
-////    if (zoneAssignmentOpt.isEmpty()) {
-////      throw new RuntimeException("UserZone assignment not found for ID: " + request.getUserId());
-////    }
-//
-//    // 2. Fetch current cluster
-//    Optional<ClusterMaster> currentClusterOpt =
-//        clusterMasterRepository.findById(request.getClusterId());
-//    if (currentClusterOpt.isEmpty()) {
-//      throw new RuntimeException("Cluster not found with ID: " + request.getClusterId());
-//    }
-//
-//    System.out.println(" >>>  "+currentClusterOpt.get());
-//    ClusterMaster currentCluster = currentClusterOpt.get();
-//    Integer currentClusterNumber = currentCluster.getClusterNumber();
-//
-//    // 3. Get cleaned land type
-//    String landType = request.getCropLandType().trim();
-//
-//    // 3.5 Check if this cluster was already rejected for this crop by the same user
-//    boolean isAlreadyRejected =
-//        cropAssignmentTrailRepository
-//            .existsByCropIdAndCluster_CluMasterIdAndIsRejectedTrueAndRejectedBy(
-//                request.getCropId(), request.getClusterId(), request.getUserId());
-//
-//
-//    System.out.println("is reject  "+isAlreadyRejected);
-//    if (isAlreadyRejected) {
-//      return new CropReplaceClusterResponse(null, null, "Cluster already rejected by user.");
-//    }
-//System.out.println(" >>> +  3");
-//    // 4. Fetch next valid cluster
-//    List<ClusterMaster> nextClusters =
-//        clusterMasterRepository.findNextClusterFlexibleLandType(
-//            Math.toIntExact(request.getZoneId()), landType, currentClusterNumber);
-//    System.out.println(" >>> +  "+nextClusters);
-//    if (nextClusters.isEmpty()) {
-//      // Optional: add trail entry showing rejection & exhausted case
-//      CropAssignmentTrail exhaustedTrail =
-//          CropAssignmentTrail.builder()
-//              .cropId(request.getCropId())
-//              .cluster(currentCluster)
-//              .keyPlot(currentCluster.getKeyPlot())
-//              .landType(landType)
-//              .isRejected(true)
-//              .zoneId(request.getZoneId())
-//              .isLimitExceeded(true)
-//              .rejectionReason("All clusters exhausted")
-//              .rejectedBy(request.getUserId())
-//              .rejectedAt(LocalDateTime.now())
-//              .isCurrentAssignment(false)
-//              .build();
-//      cropAssignmentTrailRepository.save(exhaustedTrail);
-//
-//      return new CropReplaceClusterResponse(
-//          null, null, "No next cluster found with land type: " + landType);
-//    }
-//
-//    ClusterMaster nextCluster = nextClusters.get(0);
-//
-//    // 5. Step 1: Save Rejection Trail for current cluster
-//    CropAssignmentTrail rejectionTrail =
-//        CropAssignmentTrail.builder()
-//            .cropId(request.getCropId())
-//            .cluster(currentCluster)
-//            .keyPlot(currentCluster.getKeyPlot())
-//            .landType(landType)
-//            .isRejected(true)
-//            .zoneId(request.getZoneId())
-//            .isCurrentAssignment(false)
-//            .rejectionReason("Rejected by user")
-//            .rejectedBy(request.getUserId())
-//            .rejectedAt(LocalDateTime.now())
-//            .build();
-//    cropAssignmentTrailRepository.save(rejectionTrail);
-//
-//    // 6. Step 2: Save Assignment Trail for next cluster
-//    CropAssignmentTrail assignTrail =
-//        CropAssignmentTrail.builder()
-//            .cropId(request.getCropId())
-//            .cluster(nextCluster)
-//            .keyPlot(nextCluster.getKeyPlot())
-//            .landType(landType)
-//            .zoneId(request.getZoneId())
-//            .isRejected(false)
-//            .isCurrentAssignment(true)
-//            .assignedOn(LocalDateTime.now())
-//            .build();
-//    cropAssignmentTrailRepository.save(assignTrail);
-//
-//    // 7. Return new assignment info to Form-Service
-//    return new CropReplaceClusterResponse(
-//        nextCluster.getCluMasterId(), nextCluster.getKeyPlot().getId(), "Success");
-//  }
 
   public List<KeyPlotClusterDTO> getClustersByZoneId(Integer zoneId) {
     // Fetch KeyPlots by zoneId
@@ -1395,8 +1322,6 @@ public class ClusterService {
 
     return dtos;
   }
-
-
 
   @Transactional
   public Map<String, Object> savePlotFromMobile(PlotSaveMobileAppRequest request) {
@@ -1555,9 +1480,6 @@ public class ClusterService {
     return result;
   }
 
-
-
-
   //    @Autowired
   //    public ClusterService(ClusterMasterRepository clusterMasterRepository,
   //                          ClusterFormDataRepository clusterFormDataRepository,
@@ -1642,7 +1564,6 @@ public class ClusterService {
   // KeyPlots or create a new Cluster entity.
   //        // For now, these are not mapped to the provided entities.
   //    }
-
   @Transactional
   public void updateClusterPlot(Long clusterPlotId, Double enumeratedArea, UUID userId) {
     // 1. Find the ClusterFormData entity by its primary key
@@ -1700,4 +1621,9 @@ public class ClusterService {
       clusterMasterRepository.save(clusterMaster);
     }
   }
+
+
+    public List<BtrClusterUsageResponse> getBtrClusterUsage(Long btrId) {
+        return clusterFormDataRepository.findClusterUsageByBtrId(btrId);
+    }
 }

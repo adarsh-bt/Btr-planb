@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -171,4 +172,8 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
 
   List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno);
+
+  @Modifying
+  @Query("UPDATE TblBtrData b SET b.totCent = :totCent WHERE b.id = :btrId")
+  int updateTotCent(@Param("btrId") Long btrId, @Param("totCent") Double totCent);
 }

@@ -46,7 +46,7 @@ public class ClusterController {
       return ResponseEntity.status(HttpStatus.NOT_FOUND)
           .body(
               new UserClusterSummaryResponse(
-                  e.getMessage(), 0, 0, 0, 0, "CCe Not Available", Collections.emptyList()));
+                  e.getMessage(), 0, 0, 0, 0,null,null,null, "CCe Not Available", Collections.emptyList()));
     } catch (Exception e) {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body(
@@ -55,12 +55,11 @@ public class ClusterController {
                   0,
                   0,
                   0,
-                  0,
+                  0,null,null,null,
                   "CCe Not Available",
                   Collections.emptyList()));
     }
   }
-
 
   @GetMapping("/cluster-form-status/{zoneId}")
   public ResponseEntity<UserClusterSummaryResponse> getClusterSummary(
@@ -71,9 +70,6 @@ public class ClusterController {
 
     return ResponseEntity.ok(response);
   }
-
-
-
 
   //    cluster labels for App
   @PostMapping("/cluster-labels")
@@ -249,8 +245,14 @@ public class ClusterController {
     }
   }
 
+  @GetMapping("/{btrId}/btrplot-usage")
+  public ResponseEntity<List<BtrClusterUsageResponse>> getBtrClusterUsage(
+          @PathVariable Long btrId) {
 
-
+    return ResponseEntity.ok(
+            clusterService.getBtrClusterUsage(btrId)
+    );
+  }
 //  @PostMapping("/cluster-plot-save")
 //  public
 
@@ -290,7 +292,6 @@ public class ClusterController {
   //                    .body("Error saving cluster form: " + e.getMessage());
   //        }
   //    }
-
   @PatchMapping("/update-sideplot/{id}")
   public ResponseEntity<?> updateClusterPlot(
           @PathVariable Long id,

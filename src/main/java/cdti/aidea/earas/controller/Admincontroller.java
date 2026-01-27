@@ -2,6 +2,7 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
+import cdti.aidea.earas.contract.Response.AdminZoneResponse;
 import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
@@ -67,4 +68,9 @@ public class Admincontroller {
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+    @GetMapping("/zones")
+    public ResponseEntity<List<AdminZoneResponse>> getAllZones() {
+        return ResponseEntity.ok(adminManage.getAllZonesWithSeasonDates());
+    }
+
 }

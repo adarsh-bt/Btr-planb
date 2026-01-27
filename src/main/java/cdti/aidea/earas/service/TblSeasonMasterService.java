@@ -11,10 +11,10 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class TblSeasonMasterService {
-    private final TblSeasonMasterRepository repository;
+    private final TblSeasonMasterRepository seasonMasterRepository;
 
     public List<TblSeasonMasterDTO> getAllSeasons() {
-        return repository.findAll().stream()
+        return seasonMasterRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -26,7 +26,7 @@ public class TblSeasonMasterService {
         }
 
         // 🧩 Validation 2: Season name must be unique (case-insensitive)
-        boolean seasonExists = repository.findAll().stream()
+        boolean seasonExists = seasonMasterRepository.findAll().stream()
                 .anyMatch(s -> s.getSeasonName().equalsIgnoreCase(dto.getSeasonName())
                         && (dto.getId() == null || !s.getId().equals(dto.getId())));
 
@@ -36,7 +36,7 @@ public class TblSeasonMasterService {
         TblSeasonMaster entity;
     // 🟢 If ID or UUID provided → update existing
         if (dto.getId() != null) {
-        Optional<TblSeasonMaster> existing = repository.findById(dto.getId());
+        Optional<TblSeasonMaster> existing = seasonMasterRepository.findById(dto.getId());
         if (existing.isPresent()) {
             entity = existing.get();
             entity.setSeasonName(dto.getSeasonName());
@@ -60,7 +60,7 @@ public class TblSeasonMasterService {
         entity.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
     }
 
-    TblSeasonMaster saved = repository.save(entity);
+    TblSeasonMaster saved = seasonMasterRepository.save(entity);
         return convertToDTO(saved);
 }
     private TblSeasonMasterDTO convertToDTO(TblSeasonMaster entity) {

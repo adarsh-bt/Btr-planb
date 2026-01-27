@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/zone-season-schedule")
+@RequestMapping("api/zone-season-schedule")
 @RequiredArgsConstructor
 public class TblZoneSeasonScheduleController {
     private final TblZoneSeasonScheduleService scheduleService;

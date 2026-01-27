@@ -39,4 +39,25 @@ public interface KeyPlotsRepository extends JpaRepository<KeyPlots, UUID> {
   //    List<KeyPlots> findByBtrData_IdIn(List<Long> btrDataIds);
 
   List<KeyPlots> findByZone(TblMasterZone zoneId);
+
+  //  long countByZone_ZoneId(Integer zoneId);
+//    @Query("""
+//        SELECT COUNT(k)
+//        FROM KeyPlots k
+//        WHERE k.zone.id = :zoneId
+//          AND k.status = true
+//    """)
+//    Long countActiveKeyplotsByZone(@Param("zoneId") Integer zoneId);
+
+    @Query("""
+        SELECT COUNT(k)
+        FROM KeyPlots k
+        WHERE k.zone.zoneId = :zoneId
+          AND k.status = true
+          AND (k.isRejected = false OR k.isRejected IS NULL)
+    """)
+    Long countActiveKeyplotsByZone(@Param("zoneId") Integer zoneId);
+
+    // you can keep your existing methods below
+    long countByZone_ZoneId(Integer zoneId);
 }

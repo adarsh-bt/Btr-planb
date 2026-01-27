@@ -2,6 +2,8 @@ package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
+import cdti.aidea.earas.contract.Response.AdminZoneResponse;
+import cdti.aidea.earas.contract.Response.AdminZoneSeasonResponse;
 import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
@@ -9,6 +11,8 @@ import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
 import cdti.aidea.earas.model.Btr_models.Masters.DesTaluk;
 import cdti.aidea.earas.model.Btr_models.Masters.DistrictMaster;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+import cdti.aidea.earas.model.Btr_models.TblSeasonMaster;
+import cdti.aidea.earas.model.Btr_models.TblZoneSeasonSchedule;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -37,6 +42,8 @@ public class AdminManage {
   private final TblMasterZoneRepository tblMasterZoneRepository;
   private final DesTalukRepository desTalukRepository;
   private final DistrictMasterRepository districtMasterRepository;
+  private final TblSeasonMasterRepository seasonMasterRepository;
+  private final TblZoneSeasonScheduleRepository scheduleRepository ;
 
   private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
 
@@ -49,7 +56,7 @@ public class AdminManage {
                     entity.getKeyplotsLimit(),
                     entity.getIsEdited(),
                     entity.getIsActive(),
-                    entity.getIn_active(),
+                    entity.getIsInActive(),
                     entity.getAddedBy(),
                     entity.getEditPermitter(),
                     entity.getRemarks(),
@@ -257,4 +264,79 @@ public class AdminManage {
       return clusterLimitLogRepository.save(log);
     }
   }
+    public List<AdminZoneResponse> getAllZonesWithSeasonDates() {
+
+        List<TblMasterZone> zones = tblMasterZoneRepository.findAll();
+        List<TblSeasonMaster> activeSeasons = seasonMasterRepository.findByIsActiveTrue();
+
+        return zones.stream()
+                .map(zone -> {
+
+                    Integer zoneId = zone.getZoneId();
+
+                    List<AdminZoneSeasonResponse> seasonResponses =
+                            activeSeasons.stream()
+                                    .map(season -> {
+
+                                        LocalDate startDate = season.getDefaultStart();
+                                        LocalDate endDate = season.getDefaultEnd();
+                                        LocalDate extendedDate = null;
+
+                                        Optional<TblZoneSeasonSchedule> scheduleOpt =
+                                                scheduleRepository
+                                                        .findByZoneZoneIdAndSeasonIdAndIsActiveTrue(
+                                                                zoneId,
+                                                                season.getId()
+                                                        )
+                                                        .stream()
+                                                        .findFirst();
+
+                                        if (scheduleOpt.isPresent()) {
+
+                                            TblZoneSeasonSchedule schedule = scheduleOpt.get();
+
+                                            boolean startChanged =
+                                                    !schedule.getStartDate()
+                                                            .equals(season.getDefaultStart());
+
+                                            boolean extendedChanged =
+                                                    schedule.getExtendedDate() != null;
+
+                                            if (startChanged && !extendedChanged) {
+                                                startDate = schedule.getStartDate();
+                                                endDate = schedule.getEndDate();
+                                                extendedDate = null;
+                                            } else if (!startChanged && extendedChanged) {
+                                                startDate = season.getDefaultStart();
+                                                endDate = season.getDefaultEnd();
+                                                extendedDate = schedule.getExtendedDate();
+                                            } else if (startChanged && extendedChanged) {
+                                                startDate = schedule.getStartDate();
+                                                endDate = season.getDefaultEnd();
+                                                extendedDate = schedule.getExtendedDate();
+                                            }
+                                        }
+
+                                        return new AdminZoneSeasonResponse(
+                                                season.getId(),
+                                                season.getSeasonName(),
+                                                startDate,
+                                                endDate,
+                                                extendedDate
+                                        );
+                                    })
+                                    .collect(Collectors.toList());
+
+                    return AdminZoneResponse.builder()
+                            .zoneId(zoneId)
+                            .dist_id(zone.getDistId())
+                            .zoneName(zone.getZoneNameEn())
+                            .zone_type_id(zone.getBtrType().getBtrTypeId())
+                            .zone_type_name(zone.getBtrType().getBtrType())
+                            .seasons(seasonResponses)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
 }

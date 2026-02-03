@@ -36,10 +36,11 @@ public class KeyPlotDetailsResponse {
 //  private Integer houseNo;
   private String houseNo;
   private Integer tpno;
-  private Integer tpSubNo;
+  private String tpSubNo;
   private Integer oldsuvNo;
   private String oldsubNo;
   private double areaCents;
+  private double enumArea;
   private String landType;
   private List<SidePlotDTO> sidePlots;
 }

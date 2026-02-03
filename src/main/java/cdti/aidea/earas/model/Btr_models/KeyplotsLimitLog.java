@@ -38,8 +38,8 @@ public class KeyplotsLimitLog {
 
   @Column(name = "agri_end_year", nullable = false)
   private LocalDate agriEndYear;
-
-  private Boolean in_active = true;
+  @Column(name = "is_inactive")
+  private Boolean isInActive = true;
 
   @Column(name = "is_active")
   private Boolean isActive = true;

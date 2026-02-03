@@ -81,4 +81,10 @@ public interface ClusterFormDataRepository extends JpaRepository<ClusterFormData
           @Param("end") LocalDateTime end
   );
 
+  Optional<ClusterFormData>
+  findByPlotLabelAndClusterMaster_CluMasterId(
+          String plotLabel,
+          Long cluMasterId
+  );
+
 }

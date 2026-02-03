@@ -82,17 +82,6 @@ public class ClusterService {
     Long zoneId = Long.valueOf(zone.get().getZoneId());
     Set<Long> assignedClusterIds = new HashSet<>();
     String cceMessage = null;
-      Optional<ClusterLimitLog> currentActiveOpt =
-              clusterLimitLogRepository.findByInActiveTrue();
-
-      BigDecimal clusterMin =
-              currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
-
-      BigDecimal clusterMax =
-              currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
-
-      BigDecimal tsoClusterLimit =
-              currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
 
     CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(zoneId);
     if (cceResult.isFallbackUsed()) {
@@ -213,7 +202,7 @@ public class ClusterService {
     payload.sort(Comparator.comparingInt(ClusterStatusResponse::getClusterNo));
 
     return new UserClusterSummaryResponse(
-        "Successfully fetched", completed, ongoing, notStarted, underreview,clusterMin,clusterMax,tsoClusterLimit,cceMessage, payload
+        "Successfully fetched", completed, ongoing, notStarted, underreview, cceMessage, payload
         // Will be null if CCE data is fetched successfully
         );
   }
@@ -294,17 +283,6 @@ public class ClusterService {
 
         int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
         List<ClusterStatusResponse> payload = new ArrayList<>();
-        Optional<ClusterLimitLog> currentActiveOpt =
-                clusterLimitLogRepository.findByInActiveTrue();
-
-        BigDecimal clusterMin =
-                currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
-
-        BigDecimal clusterMax =
-                currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
-
-        BigDecimal tsoClusterLimit =
-                currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
 
         // 6️⃣ Build response per cluster
         for (ClusterMaster cluster : clusters) {
@@ -396,9 +374,6 @@ public class ClusterService {
                 ongoing,
                 notStarted,
                 underreview,
-                clusterMin,
-                clusterMax,
-                tsoClusterLimit,
                 cceMessage,
                 payload
         );
@@ -414,6 +389,17 @@ public class ClusterService {
 
     List<ClusterFormData> formDataList =
         clusterFormDataRepository.findByClusterMaster(clusterMaster);
+      Optional<ClusterLimitLog> currentActiveOpt =
+              clusterLimitLogRepository.findByInActiveTrue();
+
+      BigDecimal clusterMin =
+              currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+
+      BigDecimal clusterMax =
+              currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+
+      BigDecimal tsoClusterLimit =
+              currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
 
     Map<String, List<Map<String, Object>>> labelToPlotsMap = new LinkedHashMap<>();
     Map<String, Double> labelToTotalAreaMap = new LinkedHashMap<>();
@@ -461,6 +447,9 @@ public class ClusterService {
     Map<String, Object> response = new HashMap<>();
     response.put("clusterId", clusterId);
     response.put("labels", labelToPlotsMap);
+    response.put("cluster_min", clusterMin);
+    response.put("cluster_max", clusterMax);
+    response.put("tso_cluster_limit", tsoClusterLimit);
     response.put("total_area", labelToTotalAreaMap); // per-label total area
     response.put("crops", crops); // ✅ Add crops list to response
 

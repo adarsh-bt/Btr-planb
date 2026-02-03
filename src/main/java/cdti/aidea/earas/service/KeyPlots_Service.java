@@ -3,6 +3,7 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
+import cdti.aidea.earas.contract.RequestsDTOs.UpdateEnumeratedKeyAreaDTO;
 import cdti.aidea.earas.contract.Response.ClusterFormRowDTO;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.Conditions;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeMap;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -71,7 +73,6 @@ public class KeyPlots_Service {
     }
 
     private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(KeyPlots keyPlot) {
-        System.out.println("keyplost  "+keyPlot);
         TblBtrData plot = keyPlot.getBtrData();
         String syNo = plot.getResvno() + "/" + plot.getResbdno();
         String villageBlock = plot.getBcode();
@@ -83,12 +84,12 @@ public class KeyPlots_Service {
                         .findByCodeApi(lbcode)
                         .map(TblLocalBody::getLocalbodyNameEn)
                         .orElse(lbcode); // fallback if name not found
-        System.out.println("panyachth "+panchayath);
+
         String landType = keyPlot.getLandType();
 
         Optional<TblMasterVillage> village =
                 tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
-        System.out.println("expect  :::> "+village);
+
         // Fetch related SidePlotDTOs
         List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
         Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
@@ -99,7 +100,7 @@ public class KeyPlots_Service {
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-        System.out.println("ggg  "+cluster.get().getClusterNumber());
+        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
@@ -127,6 +128,7 @@ public class KeyPlots_Service {
                 keyPlot.getBtrData().getOldsvno(),
                 keyPlot.getBtrData().getOldsubno(),
                 area,
+                enumArea.get().getEnumeratedArea(),
                 landType,
                 sidePlots);
     }
@@ -1046,6 +1048,7 @@ public class KeyPlots_Service {
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
+        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
@@ -1073,6 +1076,7 @@ public class KeyPlots_Service {
                 keyPlot.getBtrData().getOldsvno(),
                 keyPlot.getBtrData().getOldsubno(),
                 area,
+                enumArea.get().getEnumeratedArea(),
                 landType,
                 sidePlots);
     }
@@ -1293,24 +1297,98 @@ public class KeyPlots_Service {
 //    }
 
     public KeyPlotOwnerDetailsResponse getByKpId(UUID kpId) {
-        modelMapper
-                .getConfiguration()
+
+        modelMapper.getConfiguration()
                 .setFieldMatchingEnabled(true)
                 .setFieldAccessLevel(PRIVATE)
                 .setPropertyCondition(Conditions.isNotNull());
-        KeyPlots keyPlotDetails =
-                keyPlotsRepository
-                        .findById(kpId)
-                        .orElseThrow(() -> new IllegalArgumentException("Id not found: " + kpId));
-        KeyPlotOwnerDetailsResponse response =
-                modelMapper.map(keyPlotDetails, KeyPlotOwnerDetailsResponse.class);
 
-        // set static cluster_id = 2
-        Optional<ClusterMaster> clusterMaster = clusterMasterRepository.findByKeyPlotId(kpId);
+        KeyPlots keyPlotDetails = keyPlotsRepository.findById(kpId)
+                .orElseThrow(() -> new IllegalArgumentException("Id not found: " + kpId));
 
-        response.setCluster_id(clusterMaster.get().getCluMasterId());
+        TypeMap<KeyPlots, KeyPlotOwnerDetailsResponse> typeMap =
+                modelMapper.getTypeMap(KeyPlots.class, KeyPlotOwnerDetailsResponse.class);
+        if (typeMap == null) {
+            typeMap = modelMapper.createTypeMap(KeyPlots.class, KeyPlotOwnerDetailsResponse.class);
+            typeMap.addMappings(mapper ->
+                    mapper.map(KeyPlots::getSelectedDate,
+                            KeyPlotOwnerDetailsResponse::setSelectedDate)
+            );
+        }
+        KeyPlotOwnerDetailsResponse response = typeMap.map(keyPlotDetails);
+        Optional<ClusterMaster> clusterMasterOpt =
+                clusterMasterRepository.findByKeyPlotId(kpId);
+        if (clusterMasterOpt.isPresent()) {
+            ClusterMaster clusterMaster = clusterMasterOpt.get();
+            response.setCluster_id(clusterMaster.getCluMasterId());
+
+            List<ClusterFormData> clusterFormDataList =
+                    clusterFormDataRepository.findByClusterMaster(clusterMaster);
+
+            // ✅ sum enumeratedArea where plotLabel = "K"
+            Double kAreaSum = clusterFormDataList.stream()
+                    .filter(data -> "K".equalsIgnoreCase(data.getPlotLabel()))
+                    .map(ClusterFormData::getEnumeratedArea)
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .sum();
+            response.setPlotno(keyPlotDetails.getBtrData().getResvno()+"/"+keyPlotDetails.getBtrData().getResbdno());
+            response.setArea(kAreaSum); // since area is String
+        }
+
         return response;
     }
+
+    @Transactional
+    public ClusterFormData updateEnumeratedArea(UpdateEnumeratedKeyAreaDTO dto) {
+
+        // 1️⃣ Find ClusterMaster
+        ClusterMaster clusterMaster = clusterMasterRepository
+                .findByKeyPlot_Id(dto.getKpId())
+                .orElseThrow(() ->
+                        new RuntimeException("ClusterMaster not found for kp_id"));
+
+        Long clusterId = clusterMaster.getCluMasterId();
+
+        // 2️⃣ Find ClusterFormData for plotLabel = "K"
+        ClusterFormData formData = clusterFormDataRepository
+                .findByPlotLabelAndClusterMaster_CluMasterId("K", clusterId)
+                .orElseThrow(() ->
+                        new RuntimeException("ClusterFormData not found for plotLabel K"));
+
+        // 3️⃣ Get TOTAL AREA (areaCent) from KeyPlots
+        KeyPlots keyPlot = clusterMaster.getKeyPlot();
+
+        if (keyPlot.getBtrData().getTotCent() == null) {
+            throw new RuntimeException("Total area is not defined for this KeyPlot");
+        }
+
+        double totalArea = keyPlot.getBtrData().getTotCent();              // areaCent
+        double newEnumArea = dto.getEnumeratedArea();
+
+        // 4️⃣ VALIDATIONS 🔒
+        if (newEnumArea <= 0) {
+            throw new RuntimeException("Enumerated area must be greater than zero");
+        }
+
+        if (newEnumArea > totalArea) {
+            throw new RuntimeException(
+                    "Enumerated area (" + newEnumArea +
+                            ") cannot exceed total area (" + totalArea + ")"
+            );
+        }
+
+        // 5️⃣ Update fields
+        formData.setEnumeratedArea(newEnumArea);
+        formData.setRemark(dto.getRemark());
+        formData.setUpdatedAt(LocalDateTime.now());
+
+        return clusterFormDataRepository.save(formData);
+    }
+
+
+
+
 
 //    public Object KeyplotsFormation(UUID userId) {
 //        var user = userZoneAssignmentRepositoty.findByUserId(userId);

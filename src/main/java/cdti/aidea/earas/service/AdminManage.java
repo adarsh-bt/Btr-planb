@@ -56,7 +56,7 @@ public class AdminManage {
                     entity.getKeyplotsLimit(),
                     entity.getIsEdited(),
                     entity.getIsActive(),
-                    entity.getIn_active(),
+                    entity.getIsInActive(),
                     entity.getAddedBy(),
                     entity.getEditPermitter(),
                     entity.getRemarks(),

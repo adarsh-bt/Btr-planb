@@ -58,4 +58,16 @@ public interface KeyPlotsRepository extends JpaRepository<KeyPlots, UUID> {
           @Param("agriStart") LocalDate agriStart,
           @Param("agriEnd") LocalDate agriEnd
   );
+
+  @Query("""
+        SELECT COUNT(k)
+        FROM KeyPlots k
+        WHERE k.zone.zoneId = :zoneId
+          AND k.status = true
+          AND (k.isRejected = false OR k.isRejected IS NULL)
+    """)
+  Long countActiveKeyplotsByZone(@Param("zoneId") Integer zoneId);
+
+  // you can keep your existing methods below
+  long countByZone_ZoneId(Integer zoneId);
 }

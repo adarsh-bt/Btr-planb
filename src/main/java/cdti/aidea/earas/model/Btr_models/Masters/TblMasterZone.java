@@ -5,6 +5,11 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 @Data
@@ -13,7 +18,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "tbl_master_zone")
 
-public class TblMasterZone {
+public class  TblMasterZone {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,5 +54,19 @@ public class TblMasterZone {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "btr_type_id", referencedColumnName = "btr_type_id")
   private TblBtrType btrType;
+
+//  @Column(name = "added_by")
+//  private UUID addedBy;
+//
+//  @Column(name = "updated_by")
+//  private UUID updatedBy;
+
+//    @Column(name = "created_at")
+//    @CreationTimestamp
+//    private LocalDateTime createdAt;
+//
+//    @Column(name = "updated_at")
+//    @UpdateTimestamp
+//    private LocalDateTime updatedAt;
 
 }

@@ -19,7 +19,7 @@ public class TblBtrDetailsResponse {
     private String oldsubno;
     private String ownername;
     private Integer tpno;
-    private Integer tbsubdivisionno;
+    private String tbsubdivisionno;
     private Long btrtype;
     private Long clutserno;
 }

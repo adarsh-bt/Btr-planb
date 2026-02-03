@@ -141,7 +141,7 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
 
   // For BTR type 4 - Thandaper Number
   boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, Integer tbsubdivisionno);
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, String tbsubdivisionno);
 
   boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);
@@ -162,7 +162,7 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
           String ownername, String address, Double totCent);
 
   List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, Integer tbsubdivisionno);
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, String tbsubdivisionno);
 
   List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);

@@ -127,6 +127,7 @@ public class CropAssignmentTrailService {
         cceRequest.setCropId(saveDto.getCropId());
         cceRequest.setCceSourceType("RANDOM");
         cceRequest.setBtrId(keyPlot.getBtrData().getId());
+        cceRequest.setLbCode(keyPlot.getBtrData().getLbcode());
         cceRequest.setAddedBy(
             saveDto.getRejectedBy() != null ? saveDto.getRejectedBy() : UUID.randomUUID());
         cceRequest.setAgriStartYear(agriYear);

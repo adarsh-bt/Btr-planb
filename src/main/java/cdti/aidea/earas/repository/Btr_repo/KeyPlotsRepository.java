@@ -5,7 +5,10 @@ import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -40,17 +43,19 @@ public interface KeyPlotsRepository extends JpaRepository<KeyPlots, UUID> {
 
   List<KeyPlots> findByZone(TblMasterZone zoneId);
 
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("""
-       SELECT COUNT(k) 
-       FROM KeyPlots k 
-       WHERE k.zone.zoneId = :zoneId
-       AND k.agriStartYear = :agriYearStart 
-       AND k.agriEndYear = :agriYearEnd
-       AND k.isRejected = false
-       """)
-  long countKeyPlotsInYear(
+    SELECT COUNT(k)
+    FROM KeyPlots k
+    WHERE k.zone.zoneId = :zoneId
+      AND k.agriStartYear = :agriStart
+      AND k.agriEndYear = :agriEnd
+      AND k.status = true
+      AND k.isRejected = false
+""")
+  long countKeyPlotsForUpdate(
           @Param("zoneId") Integer zoneId,
-          @Param("agriYearStart") LocalDate agriYearStart,
-          @Param("agriYearEnd") LocalDate agriYearEnd);
-
+          @Param("agriStart") LocalDate agriStart,
+          @Param("agriEnd") LocalDate agriEnd
+  );
 }

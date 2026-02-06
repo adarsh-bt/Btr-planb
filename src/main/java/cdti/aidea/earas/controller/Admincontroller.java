@@ -1,13 +1,18 @@
 package cdti.aidea.earas.controller;
 
+import cdti.aidea.earas.contract.RequestsDTOs.ClusterApprovalActionDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
+import cdti.aidea.earas.contract.Response.AdminZoneResponse;
+import cdti.aidea.earas.contract.Response.ClusterApprovalTableDTO;
 import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
 import cdti.aidea.earas.service.AdminManage;
 import java.util.List;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -67,4 +72,37 @@ public class Admincontroller {
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  @GetMapping("/zones_cluster/{type}/{id}")
+  public ResponseEntity<List<ClusterApprovalTableDTO>> ZonelistClusters(
+          @PathVariable("type") String type, @PathVariable("id") String id) {
+    try {
+      Integer idValue = Integer.parseInt(id); // Parse the ID
+
+      // Call the unified service method
+      List<ClusterApprovalTableDTO> zoneList = adminManage.zoneListForClusters(type, idValue);
+      return new ResponseEntity<>(zoneList, HttpStatus.OK);
+    } catch (NumberFormatException e) {
+      // You can still return an error response if the ID is invalid
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    } catch (IllegalArgumentException e) {
+      // Optional: log or return a specific error message
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    } catch (Exception e) {
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @PostMapping("/approve-reject")
+  public ResponseEntity<?> approveOrReject(
+          @Valid @RequestBody ClusterApprovalActionDTO request) {
+    return ResponseEntity.ok(
+            adminManage.clusterApprovals(request));
+  }
+
+  @GetMapping("/zones")
+  public ResponseEntity<List<AdminZoneResponse>> getAllZones() {
+    return ResponseEntity.ok(adminManage.getAllZonesWithSeasonDates());
+  }
+
 }

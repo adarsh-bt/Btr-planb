@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.UUID;
 
 @Data
@@ -44,7 +45,7 @@ public class TblZoneSeasonSchedule {
     private Integer year;
 
     @Column(name = "uuid", columnDefinition = "UUID DEFAULT gen_random_uuid()", insertable = false, updatable = false)
-    private UUID uuid;
+    private UUID userId;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
@@ -61,5 +62,6 @@ public class TblZoneSeasonSchedule {
 
     @Column(name = "updated_at", insertable = false)
     private LocalDateTime updatedAt;
+
 
 }

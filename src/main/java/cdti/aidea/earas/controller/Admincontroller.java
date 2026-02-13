@@ -87,7 +87,7 @@ public class Admincontroller {
           @PathVariable("type") String type, @PathVariable("id") String id) {
     try {
       Integer idValue = Integer.parseInt(id); // Parse the ID
-
+System.out.println("id  "+idValue+"  : "+type);
       // Call the unified service method
       List<ClusterApprovalTableDTO> zoneList = adminManage.zoneListForClusters(type, idValue);
       return new ResponseEntity<>(zoneList, HttpStatus.OK);

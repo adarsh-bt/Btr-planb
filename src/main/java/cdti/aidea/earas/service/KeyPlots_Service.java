@@ -66,9 +66,9 @@ public class KeyPlots_Service {
 
     public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
         Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
-
+System.out.println("zone  "+zone);
         List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
-
+System.out.println("alll ");
         return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
     }
 
@@ -100,7 +100,8 @@ public class KeyPlots_Service {
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+//        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotAndPlotLabelAndClusterMaster_CluMasterId(keyPlot.getBtrData(),"K",status.get().getCluMasterId());
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
@@ -1048,7 +1049,8 @@ public class KeyPlots_Service {
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+//        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotAndPlotLabelAndClusterMaster_CluMasterId(keyPlot.getBtrData(),"K",status.get().getCluMasterId());
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
@@ -1090,7 +1092,9 @@ public class KeyPlots_Service {
 
         ClusterMaster cluster = clusterOpt.get();
 
-        List<ClusterFormData> formDataList = clusterFormDataRepository.findByClusterMaster(cluster);
+//        List<ClusterFormData> formDataList = clusterFormDataRepository.findByClusterMaster(cluster);
+        List<ClusterFormData> formDataList =
+                clusterFormDataRepository.findByClusterMasterOrderByDisplayOrderAsc(cluster);
 
         // Step 1: Extract unique lsgcodes
         Set<Integer> lsgCodes = formDataList.stream()
@@ -1109,35 +1113,68 @@ public class KeyPlots_Service {
                 ));
 
         // Step 4: Build grouped map
-        Map<String, List<ClusterFormRowDTO>> grouped = formDataList.stream()
-                .collect(Collectors.groupingBy(
-                        ClusterFormData::getPlotLabel,
-                        Collectors.mapping(data -> {
-                            TblBtrData plot = data.getPlot();
-                            String villageNameMal = lsgcodeToVillageNameMap.getOrDefault(plot.getLsgcode(), "Unknown");
+//        Map<String, List<ClusterFormRowDTO>> grouped = formDataList.stream()
+//                .collect(Collectors.groupingBy(
+//                        ClusterFormData::getPlotLabel,
+//                        Collectors.mapping(data -> {
+//                            TblBtrData plot = data.getPlot();
+//                            String villageNameMal = lsgcodeToVillageNameMap.getOrDefault(plot.getLsgcode(), "Unknown");
+//
+//                            return new ClusterFormRowDTO(
+//                                    data.getCluDetailId(),
+//                                    plot.getId(),
+//                                    Double.valueOf(data.getEnumeratedArea()),
+//                                    plot.getResvno(),
+//                                    plot.getResbdno(),
+//                                    BigDecimal.valueOf(plot.getTotCent())
+//                                            .setScale(2, RoundingMode.HALF_UP)
+//                                            .doubleValue(),
+//                                    plot.getBcode(),
+//                                    villageNameMal,
+//                                    plot.getWardnumber(),
+//                                    plot.getHouseno(),
+//                                    plot.getOwnername(),
+//                                    plot.getAddress(),
+//                                    plot.getTpno(),
+//                                    plot.getTbsubdivisionno(),
+//                                    plot.getOldsvno(),
+//                                    plot.getOldsubno()
+//                            );
+//                        }, Collectors.toList())
+//                ));
+        Map<String, List<ClusterFormRowDTO>> grouped =
+                formDataList.stream()
+                        .collect(Collectors.groupingBy(
+                                ClusterFormData::getPlotLabel,
+                                LinkedHashMap::new,   // ✅ THIS FIXES ORDER
+                                Collectors.mapping(data -> {
+                                    TblBtrData plot = data.getPlot();
+                                    String villageNameMal =
+                                            lsgcodeToVillageNameMap.getOrDefault(plot.getLsgcode(), "Unknown");
 
-                            return new ClusterFormRowDTO(
-                                    data.getCluDetailId(),
-                                    plot.getId(),
-                                    Double.valueOf(data.getEnumeratedArea()),
-                                    plot.getResvno(),
-                                    plot.getResbdno(),
-                                    BigDecimal.valueOf(plot.getTotCent())
-                                            .setScale(2, RoundingMode.HALF_UP)
-                                            .doubleValue(),
-                                    plot.getBcode(),
-                                    villageNameMal,
-                                    plot.getWardnumber(),
-                                    plot.getHouseno(),
-                                    plot.getOwnername(),
-                                    plot.getAddress(),
-                                    plot.getTpno(),
-                                    plot.getTbsubdivisionno(),
-                                    plot.getOldsvno(),
-                                    plot.getOldsubno()
-                            );
-                        }, Collectors.toList())
-                ));
+                                    return new ClusterFormRowDTO(
+                                            data.getCluDetailId(),
+                                            plot.getId(),
+                                            Double.valueOf(data.getEnumeratedArea()),
+                                            plot.getResvno(),
+                                            plot.getResbdno(),
+                                            BigDecimal.valueOf(plot.getTotCent())
+                                                    .setScale(2, RoundingMode.HALF_UP)
+                                                    .doubleValue(),
+                                            plot.getBcode(),
+                                            villageNameMal,
+                                            plot.getWardnumber(),
+                                            plot.getHouseno(),
+                                            plot.getOwnername(),
+                                            plot.getAddress(),
+                                            plot.getTpno(),
+                                            plot.getTbsubdivisionno(),
+                                            plot.getOldsvno(),
+                                            plot.getOldsubno()
+                                    );
+                                }, Collectors.toList())
+                        ));
+
 
         return grouped.entrySet().stream()
                 .map(entry -> new SidePlotDTO(entry.getKey(), entry.getValue()))

@@ -1076,8 +1076,8 @@ public class ClusterService {
                     ));
 
     Set<String> submittedKeys = new HashSet<>();
-
-    for (SidePlotDTO sidePlot : sidePlots) {
+      int orderIndex = 0;
+      for (SidePlotDTO sidePlot : sidePlots) {
       for (ClusterFormRowDTO row : sidePlot.getRows()) {
 
         Long plotId = row.getPlot_id();
@@ -1146,8 +1146,10 @@ public class ClusterService {
           formData.setUpdatedAt(LocalDateTime.now());
           formData.setCreatedBy(userid);
         }
-
+          formData.setDisplayOrder(orderIndex);
+          formData.setUpdatedAt(LocalDateTime.now());
         clusterFormDataRepository.save(formData);
+          orderIndex++;
       }
     }
 

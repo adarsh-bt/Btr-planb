@@ -33,6 +33,8 @@ public class ClusterFormData {
   @Column(name = "enumerated_area")
   private Double enumeratedArea;
 
+  @Column(name = "display_order")
+  private Integer displayOrder;
   private UUID createdBy;
 
   private Boolean status;

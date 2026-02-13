@@ -125,6 +125,7 @@ public class AdminManage {
 
   public List<ClusterApprovalTableDTO> zoneListForClusters(String type, Integer idValue) {
     List<ClusterApprovalLog> approvalLogs;
+    System.out.println("type "+type+" : "+idValue);
     if ("Taluk".equalsIgnoreCase(type)) {
       approvalLogs = clusterApprovalLogRepository
               .findByZone_DesTalukId(idValue);

@@ -1,7 +1,10 @@
 package cdti.aidea.earas.contract.Response;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ClusterStatusResponse {
   private Integer clusterNo;
   private UUID keyplotId;
@@ -23,5 +27,6 @@ public class ClusterStatusResponse {
   private Long clusterId;
   private String clusterType;
   private String status;
+  private List<SeasonStatusDto> seasons;
   List<String> cceCrops;
 }

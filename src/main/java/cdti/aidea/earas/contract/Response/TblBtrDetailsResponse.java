@@ -13,7 +13,8 @@ public class TblBtrDetailsResponse {
     private double totCent;
     private String address;
     private Integer wardno;
-    private Integer houseno;
+//    private Integer houseno;
+    private String houseno;
     private Integer oldsvno;
     private String oldsubno;
     private String ownername;

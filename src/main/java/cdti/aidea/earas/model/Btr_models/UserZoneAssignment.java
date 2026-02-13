@@ -20,7 +20,7 @@ public class UserZoneAssignment {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  //    useracce userregistraion PK
+  //    user access user registraion PK
   @Column(name = "user_id")
   private UUID userId;
 

@@ -22,7 +22,8 @@ public class KeyplotCountService {
             System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
             System.out.println("system "+keyplotsLimitLogRepository.findByIsInActiveTrueAndIsActiveFalse());
         }
-System.out.println("  > Active limit =  "+activeLimit);
+        System.out.println("  > Active limit =  "+activeLimit);
+
         if (activeLimit != null) {
             System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
         }
@@ -38,7 +39,7 @@ System.out.println("  > Active limit =  "+activeLimit);
         Long usedCount =
                 keyPlotsRepository.countActiveKeyplotsByZone(zoneId);
         usedCount = (usedCount == null) ? 0L : usedCount;
-
+        System.out.println(">>>> "+usedCount);
         // 3️⃣ Remaining count
         Long remaining = allowedLimit - usedCount;
 

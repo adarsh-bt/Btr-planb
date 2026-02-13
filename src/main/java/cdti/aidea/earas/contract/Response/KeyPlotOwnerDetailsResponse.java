@@ -1,6 +1,8 @@
 package cdti.aidea.earas.contract.Response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.time.LocalDate;
 import java.util.UUID;
 
 import lombok.*;
@@ -17,4 +19,9 @@ public class KeyPlotOwnerDetailsResponse {
   private String address;
   private String phone_number;
   private Long cluster_id;
+  private String plotno;
+  private String geocoordinate;
+  private Double area;
+  private LocalDate selectedDate;
+
 }

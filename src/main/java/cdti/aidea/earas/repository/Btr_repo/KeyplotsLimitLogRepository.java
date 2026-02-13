@@ -11,16 +11,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface KeyplotsLimitLogRepository extends JpaRepository<KeyplotsLimitLog, Long> {
   boolean existsByAgriStartYearAndIsActive(LocalDate agriStartYear, boolean isActive);
+  List<KeyplotsLimitLog> findByIsInActiveTrueAndIsActiveFalse();
 
-   // KeyplotsLimitLog findFirstByIsActiveTrueAndInActiveTrueOrderByCreatedAtDesc();
-
-    List<KeyplotsLimitLog> findByIsInActiveTrueAndIsActiveFalse();
-
-    KeyplotsLimitLog findFirstByIsActiveTrueAndIsInActiveTrueOrderByCreatedAtDesc();
-
-    //KeyplotsLimitLog findLatestActiveLimit();
-//    KeyplotsLimitLog
-//    findFirstByIsActiveTrueAndIsInActiveTrueOrderByCreatedAtDesc();
-//    List<KeyplotsLimitLog> findByIsInActiveTrueAndIsActiveFalse();
-
+  KeyplotsLimitLog findFirstByIsActiveTrueAndIsInActiveTrueOrderByCreatedAtDesc();
 }

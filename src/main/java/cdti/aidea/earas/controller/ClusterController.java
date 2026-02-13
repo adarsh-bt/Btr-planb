@@ -60,6 +60,21 @@ public class ClusterController {
                   Collections.emptyList()));
     }
   }
+
+
+  @GetMapping("/cluster-form-status/{zoneId}")
+  public ResponseEntity<UserClusterSummaryResponse> getClusterSummary(
+          @PathVariable Integer zoneId) {
+
+    UserClusterSummaryResponse response =
+            clusterService.getClusterSummaryWithExternalStatus(zoneId);
+
+    return ResponseEntity.ok(response);
+  }
+
+
+
+
   //    cluster labels for App
   @PostMapping("/cluster-labels")
   public ResponseEntity<Map<String, Object>> getGroupedClusterFormData(
@@ -178,6 +193,8 @@ public class ClusterController {
           request.getUserId(),
           request.getKeyplotId(),
           request.getClusterNo(),
+          request.getStatus(),
+          request.getRemarks(),
           request.getSidePlots());
       return ResponseEntity.ok(
           Collections.singletonMap("message", "Cluster form saved successfully."));
@@ -232,8 +249,14 @@ public class ClusterController {
     }
   }
 
+  @GetMapping("/{btrId}/btrplot-usage")
+  public ResponseEntity<List<BtrClusterUsageResponse>> getBtrClusterUsage(
+          @PathVariable Long btrId) {
 
-
+    return ResponseEntity.ok(
+            clusterService.getBtrClusterUsage(btrId)
+    );
+  }
 //  @PostMapping("/cluster-plot-save")
 //  public
 
@@ -273,7 +296,6 @@ public class ClusterController {
   //                    .body("Error saving cluster form: " + e.getMessage());
   //        }
   //    }
-
   @PatchMapping("/update-sideplot/{id}")
   public ResponseEntity<?> updateClusterPlot(
           @PathVariable Long id,

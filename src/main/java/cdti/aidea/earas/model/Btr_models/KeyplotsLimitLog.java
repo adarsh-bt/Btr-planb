@@ -41,7 +41,7 @@ public class KeyplotsLimitLog {
     @Column(name = "is_inactive")
     private Boolean isInActive = true;
 
-    @Column(name = "is_active")
+  @Column(name = "is_active")
   private Boolean isActive = true;
 
   @Column(name = "created_at", updatable = false)

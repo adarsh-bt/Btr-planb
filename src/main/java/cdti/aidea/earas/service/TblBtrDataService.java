@@ -12,6 +12,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import cdti.aidea.earas.utils.AgriYearUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.sl.draw.geom.GuideIf;
@@ -36,73 +39,94 @@ public class TblBtrDataService {
 
     @Transactional
     public Map<String, Object> saveData(TblBtrDataDTO dto) {
-        // ✅ Validate required fields
+
+        // 1️⃣ Validate required fields
         List<String> requiredErrors = validateRequiredFields(dto);
         if (!requiredErrors.isEmpty()) {
             throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
         }
 
-        // ✅ Validate duplicates
+        // 2️⃣ Validate duplicates
         ValidationErrorResponse duplicateError = validateDuplicate(dto);
         if (duplicateError != null) {
-            System.out.println("kl -------------- >        -----------");
             throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
         }
 
-        // 1️⃣ Save TblBtrData
+        // 3️⃣ Fetch zone FIRST
+        TblMasterZone zone = tblMasterZoneRepository
+                .findById(dto.getZoneId())
+                .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+        // 4️⃣ Calculate agri year
+        LocalDate today = LocalDate.now();
+
+        LocalDate agriStart =
+                (today.getMonthValue() >= 6)
+                        ? LocalDate.of(today.getYear(), 6, 1)
+                        : LocalDate.of(today.getYear() - 1, 6, 1);
+
+        LocalDate agriEnd =
+                (today.getMonthValue() >= 6)
+                        ? LocalDate.of(today.getYear() + 1, 7, 31)
+                        : LocalDate.of(today.getYear(), 7, 31);
+
+
+        // 5️⃣ COUNT FIRST — NOTHING SAVED YET
+        long count = keyPlotsRepository.countKeyPlotsForUpdate(
+                zone.getZoneId(),
+                agriStart,
+                agriEnd
+        );
+
+        if (count >= 100) {
+            throw new RuntimeException(
+                    "KeyPlot limit (100) reached for this zone in current agricultural year"
+            );
+        }
+
+
+        // ===============================
+        // ✅ ONLY NOW START SAVING TABLES
+        // ===============================
+
+        // 7️⃣ Save TblBtrData
         TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
 
-        // 2️⃣ Fetch zone by UUID
-        Integer zoneUuid = dto.getZoneId();
-        TblMasterZone zone =
-                tblMasterZoneRepository
-                        .findById(zoneUuid)
-                        .orElseThrow(() -> new RuntimeException("Zone not found"));
-
-        // 3️⃣ Save KeyPlots
+        // 8️⃣ Save KeyPlots
         KeyPlots keyPlot = new KeyPlots();
         keyPlot.setBtrData(btrData);
         keyPlot.setZone(zone);
         keyPlot.setIntervals(1);
-        keyPlot.setAgriStartYear(LocalDate.now());
-        keyPlot.setAgriEndYear(LocalDate.now().plusYears(1));
+        keyPlot.setAgriStartYear(agriStart);
+        keyPlot.setAgriEndYear(agriEnd);
         keyPlot.setIsRejected(false);
         keyPlot.setStatus(true);
         keyPlot.setLandType(btrData.getLtype());
         keyPlot.setCreated_by(UUID.randomUUID());
-        keyPlot = keyPlotsRepository.save(keyPlot);
+        keyPlotsRepository.save(keyPlot);
 
-        String lbcode = btrData.getLbcode();
-        String landType = btrData.getLtype(); // "Wet" or "Dry"
-
-        int agriYear = LocalDate.now().getYear();
-
-// In Kerala or India, agri year may start in June — adjust accordingly
-        // Start of agri year: 1st June at 00:00
-        LocalDateTime startDateTime = LocalDate.of(agriYear, 6, 1).atStartOfDay();
-
-// End of agri year: 31st May at 23:59:59
-        LocalDateTime endDateTime = startDateTime.plusYears(1).minusSeconds(1);
-
-        Optional<Integer> maxClusterNumberOpt = clusterMasterRepository
-                .findMaxClusterNumberByZoneAndDateRange(zone.getZoneId(), startDateTime, endDateTime);
+        // 9️⃣ Cluster number
+        Optional<Integer> maxClusterNumberOpt =
+                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
+                        zone.getZoneId(),
+                        agriStart.atStartOfDay(),
+                        agriEnd.atTime(23, 59, 59)
+                );
 
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
 
-
-
-
-        // 4️⃣ Save ClusterMaster
+        // 🔟 Save ClusterMaster
         ClusterMaster clusterMaster = new ClusterMaster();
         clusterMaster.setKeyPlot(keyPlot);
         clusterMaster.setClusterNumber(nextClusterNumber);
+        clusterMaster.setZone(zone);
         clusterMaster.setStatus("Not Started");
         clusterMaster.setIsReject(false);
         clusterMaster.setIs_active(true);
-        clusterMaster.setZone(zone);
+        clusterMaster.setIs_editable(true);
         clusterMasterRepository.save(clusterMaster);
 
-        // 5️⃣ Save ClusterFormData
+        // 1️⃣1️⃣ Save ClusterFormData
         ClusterFormData clusterFormData = new ClusterFormData();
         clusterFormData.setClusterMaster(clusterMaster);
         clusterFormData.setPlot(btrData);
@@ -112,36 +136,37 @@ public class TblBtrDataService {
         clusterFormData.setStatus(true);
         clusterFormDataRepository.save(clusterFormData);
 
-        // ✅ Return saved entity id
+        // 1️⃣2️⃣ Response
         Map<String, Object> response = new HashMap<>();
         response.put("id", btrData.getId());
         return response;
     }
 
+
     // ---------------- Save All ----------------
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
         List<ValidationErrorResponse> allErrors = new ArrayList<>();
-        System.out.println("test "+dtoList);
+
+        // Validate all DTOs first
         for (TblBtrDataDTO dto : dtoList) {
             // Required validation
             List<String> requiredErrors = validateRequiredFields(dto);
+
             if (!requiredErrors.isEmpty()) {
-                allErrors.add(
-                        new ValidationErrorResponse(
-                                dto.getResvno(), dto.getResbdno(), dto.getWardno(),dto.getHouseno(),dto.getTotCent(),String.join(", ", requiredErrors)));
+                allErrors.add(new ValidationErrorResponse(
+                        dto.getResvno(), dto.getResbdno(), dto.getWardno(),
+                        dto.getHouseno(), dto.getTotCent(),
+                        String.join(", ", requiredErrors)
+                ));
             }
 
             // Duplicate validation
-            System.out.println("DTo >>   "+dto.getBtrtype());
-
             ValidationErrorResponse duplicateError = validateDuplicate(dto);
             if (duplicateError != null) {
-                System.out.println("tpy not null");
                 allErrors.add(duplicateError);
             }
         }
-
 
         if (!allErrors.isEmpty()) {
             Map<String, Object> response = new HashMap<>();
@@ -150,15 +175,120 @@ public class TblBtrDataService {
             return response;
         }
 
-        // ✅ Save all and collect IDs
-        List<Long> savedIds =
-                dtoList.stream().map(dto -> (Long) saveData(dto).get("id")).collect(Collectors.toList());
+        // ===============================
+        // ✅ Check zone limit for bulk save
+        // ===============================
+        if (!dtoList.isEmpty()) {
+            TblBtrDataDTO firstDto = dtoList.get(0);
+            TblMasterZone zone = tblMasterZoneRepository
+                    .findById(firstDto.getZoneId())
+                    .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+            // Calculate agri year (same as in saveData)
+            LocalDate today = LocalDate.now();
+            LocalDate agriStart = (today.getMonthValue() >= 6)
+                    ? LocalDate.of(today.getYear(), 6, 1)
+                    : LocalDate.of(today.getYear() - 1, 6, 1);
+            LocalDate agriEnd = (today.getMonthValue() >= 6)
+                    ? LocalDate.of(today.getYear() + 1, 7, 31)
+                    : LocalDate.of(today.getYear(), 7, 31);
+
+            // Check current count
+            long currentCount = keyPlotsRepository.countKeyPlotsForUpdate(
+                    zone.getZoneId(), agriStart, agriEnd);
+
+            // Check if we can save all requested records
+            if (currentCount + dtoList.size() > 100) {
+                int availableSlots = (int) (100 - currentCount);
+                throw new RuntimeException(
+                        "Cannot save " + dtoList.size() + " records. " +
+                                "Only " + availableSlots + " slots available for this zone in current agricultural year."
+                );
+            }
+        }
+
+        // ✅ Save all records
+        List<Long> savedIds = new ArrayList<>();
+        for (TblBtrDataDTO dto : dtoList) {
+            // Call saveData without the limit check (since we already checked)
+            Long savedId = saveSingleRecordWithoutLimitCheck(dto);
+            savedIds.add(savedId);
+        }
 
         Map<String, Object> successResponse = new HashMap<>();
         successResponse.put("status", "Success");
         successResponse.put("message", "All records saved successfully");
         successResponse.put("ids", savedIds);
         return successResponse;
+    }
+
+    private Long saveSingleRecordWithoutLimitCheck(TblBtrDataDTO dto) {
+        // This is the same as saveData() but without the limit check
+        // Fetch zone
+        TblMasterZone zone = tblMasterZoneRepository
+                .findById(dto.getZoneId())
+                .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+        // Calculate agri year
+        LocalDate today = LocalDate.now();
+        LocalDate agriStart = (today.getMonthValue() >= 6)
+                ? LocalDate.of(today.getYear(), 6, 1)
+                : LocalDate.of(today.getYear() - 1, 6, 1);
+        LocalDate agriEnd = (today.getMonthValue() >= 6)
+                ? LocalDate.of(today.getYear() + 1, 7, 31)
+                : LocalDate.of(today.getYear(), 7, 31);
+
+        // Save TblBtrData
+        TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
+        Optional<Integer> maxClusterNumberOpt =
+                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
+                        zone.getZoneId(),
+                        agriStart.atStartOfDay(),
+                        agriEnd.atTime(23, 59, 59)
+                );
+        int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+//        System.out.println("next cluster ssss"+nextClusterNumber);
+//        if (nextClusterNumber >= 100){
+//            throw new RuntimeException("Current Year Keyplots limit 100 is Reach");
+//        }
+        // Save KeyPlots
+        KeyPlots keyPlot = new KeyPlots();
+        keyPlot.setBtrData(btrData);
+        keyPlot.setZone(zone);
+        keyPlot.setIntervals(1);
+        keyPlot.setAgriStartYear(agriStart);
+        keyPlot.setAgriEndYear(agriEnd);
+        keyPlot.setIsRejected(false);
+        keyPlot.setStatus(true);
+        keyPlot.setLandType(btrData.getLtype());
+        keyPlot.setCreated_by(UUID.randomUUID());
+        keyPlotsRepository.save(keyPlot);
+
+        // Get next cluster number
+
+
+        // Save ClusterMaster
+        ClusterMaster clusterMaster = new ClusterMaster();
+        clusterMaster.setKeyPlot(keyPlot);
+        clusterMaster.setClusterNumber(nextClusterNumber);
+        clusterMaster.setZone(zone);
+        clusterMaster.setStatus("Not Started");
+        clusterMaster.setIsReject(false);
+        clusterMaster.setIs_active(true);
+        clusterMaster.setIs_editable(true);
+        clusterMasterRepository.save(clusterMaster);
+
+        // Save ClusterFormData
+        ClusterFormData clusterFormData = new ClusterFormData();
+        clusterFormData.setClusterMaster(clusterMaster);
+        clusterFormData.setPlot(btrData);
+        clusterFormData.setPlotLabel("K");
+        clusterFormData.setEnumeratedArea(btrData.getTotCent());
+        clusterFormData.setCreatedBy(UUID.randomUUID());
+        clusterFormData.setStatus(true);
+        clusterFormDataRepository.save(clusterFormData);
+
+        return btrData.getId();
     }
 
     // ---------------- DTO -> Entity Mapper ----------------
@@ -225,22 +355,14 @@ public class TblBtrDataService {
         LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
         entity.setAgreStartYear(agreStart);
         entity.setAgreEndYear(agreEnd);
-        // ✅ END NEW BLOCK
-
         return entity;
     }
-
     private boolean notEmpty(String s) {
         return s != null && !s.trim().isEmpty();
     }
 
-    // ---------------- Duplicate Validation ----------------
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
-        System.out.println("ssss   " + dto);
-
         boolean existsRes = false;
-        System.out.println("dto  "+dto);
-
         if (dto.getResvno() != null ){
         if (dto.getResbdno() != null && notEmpty(dto.getResbdno())) {
 
@@ -251,8 +373,6 @@ public class TblBtrDataService {
 
             existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
                     dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
-
-
         }
             if (existsRes) {
                 return new ValidationErrorResponse(
@@ -265,11 +385,37 @@ public class TblBtrDataService {
                                 + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
             }}
 
+        LocalDate today = LocalDate.now();
+        LocalDate agriStart =
+                (today.getMonthValue() >= 6)
+                        ? LocalDate.of(today.getYear(), 6, 1)
+                        : LocalDate.of(today.getYear() - 1, 6, 1);
 
+        LocalDate agriEnd =
+                (today.getMonthValue() >= 6)
+                        ? LocalDate.of(today.getYear() + 1, 7, 31)
+                        : LocalDate.of(today.getYear(), 7, 31);
+        Optional<Integer> maxClusterNumberOpt =
+                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
+                        dto.getZoneId(),
+                        agriStart.atStartOfDay(),
+                        agriEnd.atTime(23, 59, 59)
+                );
+        int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+        System.out.println("next cluster>    "+nextClusterNumber);
+        if (nextClusterNumber > 100) {
+            return new ValidationErrorResponse(
+                    0,
+                    null,
+                    0,
+                    null,
+                    0.0,
+                    "Keyplots limit for current year is 100"
+            );
+        }
         // ---------------- Type 1 ----------------
         if (dto.getBtrtype() == 1) {
             System.out.println("Btr List val" + 1);
-
             boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
                     dto.getDcode(), dto.getTcode(), dto.getVcode(),
                     dto.getBcode(), dto.getLbcode(), dto.getResvno(), dto.getResbdno());
@@ -285,16 +431,10 @@ public class TblBtrDataService {
             }
 
         } else if (dto.getBtrtype() == 2) {
-            System.out.println("House List val" + 2);
-
             // --------- Added resvno/resbdno check ----------
-
-
             boolean exists = tblBtrDataRepository.existsByDcodeAndLbcodeAndWardnumberAndHouseno(
                     dto.getDcode(), dto.getLbcode(), dto.getWardno(), dto.getHouseno());
-
             if (exists) {
-                System.out.println("House List val" + 2);
                 return new ValidationErrorResponse(
                         dto.getResvno(), dto.getResbdno(),
                         dto.getWardno(), dto.getHouseno(),
@@ -325,7 +465,6 @@ public class TblBtrDataService {
 //                        "Duplicate entry already exists for resvno=" + dto.getResvno()
 //                                + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
 //            }
-
             boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
                     dto.getDcode(), dto.getTcode(), dto.getLbcode(), dto.getVcode(),
                     dto.getBcode(), dto.getOwnername(), dto.getAddress(), dto.getTotCent());
@@ -461,7 +600,7 @@ public class TblBtrDataService {
         if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
             System.out.println("ssss :  "+ dto.getResvno()+"  : "+cleanedResbdno);
             System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
-            +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
+                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
 
 
             // Case 1: User provided both survey number AND subdivision
@@ -722,21 +861,37 @@ public class TblBtrDataService {
     private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer identifier, String subdivision) {
         int currentYear = java.time.LocalDate.now().getYear();
         int nextYear = currentYear + 1;
-
+        System.out.println("plots >>>  "+plot);
         double totalEnumerated = 0.0;
         double totalArea = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
+        LocalDate today = LocalDate.now();
+        LocalDateTime startDate;
+        LocalDateTime endDate;
+
+        if (today.getMonthValue() >= 7) {
+            // July to December
+            startDate = LocalDate.of(today.getYear(), 7, 1).atStartOfDay();
+            endDate = LocalDate.of(today.getYear() + 1, 6, 30).atTime(23, 59, 59);
+        } else {
+            // January to June
+            startDate = LocalDate.of(today.getYear() - 1, 7, 1).atStartOfDay();
+            endDate = LocalDate.of(today.getYear(), 6, 30).atTime(23, 59, 59);
+        }
 
         List<ClusterFormData> clusterDataList = clusterFormDataRepository.findByPlotAndCreatedAtBetween(
                 plot,
-                java.time.LocalDate.of(currentYear, 7, 1).atStartOfDay(),
-                java.time.LocalDate.of(nextYear, 6, 30).atTime(23, 59, 59));
+                startDate,
+                endDate
+        );
 
         totalEnumerated += clusterDataList.stream()
                 .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
                 .sum();
-
+        System.out.println("total >>>  "+totalArea);
+        System.out.println("Emureted  >>> "+totalEnumerated);
         double remainingArea = totalArea - totalEnumerated;
-
+        System.out.println("ccccc >>  "+clusterDataList);
+        System.out.println("remain "+remainingArea);
         // For non-survey cases, identifier might be null
         Integer resvno = (identifier != null) ? identifier : null;
         String resbdno = subdivision;
@@ -773,6 +928,8 @@ public class TblBtrDataService {
             );
         }
     }
+
+
 
 
     private String getPlotType(TblBtrData plot) {
@@ -812,4 +969,27 @@ public class TblBtrDataService {
         );
     }
 
+
+
+    @Transactional
+    public String updateTotCentAndHandleClusterData(Long btrId, Double newTotCent) {
+
+        // 1️⃣ Get total area currently used in clusters
+        Double totalClusterArea = clusterFormDataRepository.getTotalEnumeratedAreaByBtrId(btrId);
+        if (totalClusterArea == null) totalClusterArea = 0.0;
+
+        // 2️⃣ Always update totCent in BTR table
+        int updatedRows = tblBtrDataRepository.updateTotCent(btrId, newTotCent);
+        if (updatedRows == 0) {
+            throw new EntityNotFoundException("TblBtrData with id " + btrId + " not found");
+        }
+
+        // 3️⃣ If new totCent < totalClusterArea, delete cluster entries
+        if (newTotCent < totalClusterArea) {
+            clusterFormDataRepository.deleteByBtrId(btrId);
+            return "New totCent is less than total enumerated area. ClusterFormData entries deleted, totCent updated.";
+        }
+
+        return "totCent updated successfully. No cluster entries deleted.";
+    }
 }

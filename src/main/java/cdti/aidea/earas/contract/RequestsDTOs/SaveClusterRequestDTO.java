@@ -14,5 +14,7 @@ public class SaveClusterRequestDTO {
   private UUID userId;
   private UUID keyplotId;
   private Integer clusterNo;
+  private String status;
+  private String remarks;
   private List<SidePlotDTO> sidePlots;
 }

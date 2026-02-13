@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class TblBtrDataController {
   private final TblBtrDataService service;
+
   private final TblNonBtrRepository tblNonBtrRepository;
 
   @PostMapping("/saveAll")
@@ -67,9 +68,19 @@ System.out.println("reqsue "+dto);
     return ResponseEntity.ok(activeBTypes);
   }
 
-   @GetMapping("/get-Btr-Details/{btrId}")
+  @GetMapping("/get-Btr-Details/{btrId}")
   public ResponseEntity<?> getBtrPlotDetails(@PathVariable("btrId") Long btrId) {
     TblBtrDetailsResponse response = service.getBtrDetails(btrId);
     return ResponseEntity.ok(response);
   }
+
+  @PutMapping("/{btrId}/update-totcent")
+  public ResponseEntity<String> updateTotCent(
+          @PathVariable Long btrId,
+          @RequestParam Double totCent) {
+
+    String message = service.updateTotCentAndHandleClusterData(btrId, totCent);
+    return ResponseEntity.ok(message);
+  }
+
 }

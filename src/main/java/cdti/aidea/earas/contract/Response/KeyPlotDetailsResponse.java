@@ -25,6 +25,7 @@ public class KeyPlotDetailsResponse {
   private String panchayath;
   private String lbcode;
   private String status;
+  private Boolean iseditable;
   private BigDecimal clusterMax;
   private BigDecimal clusterMin;
   private BigDecimal clusterMean;
@@ -32,12 +33,14 @@ public class KeyPlotDetailsResponse {
   private String ownerName;
   private String address;
   private Integer wardNo;
-  private Integer houseNo;
+//  private Integer houseNo;
+  private String houseNo;
   private Integer tpno;
   private String tpSubNo;
   private Integer oldsuvNo;
   private String oldsubNo;
   private double areaCents;
+  private double enumArea;
   private String landType;
   private List<SidePlotDTO> sidePlots;
 }

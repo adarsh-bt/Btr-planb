@@ -1,5 +1,6 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.contract.RequestsDTOs.ZoneUserAssignDto;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import java.util.List;
 import java.util.Optional;
@@ -22,4 +23,27 @@ public interface TblMasterZoneRepository extends JpaRepository<TblMasterZone, In
 
     @Query("SELECT z FROM TblMasterZone z WHERE z.zoneId = :zoneId AND z.isActive = true")
   Optional<TblMasterZone> findActiveZoneById(@Param("zoneId") Integer zoneId);
+
+
+   @Query("""
+       SELECT new cdti.aidea.earas.contract.RequestsDTOs.ZoneUserAssignDto(
+            z.zoneId,
+            z.zoneNameEn,
+            z.desDistId,
+            z.desTalukId,
+            CASE
+                WHEN uza.id IS NOT NULL THEN true
+                ELSE false
+            END,
+            uza.userId
+        )
+        FROM TblMasterZone z
+        LEFT JOIN UserZoneAssignment uza
+               ON uza.tblMasterZone.zoneId = z.zoneId
+              AND uza.isActive = true
+        WHERE z.isActive = true
+        ORDER BY z.zoneId
+    """)
+    List<ZoneUserAssignDto> findActiveZonesWithAssignment();
 }
+

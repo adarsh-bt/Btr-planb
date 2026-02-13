@@ -18,7 +18,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "tbl_master_zone")
 
-public class  TblMasterZone {
+public class TblMasterZone {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -19,7 +19,7 @@ public class KeyplotCountController {
     public ResponseEntity<KeyplotCountResponse> getKeyplotsLimitUsage(
             @PathVariable Integer zoneId) {
         KeyplotCountResponse response =
-               keyplotCountService.getKeyplotsLimitStatus(zoneId);
+                keyplotCountService.getKeyplotsLimitStatus(zoneId);
 
 
         return ResponseEntity.ok(response);

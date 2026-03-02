@@ -412,6 +412,7 @@ public class ClusterService {
 
       Map<String, Object> plotInfo = new HashMap<>();
       plotInfo.put("cluster_plot_id", data.getCluDetailId());
+      plotInfo.put("plot_id",plot.getId());
       plotInfo.put("svno", plot.getResvno() + "/" + plot.getResbdno());
       plotInfo.put("area", area);
       plotInfo.put("actual_area",data.getPlot().getTotCent());
@@ -1458,7 +1459,7 @@ public class ClusterService {
     }
 
     // Update status if changed
-    clusterMaster.get().setStatus(status);
+//    clusterMaster.get().setStatus(status);
     clusterMaster.get().setUpdatedAt(LocalDateTime.now());
     clusterMasterRepository.save(clusterMaster.get());
 

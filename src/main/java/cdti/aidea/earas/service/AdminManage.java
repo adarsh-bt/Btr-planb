@@ -21,10 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +66,7 @@ public class AdminManage {
   public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
     try {
       List<TblMasterZone> zones = null;
-
+System.out.println("sssss");
       // Decide which ID to use based on the type (Taluk, District, or Directorate)
       if ("Taluk".equalsIgnoreCase(type)) {
         zones = tblMasterZoneRepository.findByDesTalukId(idValue);
@@ -90,17 +87,20 @@ public class AdminManage {
       List<ZoneListResponse> zoneList = zones.stream()
               .map(zone -> {
                 // Fetch taluk
-
                 Optional<DesTaluk> taluk = desTalukRepository.findById(zone.getDesTalukId());
                 String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("Unknown Taluk");
-
-
 
                 // Fetch district
                 Optional<DistrictMaster> district = districtMasterRepository.findById(Long.valueOf(zone.getDistId()));
                 String districtName = district.map(DistrictMaster::getDist_name_en).orElse("Unknown District");
 
-                // Build response
+                // Fetch active user assignment
+                Optional<UserZoneAssignment> activeAssignment =
+                        userZoneAssignmentRepositoty.findByTblMasterZoneAndIsActiveTrue(zone);
+
+                UUID assignedUserId = activeAssignment.map(UserZoneAssignment::getUserId).orElse(null);
+
+                // Build response including assigned user
                 return new ZoneListResponse(
                         zone.getZoneId(),
                         zone.getZoneCode(),
@@ -110,7 +110,8 @@ public class AdminManage {
                         zone.getDesTalukId(),
                         zone.getDesDistId(),
                         talukName,
-                        districtName
+                        districtName,
+                        assignedUserId  // <-- New field added
                 );
               })
               .collect(Collectors.toList());

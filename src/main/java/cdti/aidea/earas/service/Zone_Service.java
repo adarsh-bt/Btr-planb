@@ -84,7 +84,7 @@ public class Zone_Service {
                                               zone.getZoneCode(),
                                               zone.getZoneNameEn(),
                                               zone.getZoneNameMal(), zone.getBtrType().getBtrType(),
-                                              0,0,null,null))
+                                              0,0,null,null,null))
                       .collect(Collectors.toList());
 
       return zoneList;

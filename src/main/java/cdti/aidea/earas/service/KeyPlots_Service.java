@@ -107,6 +107,7 @@ System.out.println("alll ");
                 keyPlot.getBtrData().getDcode(),
                 keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
+                cluster.get().getClusterNumber(),
                 keyPlot.getBtrData().getBtrtype().getBTypeId(),
                 keyPlot.getBtrData().getBtrtype().getBTypeName(),
                 villageName,
@@ -1049,13 +1050,17 @@ System.out.println("alll ");
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
+        System.out.println("clsuetr  "+cluster);
 //        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+        System.out.println("kkk  "+keyPlot.getBtrData()+"  K  "+status.get().getCluMasterId());
         Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotAndPlotLabelAndClusterMaster_CluMasterId(keyPlot.getBtrData(),"K",status.get().getCluMasterId());
+System.out.println("enume "+enumArea);
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
                 keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
+                cluster.get().getClusterNumber(),
                 keyPlot.getBtrData().getBtrtype().getBTypeId(),
                 keyPlot.getBtrData().getBtrtype().getBTypeName(),
                 villageName,

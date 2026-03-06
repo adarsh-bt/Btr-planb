@@ -118,7 +118,6 @@ public class CceCropService {
         objectMapper.convertValue(payload, new TypeReference<List<AvailableCcePlotResponse>>() {});
     return new CcePlotResult(plots, false);
   }
-
   public CcePlotResult fallbackAssignedCcePlots(Long zoneId, Throwable t) {
     log.warn("Fallback triggered for zoneId: {}", zoneId, t);
     return new CcePlotResult(Collections.emptyList(), true);

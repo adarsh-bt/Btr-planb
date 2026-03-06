@@ -128,8 +128,6 @@ public class Zone_Service {
             .collect(Collectors.toList());
   }
 
-
-
   public UserZoneAssignment updateZoneAssignmentStatus(ZoneAssignedRequset request) {
     try {
       // 🔁 Convert Integer to Long

@@ -14,6 +14,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -388,7 +389,7 @@ public class ClusterService {
             .orElseThrow(() -> new RuntimeException("Cluster not found"));
 
     List<ClusterFormData> formDataList =
-        clusterFormDataRepository.findByClusterMaster(clusterMaster);
+        clusterFormDataRepository.findByClusterMasterOrderByDisplayOrderAsc(clusterMaster);
       Optional<ClusterLimitLog> currentActiveOpt =
               clusterLimitLogRepository.findByInActiveTrue();
 
@@ -1115,6 +1116,11 @@ public class ClusterService {
                           newPlot.setWardnumber(row.getWard_number());
                           newPlot.setLbcode(kp.getLbcode());
                           newPlot.setLtype(kp.getLtype());
+                            LocalDate now = LocalDate.now();
+                            LocalDate agreStart = LocalDate.of(now.getYear(), 7, 1); // July 1 of current year
+                            LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
+                            newPlot.setAgreStartYear(agreStart);
+                            newPlot.setAgreEndYear(agreEnd);
 
                           TblMasterVillage village =
                                   tblMasterVillageRepository
@@ -1385,7 +1391,13 @@ public class ClusterService {
     btrData.setLtype(keyPlotBtr.getLtype());
     btrData.setLbcode(keyPlotBtr.getLbcode());
     btrData.setBtrtype(keyPlotBtr.getBtrtype());
-
+    btrData.setInsertionTime(LocalDateTime.now());
+    btrData.setUpdationTime(LocalDateTime.now());
+      LocalDate now = LocalDate.now();
+      LocalDate agreStart = LocalDate.of(now.getYear(), 7, 1); // July 1 of current year
+      LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
+      btrData.setAgreStartYear(agreStart);
+      btrData.setAgreEndYear(agreEnd);
     Optional<TblMasterVillage> lsg =
             tblMasterVillageRepository.findById(request.getVillage());
     System.out.println("lsg   "+lsg);
@@ -1409,6 +1421,12 @@ public class ClusterService {
             .findByClusterMasterAndPlotAndPlotLabel(clusterMaster.get(), savedBtr, request.getClusterlabel());
 
     ClusterFormData formData = existingForm.orElseGet(ClusterFormData::new);
+      Integer maxOrder = clusterFormDataRepository
+              .findMaxDisplayOrderByLabel(clusterMaster.get(), request.getClusterlabel());
+
+      int nextOrder = (maxOrder == null) ? 0 : maxOrder + 1;
+
+      formData.setDisplayOrder(nextOrder);
     formData.setClusterMaster(clusterMaster.get());
     formData.setPlot(savedBtr);
     formData.setPlotLabel(request.getClusterlabel());

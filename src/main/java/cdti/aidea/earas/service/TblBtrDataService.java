@@ -304,6 +304,8 @@ public class TblBtrDataService {
         entity.setTotCent(dto.getTotCent());
         entity.setResvno(dto.getResvno());
         entity.setResbdno(dto.getResbdno());
+        entity.setInsertionTime(LocalDateTime.now());
+        entity.setUpdationTime(LocalDateTime.now());
 // 🧩 Determine type-based mapping
         if (dto.getBtrtype() != null) {
             long typeId = dto.getBtrtype();

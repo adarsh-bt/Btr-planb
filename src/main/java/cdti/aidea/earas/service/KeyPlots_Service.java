@@ -4,10 +4,7 @@ import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.UpdateEnumeratedKeyAreaDTO;
-import cdti.aidea.earas.contract.Response.ClusterFormRowDTO;
-import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
-import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
-import cdti.aidea.earas.contract.Response.SidePlotDTO;
+import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
@@ -61,14 +58,15 @@ public class KeyPlots_Service {
     private final FormEntryClient formEntryClient;
     private final ClusterLimitLogRepository clusterLimitLogRepository;
     private final TblMasterZoneRepository tblMasterZoneRepository;
+    private final KeyplotsLimitLogRepository keyplotsLimitLogRepository;
 
     @PersistenceContext private EntityManager entityManager;
 
     public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
         Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
-System.out.println("zone  "+zone);
+
         List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
-System.out.println("alll ");
+
         return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
     }
 
@@ -1429,7 +1427,42 @@ System.out.println("enume "+enumArea);
     }
 
 
+    public KeyplotCountResponse getKeyplotsLimitStatus(Integer zoneId) {
 
+        // 1️⃣ Get keyplots limit where in_active = true
+        KeyplotsLimitLog activeLimit =
+                keyplotsLimitLogRepository.findFirstByIsActiveTrueAndIsInActiveTrueOrderByCreatedAtDesc();
+        if (activeLimit != null) {
+            System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
+            System.out.println("system "+keyplotsLimitLogRepository.findByIsInActiveTrueAndIsActiveFalse());
+        }
+        System.out.println("  > Active limit =  "+activeLimit);
+
+        if (activeLimit != null) {
+            System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
+        }
+        if (activeLimit == null) {
+            throw new IllegalStateException(
+                    "No active keyplots limit found (in_active = true)"
+            );
+        }
+
+        Long allowedLimit = activeLimit.getKeyplotsLimit();
+
+        // 2️⃣ Count only VALID keyplots
+        Long usedCount =
+                keyPlotsRepository.countActiveKeyplotsByZone(zoneId);
+        usedCount = (usedCount == null) ? 0L : usedCount;
+        System.out.println(">>>> "+usedCount);
+        // 3️⃣ Remaining count
+        Long remaining = allowedLimit - usedCount;
+        return new KeyplotCountResponse(
+                zoneId,
+                allowedLimit,
+                usedCount,
+                Math.max(remaining, 0)
+        );
+    }
 
 
 //    public Object KeyplotsFormation(UUID userId) {

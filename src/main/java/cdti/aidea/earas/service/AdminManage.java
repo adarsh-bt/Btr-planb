@@ -4,10 +4,7 @@ import cdti.aidea.earas.contract.RequestsDTOs.ClusterApprovalActionDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
-import cdti.aidea.earas.contract.Response.ClusterApprovalResponseDTO;
-import cdti.aidea.earas.contract.Response.ClusterApprovalTableDTO;
-import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
-import cdti.aidea.earas.contract.Response.ZoneListResponse;
+import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.DesTaluk;
 import cdti.aidea.earas.model.Btr_models.Masters.DistrictMaster;
@@ -17,6 +14,10 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -382,4 +383,50 @@ System.out.println("sssss");
       return clusterLimitLogRepository.save(log);
     }
   }
+
+
+
+
+  public ZonePageResponse getAllZones(int page, int size) {
+
+    Pageable pageable = PageRequest.of(page, size, Sort.by("zoneId").ascending());
+
+    Page<TblMasterZone> zonePage = tblMasterZoneRepository.findAll(pageable);
+
+    List<ZoneListResponse> zoneList = zonePage.getContent().stream()
+            .map(zone -> {
+
+              String talukName = desTalukRepository
+                      .findById(zone.getDesTalukId())
+                      .map(DesTaluk::getDesTalukNameEn)
+                      .orElse("Unknown Taluk");
+
+              String districtName = districtMasterRepository
+                      .findById(Long.valueOf(zone.getDistId()))
+                      .map(DistrictMaster::getDist_name_en)
+                      .orElse("Unknown District");
+
+              return new ZoneListResponse(
+                      zone.getZoneId(),
+                      zone.getZoneCode(),
+                      zone.getZoneNameEn(),
+                      zone.getZoneNameMal(),
+                      zone.getBtrType() != null ? zone.getBtrType().getBtrType() : null,
+                      zone.getDesTalukId(),
+                      zone.getDesDistId(),
+                      talukName,
+                      districtName,
+                      null
+              );
+            })
+            .toList();
+
+    return new ZonePageResponse(
+            zoneList,
+            zonePage.getNumber(),
+            zonePage.getTotalElements(),
+            zonePage.getTotalPages()
+    );
+  }
+
 }

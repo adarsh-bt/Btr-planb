@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 import feign.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -18,4 +20,6 @@ public interface TblMasterZoneRepository extends JpaRepository<TblMasterZone, In
 
   @Query("SELECT z FROM TblMasterZone z WHERE z.zoneId = :zoneId AND z.isActive = true")
   Optional<TblMasterZone> findActiveZoneById(@Param("zoneId") Integer zoneId);
+
+  Page<TblMasterZone> findAllByIsActiveTrue(Pageable pageable);
 }

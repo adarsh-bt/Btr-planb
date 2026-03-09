@@ -949,6 +949,7 @@ public class ClusterService {
   ) {
 
    System.out.println("status :::  "+requestedStatus);
+   System.out.println("reddd  "+sidePlots);
     KeyPlots keyPlot =
             keyPlotsRepository.findById(keyplotId)
                     .orElseThrow(() ->
@@ -1461,7 +1462,7 @@ public class ClusterService {
       if (max != null && total.compareTo(max) > 0) {
         throw new RuntimeException("Maximum cluster area exceeded.");
       } else if (tsoLimit != null && total.compareTo(tsoLimit) < 0) {
-        status = "Under Review";
+//        status = "Under Review";
 
         // Save review log
         ClusterApprovalLog reviewLog = new ClusterApprovalLog();
@@ -1472,7 +1473,7 @@ public class ClusterService {
         reviewLog.setTotalArea(total);
         clusterApprovalRepository.save(reviewLog);
       } else if (min != null && total.compareTo(min) >= 0) {
-        status = "Completed";
+//        status = "Completed";
       }
     }
 

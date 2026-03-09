@@ -571,9 +571,10 @@ public class Zone_Service {
 
     List<Integer> villageIds =
             zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
-
+System.out.println("villages  "+villageIds);
     List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
     List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
+    System.out.println("lsgcode   "+lsgcodes);
     List<String> villages_names =
             villageList.stream().map(TblMasterVillage::getVillageNameEn).toList();
     System.out.println("villages " + villages_names);
@@ -585,14 +586,15 @@ public class Zone_Service {
 
     List<String> LbcodeList =
             allData.stream().map(TblBtrData::getLbcode).distinct().collect(Collectors.toList());
-
+    System.out.println("localbode  "+LbcodeList);
     List<TblLocalBody> localBodies_full = localBodyRepository.findAllByCodeApiIn(LbcodeList);
 
     // Map lbcode -> local body name
+    System.out.println("fulll >>  "+localBodies_full);
     Map<String, String> localBodyNameMap = new HashMap<>();
     localBodies_full.forEach(
             localBody -> localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn()));
-
+System.out.println("localbody  >>>  "+localBodyNameMap);
     // Fetch unique localbody type IDs and load LocalBodyType entities
     List<Short> localbodyTypeIds =
             localBodies_full.stream()

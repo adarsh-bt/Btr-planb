@@ -3,9 +3,7 @@ package cdti.aidea.earas.controller;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterApprovalActionDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
-import cdti.aidea.earas.contract.Response.ClusterApprovalTableDTO;
-import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
-import cdti.aidea.earas.contract.Response.ZoneListResponse;
+import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
 import cdti.aidea.earas.service.AdminManage;
@@ -14,6 +12,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -97,6 +96,14 @@ System.out.println("id  "+idValue+"  : "+type);
           @Valid @RequestBody ClusterApprovalActionDTO request) {
     return ResponseEntity.ok(
             adminManage.clusterApprovals(request));
+  }
+
+  @GetMapping("/GetZones")
+  public ZonePageResponse getZones(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "20") int size) {
+
+    return adminManage.getAllZones(page, size);
   }
 
 }

@@ -55,18 +55,18 @@ public class  TblMasterZone {
   @JoinColumn(name = "btr_type_id", referencedColumnName = "btr_type_id")
   private TblBtrType btrType;
 
-//  @Column(name = "added_by")
-//  private UUID addedBy;
-//
-//  @Column(name = "updated_by")
-//  private UUID updatedBy;
+  @Column(name = "added_by")
+  private UUID addedBy;
 
-//    @Column(name = "created_at")
-//    @CreationTimestamp
-//    private LocalDateTime createdAt;
-//
-//    @Column(name = "updated_at")
-//    @UpdateTimestamp
-//    private LocalDateTime updatedAt;
+  @Column(name = "updated_by")
+  private UUID updatedBy;
+
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
 }

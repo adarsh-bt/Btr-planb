@@ -1,14 +1,10 @@
 package cdti.aidea.earas.service;
 
-import cdti.aidea.earas.contract.RequestsDTOs.ClusterApprovalActionDTO;
+import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
 import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.*;
-import cdti.aidea.earas.model.Btr_models.Masters.DesTaluk;
-import cdti.aidea.earas.model.Btr_models.Masters.DistrictMaster;
-import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -18,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -27,6 +24,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @Service
 @RequiredArgsConstructor
@@ -42,8 +41,16 @@ public class AdminManage {
   private final DistrictMasterRepository districtMasterRepository;
   private final ClusterApprovalLogRepository clusterApprovalLogRepository;
   private final ClusterMasterRepository clusterMasterRepository;
+  private final TblBtrTypeRepository tblBtrTypeRepository;
 
   private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
+  private final ZoneRevenueTalukMappingRepository zoneRevenueTalukMappingRepository;
+  private final RevenueTalukRepository revenueTalukRepository;
+  private final TblMasterVillageRepository tblMasterVillageRepository;
+  private final TblMasterVillageBlockRepository tblMasterVillageBlockRepository;
+  private final TblZoneRevenueVillageMappingRepository zoneRevenueVillageMappingRepository;
+  private final TblZoneVillageBlockMappingRepository tblZoneVillageBlockMappingRepository;
+
 
   public List<KeyplotsLimitLogResponse> getAllKeyplots() {
     List<KeyplotsLimitLog> entities = repository.findAll();
@@ -67,7 +74,7 @@ public class AdminManage {
   public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
     try {
       List<TblMasterZone> zones = null;
-System.out.println("sssss");
+      System.out.println("sssss");
       // Decide which ID to use based on the type (Taluk, District, or Directorate)
       if ("Taluk".equalsIgnoreCase(type)) {
         zones = tblMasterZoneRepository.findByDesTalukId(idValue);
@@ -88,7 +95,7 @@ System.out.println("sssss");
       List<ZoneListResponse> zoneList = zones.stream()
               .map(zone -> {
                 // Fetch taluk
-                Optional<DesTaluk> taluk = desTalukRepository.findById(zone.getDesTalukId());
+                Optional<DesTaluk> taluk = desTalukRepository.findById(Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()));
                 String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("Unknown Taluk");
 
                 // Fetch district
@@ -108,8 +115,8 @@ System.out.println("sssss");
                         zone.getZoneNameEn(),
                         zone.getZoneNameMal(),
                         zone.getBtrType().getBtrType(),
-                        zone.getDesTalukId(),
-                        zone.getDesDistId(),
+                        Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()),
+                        zone.getDistrictMaster().getDist_id(),
                         talukName,
                         districtName,
                         assignedUserId  // <-- New field added
@@ -127,7 +134,7 @@ System.out.println("sssss");
 
   public List<ClusterApprovalTableDTO> zoneListForClusters(String type, Integer idValue) {
     List<ClusterApprovalLog> approvalLogs;
-    System.out.println("type "+type+" : "+idValue);
+    System.out.println("type " + type + " : " + idValue);
     if ("Taluk".equalsIgnoreCase(type)) {
       approvalLogs = clusterApprovalLogRepository
               .findByZone_DesTalukId(idValue);
@@ -171,7 +178,7 @@ System.out.println("sssss");
     if (request.getIs_edit() != null && request.getIs_edit()) {
       clusterMaster.setIs_editable(true);
       clusterMaster.setStatus("On Going");
-    }else{
+    } else {
       clusterMaster.setStatus("Completed");
     }
 
@@ -221,7 +228,7 @@ System.out.println("sssss");
 
     // Taluk
     DesTaluk taluk = desTalukRepository
-            .findById(zone.getDesTalukId())
+            .findById(Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()))
             .orElse(null);
 
     // District
@@ -294,7 +301,7 @@ System.out.println("sssss");
       // ❗ Prevent duplicate active agri year
       boolean exists = repository.existsByAgriStartYearAndIsActive(agriStart, true);
       if (exists) {
-        throw new RuntimeException("A record already exists for the current agri year: " + agriStart +" To "+agriEnd);
+        throw new RuntimeException("A record already exists for the current agri year: " + agriStart + " To " + agriEnd);
       }
 
       log = new KeyplotsLimitLog();
@@ -384,9 +391,6 @@ System.out.println("sssss");
     }
   }
 
-
-
-
   public ZonePageResponse getAllZones(int page, int size) {
 
     Pageable pageable = PageRequest.of(page, size, Sort.by("zoneId").ascending());
@@ -397,7 +401,7 @@ System.out.println("sssss");
             .map(zone -> {
 
               String talukName = desTalukRepository
-                      .findById(zone.getDesTalukId())
+                      .findById(Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()))
                       .map(DesTaluk::getDesTalukNameEn)
                       .orElse("Unknown Taluk");
 
@@ -412,8 +416,8 @@ System.out.println("sssss");
                       zone.getZoneNameEn(),
                       zone.getZoneNameMal(),
                       zone.getBtrType() != null ? zone.getBtrType().getBtrType() : null,
-                      zone.getDesTalukId(),
-                      zone.getDesDistId(),
+                      Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()),
+                      zone.getDistrictMaster().getDist_id(),
                       talukName,
                       districtName,
                       null
@@ -429,4 +433,286 @@ System.out.println("sssss");
     );
   }
 
+  public ZoneMappingResponseDTO getZoneDetails(Integer zoneId) {
+
+    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
+            .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+    List<Object[]> rows = zoneRevenueTalukMappingRepository.getZoneHierarchy(zoneId);
+
+    Map<Integer, TalukDTO> talukMap = new LinkedHashMap<>();
+
+    for (Object[] row : rows) {
+
+      Long talukMappingId = row[0] != null ? Long.valueOf(row[0].toString()) : null;
+      Integer talukId = row[1] != null ? Integer.valueOf(row[1].toString()) : null;
+      String talukName = row[2] != null ? row[2].toString() : null;
+
+      Long villageMappingId = row[3] != null ? Long.valueOf(row[3].toString()) : null;
+      Integer villageId = row[4] != null ? Integer.valueOf(row[4].toString()) : null;
+      String villageName = row[5] != null ? row[5].toString() : null;
+
+      Long blockMappingId = row[6] != null ? Long.valueOf(row[6].toString()) : null;
+      String blockCode = row[7] != null ? row[7].toString() : null;
+
+      TalukDTO talukDTO = talukMap.computeIfAbsent(
+              talukId,
+              id -> new TalukDTO(talukMappingId, talukId, talukName)
+      );
+
+      // If village is null → skip village/block processing
+      if (villageId == null) {
+        continue;
+      }
+
+      VillageDTO villageDTO = talukDTO.getVillages()
+              .stream()
+              .filter(v -> v.getVillageId().equals(villageId))
+              .findFirst()
+              .orElseGet(() -> {
+
+                VillageDTO newVillage =
+                        new VillageDTO(villageMappingId, villageId, villageName);
+
+                talukDTO.getVillages().add(newVillage);
+                return newVillage;
+
+              });
+
+      if (blockCode != null) {
+
+        boolean exists = villageDTO.getBlocks()
+                .stream()
+                .anyMatch(b -> b.getBlockCode().equals(blockCode));
+
+        if (!exists) {
+          villageDTO.getBlocks().add(
+                  new BlockDTO(blockMappingId, blockCode)
+          );
+        }
+      }
+    }
+
+    return new ZoneMappingResponseDTO(
+            zone.getZoneId(),
+            zone.getZoneNameEn(),
+            zone.getBtrType() != null ? zone.getBtrType().getBtrType() : null,
+            new ArrayList<>(talukMap.values())
+    );
+  }
+
+  public List<TalukDTO> getTaluksByZone(Integer zoneId) {
+
+    TblMasterZone zone = tblMasterZoneRepository
+            .findByZoneIdAndIsActiveTrue(zoneId)
+            .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+    Integer distId = zone.getDistId();
+
+    List<RevTaluk> taluks = revenueTalukRepository
+            .findByDistIdAndIsActiveTrue(distId);
+
+    return taluks.stream()
+            .map(t -> new TalukDTO(
+                    Math.toIntExact(t.getRevTalukId()),
+                    t.getRevTalukNameEn()
+            ))
+            .toList();
+  }
+
+  public List<VillageDTO> getVillages(Integer talukId) {
+
+    List<TblMasterVillage> villages =
+            tblMasterVillageRepository.findByRevTalukIdAndIsActiveTrue(talukId);
+
+    return villages.stream()
+            .map(v -> new VillageDTO(
+                    null,
+                    v.getVillageId(),
+                    v.getVillageNameEn()
+            ))
+            .toList();
+  }
+
+  public List<BlockDTO> getBlocksByVillage(Integer villageId) {
+
+    List<TblMasterVillageBlock> blocks =
+            tblMasterVillageBlockRepository.findByVillageId(villageId);
+
+    return blocks.stream()
+            .map(b -> new BlockDTO(
+                    b.getVillageBlockId().longValue(),
+                    b.getBlockCode()
+            ))
+            .toList();
+  }
+
+
+  @Transactional
+  public void saveZoneMapping(AddZoneMappingRequest request) {
+System.out.println("request "+ request);
+    Integer zoneId = Math.toIntExact(request.getZoneId());
+
+    zoneRevenueTalukMappingRepository
+            .findByZoneAndRevenueTalukAndIsValidTrue(zoneId, request.getTalukId())
+            .orElseGet(() -> {
+
+              ZoneRevenueTalukMapping taluk = new ZoneRevenueTalukMapping();
+              taluk.setZone(zoneId);
+              taluk.setRevenueTaluk(request.getTalukId());
+              taluk.setIsValid(true);
+              taluk.setCreatedAt(LocalDateTime.now());
+              taluk.setAddedBy(request.getUserId());
+              return zoneRevenueTalukMappingRepository.save(taluk);
+            });
+
+    if (request.getVillageId() == null) {
+      return;
+    }
+
+    zoneRevenueVillageMappingRepository
+            .findByZoneAndRevenueVillageAndIsValidTrue(zoneId, request.getVillageId())
+            .orElseGet(() -> {
+
+              TblZoneRevenueVillageMapping village = new TblZoneRevenueVillageMapping();
+              village.setZone(zoneId);
+              village.setRevenueVillage(request.getVillageId());
+              village.setIsValid(true);
+              village.setCreatedAt(LocalDateTime.now());
+              village.setAddedBy(request.getUserId());
+              village.setRevenueTaluk(request.getTalukId());
+
+              return zoneRevenueVillageMappingRepository.save(village);
+            });
+
+    /* AUTO MAP BLOCKS IF NONE PROVIDED */
+
+    if (request.getBlockCodes() == null || request.getBlockCodes().isEmpty()) {
+
+      List<TblMasterVillageBlock> blocks =
+              tblMasterVillageBlockRepository.findByVillageId(request.getVillageId());
+
+      for (TblMasterVillageBlock block : blocks) {
+
+        Integer blockId = block.getVillageBlockId();
+
+        boolean exists =
+                tblZoneVillageBlockMappingRepository
+                        .existsByZoneAndVillageBlockIdAndIsValidTrue(zoneId, blockId);
+
+        if (!exists) {
+
+          TblZoneVillageBlockMapping blockMapping = new TblZoneVillageBlockMapping();
+          blockMapping.setZone(zoneId);
+          blockMapping.setVillageBlockId(blockId);
+          blockMapping.setVillageId(request.getVillageId());
+          blockMapping.setIsValid(true);
+          blockMapping.setCreatedAt(LocalDateTime.now());
+          blockMapping.setAddedBy(request.getUserId());
+
+          tblZoneVillageBlockMappingRepository.save(blockMapping);
+        }
+      }
+
+      return;
+    }
+
+    /* USER SELECTED BLOCKS */
+
+    for (String blockId : request.getBlockCodes()) {
+
+      Integer block = Integer.valueOf(blockId);
+
+      boolean exists =
+              tblZoneVillageBlockMappingRepository
+                      .existsByZoneAndVillageBlockIdAndIsValidTrue(zoneId, block);
+
+      if (!exists) {
+
+        TblZoneVillageBlockMapping blockMapping = new TblZoneVillageBlockMapping();
+        blockMapping.setZone(zoneId);
+        blockMapping.setVillageBlockId(block);
+        blockMapping.setVillageId(request.getVillageId()); // ✅ FIX
+        blockMapping.setIsValid(true);
+        blockMapping.setCreatedAt(LocalDateTime.now());
+        blockMapping.setAddedBy(request.getUserId());
+
+        tblZoneVillageBlockMappingRepository.save(blockMapping);
+      }
+    }
+  }
+
+
+  public TblMasterZone saveOrUpdate(ZoneCreateRequest request) {
+
+    TblMasterZone zone;
+
+    // 🔹 UPDATE
+    if (request.getZoneId() != null) {
+
+      zone = tblMasterZoneRepository.findById(request.getZoneId())
+              .orElseThrow(() -> new RuntimeException("Zone not found with id: " + request.getZoneId()));
+
+      if (request.getZoneNameEn() != null) zone.setZoneNameEn(request.getZoneNameEn());
+      if (request.getZoneNameMal() != null) zone.setZoneNameMal(request.getZoneNameMal());
+      if (request.getIsActive() != null) zone.setIsActive(request.getIsActive());
+      if (request.getZoneUser() != null) zone.setZoneUser(request.getZoneUser());
+
+      if (request.getBtrTypeId() != null) {
+        TblBtrType btr = tblBtrTypeRepository.findById(request.getBtrTypeId())
+                .orElseThrow(() -> new RuntimeException("BTR Type not found with id: " + request.getBtrTypeId()));
+        zone.setBtrType(btr);
+      }
+
+      if (request.getDesDistId() != null) {
+        DistrictMaster district = districtMasterRepository.findById(Long.valueOf(request.getDesDistId()))
+                .orElseThrow(() -> new RuntimeException("District not found with id: " + request.getDesDistId()));
+        zone.setDistId(district.getDist_id());
+        zone.setDistrictMaster(district);
+      }
+
+      if (request.getDesTalukId() != null) {
+        DesTaluk taluk = desTalukRepository.findById(request.getDesTalukId())
+                .orElseThrow(() -> new RuntimeException("Taluk not found with id: " + request.getDesTalukId()));
+        zone.setDesTalukId(taluk.getDesTalukId());
+        zone.setDesTalukMaster(taluk);
+      }
+      zone.setUpdatedAt(LocalDateTime.now());
+      zone.setUpdatedBy(request.getUserId());
+    } else {
+      // 🔹 CREATE
+      if (request.getDesDistId() == null) throw new RuntimeException("District ID is required");
+      if (request.getDesTalukId() == null) throw new RuntimeException("Taluk ID is required");
+
+      zone = new TblMasterZone();
+      zone.setZoneCode(request.getZoneCode());
+      zone.setZoneNameEn(request.getZoneNameEn());
+      zone.setZoneNameMal(request.getZoneNameMal());
+      zone.setZoneUser(request.getZoneUser());
+      zone.setAddedBy(request.getUserId());
+      zone.setCreatedAt(LocalDateTime.now());
+      zone.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+
+      // Fetch and set Taluk
+      DesTaluk taluk = desTalukRepository.findById(request.getDesTalukId())
+              .orElseThrow(() -> new RuntimeException("Taluk not found with id: " + request.getDesTalukId()));
+      zone.setDesTalukId(taluk.getDesTalukId());
+      zone.setDesTalukMaster(taluk);
+
+      // Fetch and set District
+      DistrictMaster district = districtMasterRepository.findById(Long.valueOf(request.getDesDistId()))
+              .orElseThrow(() -> new RuntimeException("District not found with id: " + request.getDesDistId()));
+      zone.setDistId(district.getDist_id());
+      zone.setDistrictMaster(district);
+
+      // Set BTR Type if provided
+      if (request.getBtrTypeId() != null) {
+        TblBtrType btr = tblBtrTypeRepository.findById(request.getBtrTypeId())
+                .orElseThrow(() -> new RuntimeException("BTR Type not found with id: " + request.getBtrTypeId()));
+        zone.setBtrType(btr);
+      }
+    }
+
+    return tblMasterZoneRepository.save(zone);
+  }
 }

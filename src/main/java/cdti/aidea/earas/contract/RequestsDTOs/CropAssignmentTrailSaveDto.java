@@ -31,6 +31,8 @@ public class CropAssignmentTrailSaveDto {
 
   private Boolean isCurrentAssignment = true;
 
+  private UUID addedBy;
+
   private UUID rejectedBy;
 
   private LocalDateTime rejectedAt;

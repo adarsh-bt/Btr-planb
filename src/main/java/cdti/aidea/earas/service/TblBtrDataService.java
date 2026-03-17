@@ -142,7 +142,6 @@ public class TblBtrDataService {
         return response;
     }
 
-
     // ---------------- Save All ----------------
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
@@ -261,7 +260,7 @@ public class TblBtrDataService {
         keyPlot.setIsRejected(false);
         keyPlot.setStatus(true);
         keyPlot.setLandType(btrData.getLtype());
-        keyPlot.setCreated_by(UUID.randomUUID());
+        keyPlot.setCreated_by(dto.getUser_id());
         keyPlotsRepository.save(keyPlot);
 
         // Get next cluster number
@@ -284,7 +283,7 @@ public class TblBtrDataService {
         clusterFormData.setPlot(btrData);
         clusterFormData.setPlotLabel("K");
         clusterFormData.setEnumeratedArea(btrData.getTotCent());
-        clusterFormData.setCreatedBy(UUID.randomUUID());
+        clusterFormData.setCreatedBy(dto.getUser_id());
         clusterFormData.setStatus(true);
         clusterFormDataRepository.save(clusterFormData);
 
@@ -304,6 +303,8 @@ public class TblBtrDataService {
         entity.setTotCent(dto.getTotCent());
         entity.setResvno(dto.getResvno());
         entity.setResbdno(dto.getResbdno());
+        entity.setCreated_by(dto.getUser_id());
+        entity.setUpdated_by(dto.getUser_id());
         entity.setInsertionTime(LocalDateTime.now());
         entity.setUpdationTime(LocalDateTime.now());
 // 🧩 Determine type-based mapping

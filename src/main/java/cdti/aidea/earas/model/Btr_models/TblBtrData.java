@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -74,6 +75,9 @@ public class TblBtrData {
   @Column(name = "ward_number")
     private Integer wardnumber;
     private  String cl_no;
+
+    private UUID created_by;
+    private UUID updated_by;
 
 
   //    private Boolean reject;

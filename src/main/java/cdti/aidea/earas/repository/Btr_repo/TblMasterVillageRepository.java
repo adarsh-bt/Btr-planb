@@ -42,4 +42,6 @@ public interface TblMasterVillageRepository extends JpaRepository<TblMasterVilla
       nativeQuery = true)
   List<Object[]> findVillagesByZoneAndLocalBody(
       @Param("zoneId") Integer zoneId, @Param("localBodyId") Integer localBodyId);
+
+  List<TblMasterVillage> findByRevTalukIdAndIsActiveTrue(Integer revTalukId);
 }

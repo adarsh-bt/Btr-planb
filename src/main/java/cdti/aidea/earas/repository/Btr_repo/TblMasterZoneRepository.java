@@ -22,4 +22,5 @@ public interface TblMasterZoneRepository extends JpaRepository<TblMasterZone, In
   Optional<TblMasterZone> findActiveZoneById(@Param("zoneId") Integer zoneId);
 
   Page<TblMasterZone> findAllByIsActiveTrue(Pageable pageable);
+  Optional<TblMasterZone> findByZoneIdAndIsActiveTrue(Integer zoneId);
 }

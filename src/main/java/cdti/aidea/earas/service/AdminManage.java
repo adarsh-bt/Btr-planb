@@ -50,6 +50,7 @@ public class AdminManage {
   private final TblMasterVillageBlockRepository tblMasterVillageBlockRepository;
   private final TblZoneRevenueVillageMappingRepository zoneRevenueVillageMappingRepository;
   private final TblZoneVillageBlockMappingRepository tblZoneVillageBlockMappingRepository;
+  private final TblZoneLocalbodyMappingRepository tblZoneLocalbodyMappingRepository;
 
 
   public List<KeyplotsLimitLogResponse> getAllKeyplots() {
@@ -714,5 +715,98 @@ System.out.println("request "+ request);
     }
 
     return tblMasterZoneRepository.save(zone);
+  }
+
+  public List<LocalbodyDTO> getZoneLocalBodies(Integer zoneId) {
+
+    List<Object[]> rows =
+            tblZoneLocalbodyMappingRepository.findLocalBodiesByZone(zoneId);
+
+    List<LocalbodyDTO> result = new ArrayList<>();
+
+    for (Object[] row : rows) {
+
+      LocalbodyDTO dto = new LocalbodyDTO(
+              row[0] != null ? Integer.valueOf(row[0].toString()) : null,
+              row[1] != null ? Integer.valueOf(row[1].toString()) : null,
+              row[2] != null ? row[2].toString() : null,
+              null,null
+      );
+
+      result.add(dto);
+    }
+
+    return result;
+  }
+
+  public List<LocalbodyDTO> getAvailableLocalBodies(Integer zoneId) {
+    List<Object[]> rows =
+            tblZoneLocalbodyMappingRepository.findAvailableLocalBodies(zoneId);
+    List<LocalbodyDTO> result = new ArrayList<>();
+    for (Object[] row : rows) {
+      result.add(new LocalbodyDTO(
+              null,
+              Integer.valueOf(row[0].toString()),
+              row[1].toString(),
+              null,null
+      ));
+    }
+    return result;
+  }
+
+  @Transactional
+  public void saveLocalBodyMapping(LocalbodyDTO request) {
+    if (request.getUserId() == null) {
+      throw new RuntimeException("UserId is required");
+    }
+    Integer zoneId = request.getZoneId();
+    Integer localbodyId = request.getLocalbodyId();
+
+    Optional<TblZoneLocalbodyMapping> existing =
+            tblZoneLocalbodyMappingRepository
+                    .findByZoneAndLocalbody(zoneId, localbodyId);
+    if (existing.isPresent()) {
+      TblZoneLocalbodyMapping mapping = existing.get();
+      // 🔥 CASE 1: Already active → do nothing
+      if (Boolean.TRUE.equals(mapping.getIsValid())) {
+        return;
+      }
+      // 🔥 CASE 2: Was deleted → reactivate
+      mapping.setIsValid(true);
+      mapping.setUpdatedBy(request.getUserId());
+
+      tblZoneLocalbodyMappingRepository.save(mapping);
+
+    } else {
+
+      // 🔥 CASE 3: New mapping
+      TblZoneLocalbodyMapping mapping = new TblZoneLocalbodyMapping();
+      mapping.setZone(zoneId);
+      mapping.setLocalbody(localbodyId);
+      mapping.setIsValid(true);
+      mapping.setAddedBy(request.getUserId());
+      mapping.setCreatedAt(LocalDateTime.now());
+      tblZoneLocalbodyMappingRepository.save(mapping);
+    }
+  }
+
+  @Transactional
+  public void removeLocalBodyMapping(Integer id, UUID userId) {
+
+    if (userId == null) {
+      throw new RuntimeException("UserId is required");
+    }
+    TblZoneLocalbodyMapping mapping =
+            tblZoneLocalbodyMappingRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("LocalBody mapping not found"));
+    // 🔥 Already removed → ignore (idempotent)
+    if (Boolean.FALSE.equals(mapping.getIsValid())) {
+      return;
+    }
+    // 🔥 Soft delete
+    mapping.setIsValid(false);
+    mapping.setUpdatedBy(userId);
+    mapping.setUpdatedAt(LocalDateTime.now());
+    tblZoneLocalbodyMappingRepository.save(mapping);
   }
 }

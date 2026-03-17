@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "tbl_master_localbody")
 public class TblLocalBody {
 
+
   @Id private Integer localbodyId;
 
   private String localbodyCode;

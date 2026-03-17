@@ -247,4 +247,34 @@ System.out.println("id  "+idValue+"  : "+type);
     TblMasterZone response = adminManage.saveOrUpdate(request);
     return ResponseEntity.ok(response);
   }
+
+  @GetMapping("/zone-localbodies/{zoneId}")
+  public ResponseEntity<?> getLocalBodies(@PathVariable Integer zoneId) {
+
+    List<LocalbodyDTO> data = adminManage.getZoneLocalBodies(zoneId);
+
+    return ResponseEntity.ok(data);
+  }
+
+  @GetMapping("/available-localbodies/{zoneId}")
+  public ResponseEntity<?> getAvailableLocalBodies(@PathVariable Integer zoneId) {
+
+    return ResponseEntity.ok(
+            adminManage.getAvailableLocalBodies(zoneId)
+    );
+  }
+
+  @PostMapping("/add-localbody")
+  public ResponseEntity<?> addLocalBody(
+          @RequestBody LocalbodyDTO request) {
+    adminManage.saveLocalBodyMapping(request);
+    return ResponseEntity.ok("LocalBody mapped successfully");
+  }
+
+  @PutMapping("/remove-localbody/{id}")
+  public ResponseEntity<?> removeLocalBody(@PathVariable Integer id,
+                                           @RequestParam UUID userId) {
+    adminManage.removeLocalBodyMapping(id, userId);
+    return ResponseEntity.ok("LocalBody removed successfully");
+  }
 }

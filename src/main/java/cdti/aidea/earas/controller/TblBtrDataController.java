@@ -38,7 +38,7 @@ public class TblBtrDataController {
   @PostMapping("/validate-duplicate")
   public ResponseEntity<?> validateDuplicate(@RequestBody TblBtrDataDTO dto) {
     ValidationResponse response = service.validateDuplicateForCluster(dto);
-System.out.println("reqsue "+dto);
+
     if (response != null) {
       return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     } else {
@@ -71,5 +71,13 @@ System.out.println("reqsue "+dto);
     return ResponseEntity.ok(response);
   }
 
+  @PutMapping("/{btrId}/update-totcent")
+  public ResponseEntity<String> updateTotCent(
+          @PathVariable Long btrId,
+          @RequestParam Double totCent) {
+
+    String message = service.updateTotCentAndHandleClusterData(btrId, totCent);
+    return ResponseEntity.ok(message);
+  }
 
 }

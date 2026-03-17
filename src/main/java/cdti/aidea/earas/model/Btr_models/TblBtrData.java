@@ -45,7 +45,7 @@ public class TblBtrData {
     @Column(name = "tp_no")
   private Integer tpno;
     @Column(name = "tb_subdivision_no")
-  private Integer tbsubdivisionno;
+  private String tbsubdivisionno;
 
   @Column(name = "land_owner_address")
   private String address;

@@ -249,8 +249,14 @@ public class ClusterController {
     }
   }
 
+  @GetMapping("/{btrId}/btrplot-usage")
+  public ResponseEntity<List<BtrClusterUsageResponse>> getBtrClusterUsage(
+          @PathVariable Long btrId) {
 
-
+    return ResponseEntity.ok(
+            clusterService.getBtrClusterUsage(btrId)
+    );
+  }
 //  @PostMapping("/cluster-plot-save")
 //  public
 
@@ -290,7 +296,6 @@ public class ClusterController {
   //                    .body("Error saving cluster form: " + e.getMessage());
   //        }
   //    }
-
   @PatchMapping("/update-sideplot/{id}")
   public ResponseEntity<?> updateClusterPlot(
           @PathVariable Long id,

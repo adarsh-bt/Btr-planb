@@ -1,5 +1,6 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.model.Btr_models.ClusterFormData;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
 import java.time.LocalDate;
@@ -83,4 +84,8 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
           @Param("zoneId") Integer zoneId,
           @Param("start") LocalDateTime start,
           @Param("end") LocalDateTime end);
+
+  Optional<ClusterMaster> findByKeyPlot_Id(UUID kpId);
+//  Optional<ClusterFormData> findByClusterMaster(ClusterMaster clusterMaster);
+
 }

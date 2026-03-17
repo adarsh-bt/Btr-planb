@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import cdti.aidea.earas.utils.AgriYearUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.sl.draw.geom.GuideIf;
@@ -599,7 +600,7 @@ public class TblBtrDataService {
         if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
             System.out.println("ssss :  "+ dto.getResvno()+"  : "+cleanedResbdno);
             System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
-            +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
+                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
 
 
             // Case 1: User provided both survey number AND subdivision
@@ -860,21 +861,37 @@ public class TblBtrDataService {
     private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer identifier, String subdivision) {
         int currentYear = java.time.LocalDate.now().getYear();
         int nextYear = currentYear + 1;
-
+        System.out.println("plots >>>  "+plot);
         double totalEnumerated = 0.0;
         double totalArea = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
+        LocalDate today = LocalDate.now();
+        LocalDateTime startDate;
+        LocalDateTime endDate;
+
+        if (today.getMonthValue() >= 7) {
+            // July to December
+            startDate = LocalDate.of(today.getYear(), 7, 1).atStartOfDay();
+            endDate = LocalDate.of(today.getYear() + 1, 6, 30).atTime(23, 59, 59);
+        } else {
+            // January to June
+            startDate = LocalDate.of(today.getYear() - 1, 7, 1).atStartOfDay();
+            endDate = LocalDate.of(today.getYear(), 6, 30).atTime(23, 59, 59);
+        }
 
         List<ClusterFormData> clusterDataList = clusterFormDataRepository.findByPlotAndCreatedAtBetween(
                 plot,
-                java.time.LocalDate.of(currentYear, 7, 1).atStartOfDay(),
-                java.time.LocalDate.of(nextYear, 6, 30).atTime(23, 59, 59));
+                startDate,
+                endDate
+        );
 
         totalEnumerated += clusterDataList.stream()
                 .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
                 .sum();
-
+        System.out.println("total >>>  "+totalArea);
+        System.out.println("Emureted  >>> "+totalEnumerated);
         double remainingArea = totalArea - totalEnumerated;
-
+        System.out.println("ccccc >>  "+clusterDataList);
+        System.out.println("remain "+remainingArea);
         // For non-survey cases, identifier might be null
         Integer resvno = (identifier != null) ? identifier : null;
         String resbdno = subdivision;
@@ -911,6 +928,8 @@ public class TblBtrDataService {
             );
         }
     }
+
+
 
 
     private String getPlotType(TblBtrData plot) {
@@ -950,4 +969,27 @@ public class TblBtrDataService {
         );
     }
 
+
+
+    @Transactional
+    public String updateTotCentAndHandleClusterData(Long btrId, Double newTotCent) {
+
+        // 1️⃣ Get total area currently used in clusters
+        Double totalClusterArea = clusterFormDataRepository.getTotalEnumeratedAreaByBtrId(btrId);
+        if (totalClusterArea == null) totalClusterArea = 0.0;
+
+        // 2️⃣ Always update totCent in BTR table
+        int updatedRows = tblBtrDataRepository.updateTotCent(btrId, newTotCent);
+        if (updatedRows == 0) {
+            throw new EntityNotFoundException("TblBtrData with id " + btrId + " not found");
+        }
+
+        // 3️⃣ If new totCent < totalClusterArea, delete cluster entries
+        if (newTotCent < totalClusterArea) {
+            clusterFormDataRepository.deleteByBtrId(btrId);
+            return "New totCent is less than total enumerated area. ClusterFormData entries deleted, totCent updated.";
+        }
+
+        return "totCent updated successfully. No cluster entries deleted.";
+    }
 }

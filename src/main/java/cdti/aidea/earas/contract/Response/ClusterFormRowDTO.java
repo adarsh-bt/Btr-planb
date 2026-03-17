@@ -23,7 +23,7 @@ public class ClusterFormRowDTO {
   private String ownername;
   private String address;
   private Integer tpno;
-  private Integer tbsubdivisionno;
+  private String tbsubdivisionno;
   private Integer oldsvno;
   private String oldsubno;
 }

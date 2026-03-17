@@ -3,12 +3,19 @@ package cdti.aidea.earas.controller;
 import cdti.aidea.earas.common.exception.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
+import cdti.aidea.earas.contract.RequestsDTOs.UpdateEnumeratedKeyAreaDTO;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
+import cdti.aidea.earas.model.Btr_models.ClusterFormData;
+import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
+import cdti.aidea.earas.repository.Btr_repo.ClusterFormDataRepository;
+import cdti.aidea.earas.repository.Btr_repo.ClusterMasterRepository;
 import cdti.aidea.earas.service.KeyPlots_Service;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -171,5 +178,18 @@ public class KeyPlotsController {
 //        Map<String, Object> response = keyPlots_Service.rejectAndReplaceKeyplot(keyPlotId, request);
 //        return ResponseEntity.ok(response);
 //    }
+@PostMapping("/update-enumerated-area")
+public ResponseEntity<?> updateEnumeratedArea(
+        @RequestBody UpdateEnumeratedKeyAreaDTO dto) {
+System.out.println("dto  "+dto);
+    ClusterFormData updatedData =
+            (ClusterFormData) keyPlots_Service.updateEnumeratedArea(dto);
+
+    return ResponseEntity.ok(Map.of(
+            "message", "Enumerated area updated successfully",
+            "data", dto
+    ));
+}
+
 
 }

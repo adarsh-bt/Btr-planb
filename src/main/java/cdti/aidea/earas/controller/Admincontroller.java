@@ -1,8 +1,10 @@
 package cdti.aidea.earas.controller;
 
+import cdti.aidea.earas.common.exception.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterApprovalActionDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
+import cdti.aidea.earas.contract.RequestsDTOs.ZoneUserAssignDto;
 import cdti.aidea.earas.contract.Response.AdminZoneResponse;
 import cdti.aidea.earas.contract.Response.ClusterApprovalTableDTO;
 import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
@@ -103,6 +105,31 @@ public class Admincontroller {
   @GetMapping("/zones")
   public ResponseEntity<List<AdminZoneResponse>> getAllZones() {
     return ResponseEntity.ok(adminManage.getAllZonesWithSeasonDates());
+  }
+
+  //interconnection with pagination done to aassign zone userdetails
+  @GetMapping("/active")
+  public ResponseEntity<Response> getActiveZones(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "100") int size) {
+
+    List<ZoneUserAssignDto> allZones =
+            adminManage.getAllZonesWithUsers();
+
+    int start = page * size;
+    int end = Math.min(start + size, allZones.size());
+
+    List<ZoneUserAssignDto> paginatedList =
+            (start >= allZones.size()) ?
+                    List.of() :
+                    allZones.subList(start, end);
+
+    return ResponseEntity.ok(
+            Response.builder()
+                    .payload(paginatedList)
+                    .message("Zones fetched successfully")
+                    .build()
+    );
   }
 
 }

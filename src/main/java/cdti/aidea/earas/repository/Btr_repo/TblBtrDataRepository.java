@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -140,7 +141,7 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
 
   // For BTR type 4 - Thandaper Number
   boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, Integer tbsubdivisionno);
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, String tbsubdivisionno);
 
   boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);
@@ -161,7 +162,7 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
           String ownername, String address, Double totCent);
 
   List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, Integer tbsubdivisionno);
+          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, String tbsubdivisionno);
 
   List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);
@@ -171,4 +172,8 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
 
   List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno);
+
+  @Modifying
+  @Query("UPDATE TblBtrData b SET b.totCent = :totCent WHERE b.id = :btrId")
+  int updateTotCent(@Param("btrId") Long btrId, @Param("totCent") Double totCent);
 }

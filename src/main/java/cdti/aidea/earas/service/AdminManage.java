@@ -1,10 +1,10 @@
 package cdti.aidea.earas.service;
 
-import cdti.aidea.earas.contract.RequestsDTOs.ClusterApprovalActionDTO;
+import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyplotsLimitLogRequest;
 import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.contract.UserAccessDTOs.AssignedUserResponse;
+import cdti.aidea.earas.contract.UserAccessDTOs.UserLoginDetailsResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.DesTaluk;
 import cdti.aidea.earas.model.Btr_models.Masters.DistrictMaster;
@@ -18,10 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +40,7 @@ public class AdminManage {
   private final ClusterMasterRepository clusterMasterRepository;
   private final TblSeasonMasterRepository seasonMasterRepository;
   private final  TblZoneSeasonScheduleRepository scheduleRepository;
+  private final UserAccessClientService userAccessClientService;
 
   private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
 
@@ -55,7 +53,7 @@ public class AdminManage {
                     entity.getKeyplotsLimit(),
                     entity.getIsEdited(),
                     entity.getIsActive(),
-                    entity.getIn_active(),
+                    entity.getIsInActive(),
                     entity.getAddedBy(),
                     entity.getEditPermitter(),
                     entity.getRemarks(),
@@ -453,5 +451,39 @@ public class AdminManage {
                       .build();
             })
             .collect(Collectors.toList());
+  }
+
+  //To get zone assigned details
+  public List<ZoneUserAssignDto> getAllZonesWithUsers() {
+
+    List<ZoneUserAssignDto> zones = tblMasterZoneRepository.findActiveZonesWithAssignment ();
+
+    zones.forEach(zone -> {
+
+      UUID loginId = zone.getAssignedUserLoginId();
+
+      if (Boolean.TRUE.equals(zone.getIsAssigned()) && loginId != null) {
+
+        UserLoginDetailsResponse userDetails =
+                userAccessClientService.getUserDetails(loginId);
+
+        AssignedUserResponse assignedUser =
+                AssignedUserResponse.builder()
+                        .userId(userDetails.getUserId())
+                        .name(userDetails.getName())
+                        .designationId(userDetails.getDesignationId())
+                        .designation(userDetails.getDesignation())
+                        .roleId(userDetails.getRoleId())
+                        .roles(userDetails.getRoles())
+                        .build();
+
+        zone.setAssignedUserId(assignedUser);
+
+      } else {
+        zone.setAssignedUserId(null);
+      }
+    });
+
+    return zones;
   }
 }

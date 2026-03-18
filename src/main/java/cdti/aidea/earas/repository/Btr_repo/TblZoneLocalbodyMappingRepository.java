@@ -15,10 +15,17 @@ public interface TblZoneLocalbodyMappingRepository
     SELECT 
         zlm.zone_localbody_mapping_id,
         ml.localbody_id,
-        ml.localbody_name_en
+        ml.localbody_name_en,
+        lbt.localbody_type_name
+
     FROM tbl_zone_localbody_mapping zlm
+
     JOIN tbl_master_localbody ml
-         ON ml.localbody_id = zlm.localbody
+        ON ml.localbody_id = zlm.localbody
+
+    LEFT JOIN tbl_master_localbody_type lbt
+        ON lbt.localbody_type_id = ml.localbody_type
+
     WHERE zlm.zone = :zoneId
       AND zlm.is_valid = true
 """, nativeQuery = true)
@@ -27,8 +34,13 @@ public interface TblZoneLocalbodyMappingRepository
   @Query(value = """
     SELECT 
         ml.localbody_id,
-        ml.localbody_name_en
+        ml.localbody_name_en,
+        lbt.localbody_type_name
+
     FROM tbl_master_localbody ml
+
+    LEFT JOIN tbl_master_localbody_type lbt
+        ON lbt.localbody_type_id = ml.localbody_type
 
     WHERE ml.dist_id = (
         SELECT mz.dist_id

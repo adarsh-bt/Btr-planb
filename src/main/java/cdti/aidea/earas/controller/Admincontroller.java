@@ -114,9 +114,9 @@ System.out.println("id  "+idValue+"  : "+type);
   @GetMapping("/GetZones")
   public ZonePageResponse getZones(
           @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "20") int size) {
-
-    return adminManage.getAllZones(page, size);
+          @RequestParam(defaultValue = "20") int size,
+          @RequestParam(required = false) String search) {
+    return adminManage.getAllZones(page, size, search);
   }
 
   @GetMapping("/zone-mapping-details/{zoneId}")
@@ -127,13 +127,10 @@ System.out.println("id  "+idValue+"  : "+type);
     return ResponseEntity.ok(result);
   }
 
-
   @GetMapping("/taluks")
   public List<TalukDTO> getTaluks(@RequestParam Integer zoneId) {
-
     return adminManage.getTaluksByZone(zoneId);
   }
-
 
   @GetMapping("/villages")
   public List<VillageDTO> getVillages(@RequestParam Integer talukId) {

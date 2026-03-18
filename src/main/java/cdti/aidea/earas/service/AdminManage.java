@@ -392,17 +392,21 @@ public class AdminManage {
     }
   }
 
-  public ZonePageResponse getAllZones(int page, int size) {
-
+  public ZonePageResponse getAllZones(int page, int size, String search) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("zoneId").ascending());
+    Page<TblMasterZone> zonePage;
 
-    Page<TblMasterZone> zonePage = tblMasterZoneRepository.findAll(pageable);
+    if (search != null && !search.trim().isEmpty()) {
+      zonePage = tblMasterZoneRepository.searchZones(search.toLowerCase(), pageable);
+    } else {
+      zonePage = tblMasterZoneRepository.findAll(pageable); // ✅ ALL zones
+    }
 
     List<ZoneListResponse> zoneList = zonePage.getContent().stream()
             .map(zone -> {
 
               String talukName = desTalukRepository
-                      .findById(Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()))
+                      .findById(zone.getDesTalukId())
                       .map(DesTaluk::getDesTalukNameEn)
                       .orElse("Unknown Taluk");
 
@@ -417,8 +421,8 @@ public class AdminManage {
                       zone.getZoneNameEn(),
                       zone.getZoneNameMal(),
                       zone.getBtrType() != null ? zone.getBtrType().getBtrType() : null,
-                      Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()),
-                      zone.getDistrictMaster().getDist_id(),
+                      zone.getDesTalukId(),
+                      zone.getDistId(),
                       talukName,
                       districtName,
                       null
@@ -730,7 +734,9 @@ System.out.println("request "+ request);
               row[0] != null ? Integer.valueOf(row[0].toString()) : null,
               row[1] != null ? Integer.valueOf(row[1].toString()) : null,
               row[2] != null ? row[2].toString() : null,
-              null,null
+              row[3] != null ? row[3].toString() : null,  // ✅ type name
+              zoneId,
+              null
       );
 
       result.add(dto);
@@ -740,17 +746,23 @@ System.out.println("request "+ request);
   }
 
   public List<LocalbodyDTO> getAvailableLocalBodies(Integer zoneId) {
+
     List<Object[]> rows =
             tblZoneLocalbodyMappingRepository.findAvailableLocalBodies(zoneId);
+
     List<LocalbodyDTO> result = new ArrayList<>();
+
     for (Object[] row : rows) {
       result.add(new LocalbodyDTO(
               null,
               Integer.valueOf(row[0].toString()),
               row[1].toString(),
-              null,null
+              row[2] != null ? row[2].toString() : null, // ✅ type name
+              zoneId,
+              null
       ));
     }
+
     return result;
   }
 

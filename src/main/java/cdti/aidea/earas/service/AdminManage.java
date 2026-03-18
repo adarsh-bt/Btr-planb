@@ -557,7 +557,7 @@ public class AdminManage {
   public void saveZoneMapping(AddZoneMappingRequest request) {
 System.out.println("request "+ request);
     Integer zoneId = Math.toIntExact(request.getZoneId());
-
+    Optional<DesTaluk> des = desTalukRepository.findById(request.getTalukId());
     zoneRevenueTalukMappingRepository
             .findByZoneAndRevenueTalukAndIsValidTrue(zoneId, request.getTalukId())
             .orElseGet(() -> {
@@ -565,6 +565,7 @@ System.out.println("request "+ request);
               ZoneRevenueTalukMapping taluk = new ZoneRevenueTalukMapping();
               taluk.setZone(zoneId);
               taluk.setRevenueTaluk(request.getTalukId());
+              taluk.setRevTalukNameEn(des.get().getDesTalukNameEn());
               taluk.setIsValid(true);
               taluk.setCreatedAt(LocalDateTime.now());
               taluk.setAddedBy(request.getUserId());

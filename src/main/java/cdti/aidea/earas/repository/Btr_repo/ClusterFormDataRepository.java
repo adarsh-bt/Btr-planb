@@ -26,7 +26,16 @@ public interface ClusterFormDataRepository extends JpaRepository<ClusterFormData
 
   Optional<ClusterFormData> findByClusterMasterAndPlotAndPlotLabel(ClusterMaster clusterMaster, TblBtrData plot, String label);
   List<ClusterFormData> findByClusterMasterOrderByDisplayOrderAsc(ClusterMaster clusterMaster);
-
+  @Query("""
+SELECT MAX(c.displayOrder)
+FROM ClusterFormData c
+WHERE c.clusterMaster = :clusterMaster
+AND c.plotLabel = :plotLabel
+""")
+  Integer findMaxDisplayOrderByLabel(
+          ClusterMaster clusterMaster,
+          String plotLabel
+  );
   @Query("""
     SELECT c.clusterMaster.cluMasterId AS clusterId,
            COALESCE(SUM(c.enumeratedArea), 0)

@@ -2,16 +2,13 @@ package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
-import cdti.aidea.earas.contract.Response.ClusterApprovalResponseDTO;
-import cdti.aidea.earas.contract.Response.ClusterApprovalTableDTO;
+import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.contract.Response.AdminZoneResponse;
 import cdti.aidea.earas.contract.Response.AdminZoneSeasonResponse;
-import cdti.aidea.earas.contract.Response.KeyplotsLimitLogResponse;
-import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.contract.UserAccessDTOs.UserLoginDetailsResponse;
 //import cdti.aidea.earas.contract.UserAccessDTOs.ZoneDetailsWithUserAccessResponse;
 import cdti.aidea.earas.contract.UserAccessDTOs.AssignedUserResponse;
-import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.DesTaluk;
 import cdti.aidea.earas.model.Btr_models.Masters.DistrictMaster;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
@@ -37,9 +34,9 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AdminManage {
 
-    private final KeyplotsLimitLogRepository repository;
+  private final KeyplotsLimitLogRepository repository;
 
-    private final ClusterLimitLogRepository clusterLimitLogRepository;
+  private final ClusterLimitLogRepository clusterLimitLogRepository;
 
     private final TblMasterZoneRepository tblMasterZoneRepository;
     private final DesTalukRepository desTalukRepository;
@@ -52,420 +49,430 @@ public class AdminManage {
     private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
     private final UserAccessClientService userAccessClientService; //interconnection service
 
-    public List<KeyplotsLimitLogResponse> getAllKeyplots() {
-        List<KeyplotsLimitLog> entities = repository.findAll();
+  public List<KeyplotsLimitLogResponse> getAllKeyplots() {
+    List<KeyplotsLimitLog> entities = repository.findAll();
 
-        return entities.stream()
-                .map(entity -> new KeyplotsLimitLogResponse(
-                        entity.getId(),
-                        entity.getKeyplotsLimit(),
-                        entity.getIsEdited(),
-                        entity.getIsActive(),
-                        entity.getIsInActive(),
-                        entity.getAddedBy(),
-                        entity.getEditPermitter(),
-                        entity.getRemarks(),
-                        entity.getAgriStartYear(),
-                        entity.getAgriEndYear()
-                ))
-                .collect(Collectors.toList());
+    return entities.stream()
+            .map(entity -> new KeyplotsLimitLogResponse(
+                    entity.getId(),
+                    entity.getKeyplotsLimit(),
+                    entity.getIsEdited(),
+                    entity.getIsActive(),
+                    entity.getIsInActive(),
+                    entity.getAddedBy(),
+                    entity.getEditPermitter(),
+                    entity.getRemarks(),
+                    entity.getAgriStartYear(),
+                    entity.getAgriEndYear()
+            ))
+            .collect(Collectors.toList());
+  }
+
+  public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
+    try {
+      List<TblMasterZone> zones = null;
+
+      // Decide which ID to use based on the type (Taluk, District, or Directorate)
+      if ("Taluk".equalsIgnoreCase(type)) {
+        zones = tblMasterZoneRepository.findByDesTalukId(idValue);
+      } else if ("District".equalsIgnoreCase(type)) {
+        zones = tblMasterZoneRepository.findByDistId(idValue);
+      } else if ("Directorate".equalsIgnoreCase(type)) {
+        // If type is DIRECTORATE, use appropriate repository method (change if needed)
+        zones = tblMasterZoneRepository.findAll();
+      } else {
+        throw new IllegalArgumentException("Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
+      }
+
+      if (zones == null || zones.isEmpty()) {
+        throw new IllegalArgumentException("No zones found for the given ID.");
+      }
+
+      // Directly map all zones to the response DTO
+      List<ZoneListResponse> zoneList = zones.stream()
+              .map(zone -> {
+                // Fetch taluk
+
+                Optional<DesTaluk> taluk = desTalukRepository.findById(zone.getDesTalukId());
+                String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("Unknown Taluk");
+
+
+
+                // Fetch district
+                Optional<DistrictMaster> district = districtMasterRepository.findById(Long.valueOf(zone.getDistId()));
+                String districtName = district.map(DistrictMaster::getDist_name_en).orElse("Unknown District");
+
+                // Fetch active user assignment
+                Optional<UserZoneAssignment> activeAssignment =
+                        userZoneAssignmentRepositoty.findByTblMasterZoneAndIsActiveTrue(zone);
+
+                UUID assignedUserId = activeAssignment.map(UserZoneAssignment::getUserId).orElse(null);
+
+                // Build response including assigned user
+                return new ZoneListResponse(
+                        zone.getZoneId(),
+                        zone.getZoneCode(),
+                        zone.getZoneNameEn(),
+                        zone.getZoneNameMal(),
+                        zone.getBtrType().getBtrType(),
+                        zone.getDesTalukId(),
+                        zone.getDesDistId(),
+                        talukName,
+                        districtName,
+                        assignedUserId  // <-- New field added
+                );
+              })
+              .collect(Collectors.toList());
+      zoneList.sort(Comparator.comparing(ZoneListResponse::getDesTalukId).reversed());
+      zoneList.sort(Comparator.comparing(ZoneListResponse::getDesDistId).reversed());
+      return zoneList;
+
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Something went wrong while fetching zones", e);
+    }
+  }
+
+  public List<ClusterApprovalTableDTO> zoneListForClusters(String type, Integer idValue) {
+    List<ClusterApprovalLog> approvalLogs;
+    System.out.println("type "+type+" : "+idValue);
+    if ("Taluk".equalsIgnoreCase(type)) {
+      approvalLogs = clusterApprovalLogRepository
+              .findByZone_DesTalukId(idValue);
+    } else if ("District".equalsIgnoreCase(type)) {
+      approvalLogs = clusterApprovalLogRepository
+              .findByZone_DistId(idValue);
+    } else if ("Directorate".equalsIgnoreCase(type)) {
+      approvalLogs = clusterApprovalLogRepository.findAll();
+
+    } else {
+      throw new IllegalArgumentException(
+              "Invalid type. Use 'Taluk', 'District', or 'Directorate'");
     }
 
-    public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
-        try {
-            List<TblMasterZone> zones = null;
-
-            // Decide which ID to use based on the type (Taluk, District, or Directorate)
-            if ("Taluk".equalsIgnoreCase(type)) {
-                zones = tblMasterZoneRepository.findByDesTalukId(idValue);
-            } else if ("District".equalsIgnoreCase(type)) {
-                zones = tblMasterZoneRepository.findByDistId(idValue);
-            } else if ("Directorate".equalsIgnoreCase(type)) {
-                // If type is DIRECTORATE, use appropriate repository method (change if needed)
-                zones = tblMasterZoneRepository.findAll();
-            } else {
-                throw new IllegalArgumentException("Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
-            }
-
-            if (zones == null || zones.isEmpty()) {
-                throw new IllegalArgumentException("No zones found for the given ID.");
-            }
-
-            // Directly map all zones to the response DTO
-            List<ZoneListResponse> zoneList = zones.stream()
-                    .map(zone -> {
-                        // Fetch taluk
-
-                        Optional<DesTaluk> taluk = desTalukRepository.findById(zone.getDesTalukId());
-                        String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("Unknown Taluk");
-
-
-                        // Fetch district
-                        Optional<DistrictMaster> district = districtMasterRepository.findById(Long.valueOf(zone.getDistId()));
-                        String districtName = district.map(DistrictMaster::getDist_name_en).orElse("Unknown District");
-
-                        // Build response
-                        return new ZoneListResponse(
-                                zone.getZoneId(),
-                                zone.getZoneCode(),
-                                zone.getZoneNameEn(),
-                                zone.getZoneNameMal(),
-                                zone.getBtrType().getBtrType(),
-                                zone.getDesTalukId(),
-                                zone.getDesDistId(),
-                                talukName,
-                                districtName
-                        );
-                    })
-                    .collect(Collectors.toList());
-            zoneList.sort(Comparator.comparing(ZoneListResponse::getDesTalukId).reversed());
-            zoneList.sort(Comparator.comparing(ZoneListResponse::getDesDistId).reversed());
-            return zoneList;
-
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Something went wrong while fetching zones", e);
-        }
+    if (approvalLogs.isEmpty()) {
+      return Collections.emptyList();
     }
 
-    public List<ClusterApprovalTableDTO> zoneListForClusters(String type, Integer idValue) {
-        List<ClusterApprovalLog> approvalLogs;
-        if ("Taluk".equalsIgnoreCase(type)) {
-            approvalLogs = clusterApprovalLogRepository
-                    .findByZone_DesTalukId(idValue);
-        } else if ("District".equalsIgnoreCase(type)) {
-            approvalLogs = clusterApprovalLogRepository
-                    .findByZone_DistId(idValue);
-        } else if ("Directorate".equalsIgnoreCase(type)) {
-            approvalLogs = clusterApprovalLogRepository.findAll();
+    return approvalLogs.stream()
+            .map(this::mapToDTO)
+            .sorted(Comparator
+                    .comparing(ClusterApprovalTableDTO::getDistrictId).reversed()
+                    .thenComparing(ClusterApprovalTableDTO::getTalukId).reversed())
+            .collect(Collectors.toList());
+  }
 
-        } else {
-            throw new IllegalArgumentException(
-                    "Invalid type. Use 'Taluk', 'District', or 'Directorate'");
-        }
+  @Transactional
+  public ClusterApprovalResponseDTO clusterApprovals(
+          @Valid ClusterApprovalActionDTO request) {
 
-        if (approvalLogs.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return approvalLogs.stream()
-                .map(this::mapToDTO)
-                .sorted(Comparator
-                        .comparing(ClusterApprovalTableDTO::getDistrictId).reversed()
-                        .thenComparing(ClusterApprovalTableDTO::getTalukId).reversed())
-                .collect(Collectors.toList());
+    if (request.getApprovalLogId() == null) {
+      throw new IllegalArgumentException("Approval ID must be provided");
     }
 
-    @Transactional
-    public ClusterApprovalResponseDTO clusterApprovals(
-            @Valid ClusterApprovalActionDTO request) {
+    ClusterApprovalLog approvalLog = clusterApprovalLogRepository
+            .findById(request.getApprovalLogId())
+            .orElseThrow(() ->
+                    new IllegalArgumentException("Approval Log not found"));
 
-        if (request.getApprovalLogId() == null) {
-            throw new IllegalArgumentException("Approval ID must be provided");
-        }
-
-        ClusterApprovalLog approvalLog = clusterApprovalLogRepository
-                .findById(request.getApprovalLogId())
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Approval Log not found"));
-
-        ClusterMaster clusterMaster = approvalLog.getClusterMaster();
-        if (request.getIs_edit() != null && request.getIs_edit()) {
-            clusterMaster.setIs_editable(true);
-            clusterMaster.setStatus("On Going");
-        } else {
-            clusterMaster.setStatus("Completed");
-        }
-
-        clusterMasterRepository.save(clusterMaster);
-
-        approvalLog.setAdminId(request.getApprover_id());
-        approvalLog.setInApproved(true);
-        approvalLog.setApprovedDate(LocalDateTime.now());
-        approvalLog.setRemarks(request.getRemarks());
-
-        clusterApprovalLogRepository.save(approvalLog);
-
-        // 🔥 RETURN DTO (NOT ENTITY)
-        return new ClusterApprovalResponseDTO(
-                approvalLog.getId(),
-                approvalLog.getInApproved(),
-                approvalLog.getAdminId(),
-                approvalLog.getApprovedDate(),
-                "SUCCESS"
-        );
+    ClusterMaster clusterMaster = approvalLog.getClusterMaster();
+    if (request.getIs_edit() != null && request.getIs_edit()) {
+      clusterMaster.setIs_editable(true);
+      clusterMaster.setStatus("On Going");
+    }else{
+      clusterMaster.setStatus("Completed");
     }
 
+    clusterMasterRepository.save(clusterMaster);
 
-    public List<ClusterLimitRequest> getAllClusterLimits() {
-        List<ClusterLimitLog> entity = clusterLimitLogRepository.findAll();
+    approvalLog.setAdminId(request.getApprover_id());
+    approvalLog.setInApproved(true);
+    approvalLog.setApprovedDate(LocalDateTime.now());
+    approvalLog.setRemarks(request.getRemarks());
 
-        return entity.stream()
-                .map(entitys -> new ClusterLimitRequest(
-                        entitys.getId(),
-                        entitys.getClusterMin(),
-                        entitys.getClusterMax(),
-                        entitys.getTsoApprovalLimit(),
+    clusterApprovalLogRepository.save(approvalLog);
+
+    // 🔥 RETURN DTO (NOT ENTITY)
+    return new ClusterApprovalResponseDTO(
+            approvalLog.getId(),
+            approvalLog.getInApproved(),
+            approvalLog.getAdminId(),
+            approvalLog.getApprovedDate(),
+            "SUCCESS"
+    );
+  }
+
+
+  public List<ClusterLimitRequest> getAllClusterLimits() {
+    List<ClusterLimitLog> entity = clusterLimitLogRepository.findAll();
+
+    return entity.stream()
+            .map(entitys -> new ClusterLimitRequest(
+                    entitys.getId(),
+                    entitys.getClusterMin(),
+                    entitys.getClusterMax(),
+                    entitys.getTsoApprovalLimit(),
 //                    entity.getIsEdited(),
-                        entitys.getAddedBy(),
-                        entitys.getRemarks(),
-                        entitys.getAgriStartYear(),
-                        entitys.getAgriEndYear(),
-                        entitys.getInActive()
-                ))
-                .collect(Collectors.toList());
-    }
+                    entitys.getAddedBy(),
+                    entitys.getRemarks(),
+                    entitys.getAgriStartYear(),
+                    entitys.getAgriEndYear(),
+                    entitys.getInActive()
+            ))
+            .collect(Collectors.toList());
+  }
 
-    private ClusterApprovalTableDTO mapToDTO(ClusterApprovalLog log) {
+  private ClusterApprovalTableDTO mapToDTO(ClusterApprovalLog log) {
 
-        TblMasterZone zone = log.getZone();
-        ClusterMaster cluster = log.getClusterMaster();
+    TblMasterZone zone = log.getZone();
+    ClusterMaster cluster = log.getClusterMaster();
 
-        // Taluk
-        DesTaluk taluk = desTalukRepository
-                .findById(zone.getDesTalukId())
-                .orElse(null);
+    // Taluk
+    DesTaluk taluk = desTalukRepository
+            .findById(zone.getDesTalukId())
+            .orElse(null);
 
-        // District
-        DistrictMaster district = districtMasterRepository
-                .findById(Long.valueOf(zone.getDistId()))
-                .orElse(null);
+    // District
+    DistrictMaster district = districtMasterRepository
+            .findById(Long.valueOf(zone.getDistId()))
+            .orElse(null);
 
-        return new ClusterApprovalTableDTO(
+    return new ClusterApprovalTableDTO(
 
-                // Approval
-                log.getId(),
+            // Approval
+            log.getId(),
 
-                // Cluster
-                cluster.getCluMasterId(),
-                cluster.getClusterNumber(),
-                cluster.getKeyPlot().getLandType(),
-                // Zone
-                zone.getZoneId(),
-                zone.getZoneNameEn(),
-                // Taluk
-                taluk != null ? taluk.getDesTalukId() : null,
-                taluk != null ? taluk.getDesTalukNameEn() : null,
-                // District
-                district != null ? district.getDist_id() : null,
-                district != null ? district.getDist_name_en() : null,
-                // Area & status
-                log.getTotalArea(),
-                log.getInApproved(),
-                // Audit
-                log.getAddedBy(),
-                log.getAdminId(),
-                log.getRemarks(),
-                cluster.getInvestigatorRemark(),
-                log.getCreatedAt(),
-                log.getApprovedDate()
-        );
-    }
+            // Cluster
+            cluster.getCluMasterId(),
+            cluster.getClusterNumber(),
+            cluster.getKeyPlot().getLandType(),
+            // Zone
+            zone.getZoneId(),
+            zone.getZoneNameEn(),
+            // Taluk
+            taluk != null ? taluk.getDesTalukId() : null,
+            taluk != null ? taluk.getDesTalukNameEn() : null,
+            // District
+            district != null ? district.getDist_id() : null,
+            district != null ? district.getDist_name_en() : null,
+            // Area & status
+            log.getTotalArea(),
+            log.getInApproved(),
+            // Audit
+            log.getAddedBy(),
+            log.getAdminId(),
+            log.getRemarks(),
+            cluster.getInvestigatorRemark(),
+            log.getCreatedAt(),
+            log.getApprovedDate()
+    );
+  }
 
 
-    public KeyplotsLimitLog saveOrUpdateKeyplotsLimit(KeyplotsLimitLogRequest request) {
-        KeyplotsLimitLog log;
+  public KeyplotsLimitLog saveOrUpdateKeyplotsLimit(KeyplotsLimitLogRequest request) {
+    KeyplotsLimitLog log;
 
-        // === UPDATE PATH ===
-        if (request.getId() != null) {
-            log = repository.findById(request.getId())
-                    .orElseThrow(() -> new RuntimeException("Record not found with ID: " + request.getId()));
+    // === UPDATE PATH ===
+    if (request.getId() != null) {
+      log = repository.findById(request.getId())
+              .orElseThrow(() -> new RuntimeException("Record not found with ID: " + request.getId()));
 
-            // ❗ Only allow edit if marked editable
-            if (!Boolean.TRUE.equals(log.getIsEdited())) {
-                throw new IllegalStateException("Edit not allowed. This record is not editable.");
-            }
+      // ❗ Only allow edit if marked editable
+      if (!Boolean.TRUE.equals(log.getIsEdited())) {
+        throw new IllegalStateException("Edit not allowed. This record is not editable.");
+      }
 
-            // ❗ Editor (addedBy) must not be same as editPermitter (admin who allowed edit)
-            if (request.getAddedBy() == null || request.getAddedBy().equals(log.getEditPermitter())) {
-                throw new IllegalStateException("Edit not allowed by admin. Another user must perform the edit.");
-            }
+      // ❗ Editor (addedBy) must not be same as editPermitter (admin who allowed edit)
+      if (request.getAddedBy() == null || request.getAddedBy().equals(log.getEditPermitter())) {
+        throw new IllegalStateException("Edit not allowed by admin. Another user must perform the edit.");
+      }
 
-            // ✅ Update allowed
-            log.setKeyplotsLimit(request.getKeyplotsLimit());
-            log.setRemarks(request.getRemarks());
-            log.setUpdatedAt(LocalDateTime.now());
+      // ✅ Update allowed
+      log.setKeyplotsLimit(request.getKeyplotsLimit());
+      log.setRemarks(request.getRemarks());
+      log.setUpdatedAt(LocalDateTime.now());
 
-        } else {
-            // === CREATE PATH ===
-            int year = LocalDate.now().getYear();
+    } else {
+      // === CREATE PATH ===
+      int year = LocalDate.now().getYear();
 
-            LocalDate agriStart = LocalDate.of(year, 7, 1);
-            LocalDate agriEnd = LocalDate.of(year + 1, 6, 30);
+      LocalDate agriStart = LocalDate.of(year, 7, 1);
+      LocalDate agriEnd = LocalDate.of(year + 1, 6, 30);
 
-            // ❗ Prevent duplicate active agri year
-            boolean exists = repository.existsByAgriStartYearAndIsActive(agriStart, true);
-            if (exists) {
-                throw new RuntimeException("A record already exists for the current agri year: " + agriStart + " To " + agriEnd);
-            }
+      // ❗ Prevent duplicate active agri year
+      boolean exists = repository.existsByAgriStartYearAndIsActive(agriStart, true);
+      if (exists) {
+        throw new RuntimeException("A record already exists for the current agri year: " + agriStart +" To "+agriEnd);
+      }
 
-            log = new KeyplotsLimitLog();
-            log.setKeyplotsLimit(request.getKeyplotsLimit());
-            log.setIsEdited(request.getIsEdited() != null ? request.getIsEdited() : false);
+      log = new KeyplotsLimitLog();
+      log.setKeyplotsLimit(request.getKeyplotsLimit());
+      log.setIsEdited(request.getIsEdited() != null ? request.getIsEdited() : false);
 //            log.setEditPermitter(request.getEditPermitter());
-            log.setAddedBy(request.getAddedBy());
-            log.setRemarks(request.getRemarks());
-            log.setAgriStartYear(agriStart);
-            log.setAgriEndYear(agriEnd);
-            log.setIsActive(true);
+      log.setAddedBy(request.getAddedBy());
+      log.setRemarks(request.getRemarks());
+      log.setAgriStartYear(agriStart);
+      log.setAgriEndYear(agriEnd);
+      log.setIsActive(true);
 
-            log.setCreatedAt(LocalDateTime.now());
-            log.setUpdatedAt(LocalDateTime.now());
-        }
-
-        return repository.save(log);
+      log.setCreatedAt(LocalDateTime.now());
+      log.setUpdatedAt(LocalDateTime.now());
     }
 
+    return repository.save(log);
+  }
 
-    @Transactional
-    public ClusterLimitLog saveOrUpdateClusterLimit(ClusterLimitRequest request) {
-        ClusterLimitLog log;
 
-        if (request.getId() != null) {
-            // update path unchanged except do not flip inActive unless explicitly intended
-            log = clusterLimitLogRepository.findById(request.getId())
-                    .orElseThrow(() -> new RuntimeException("Record not found with ID: " + request.getId()));
+  @Transactional
+  public ClusterLimitLog saveOrUpdateClusterLimit(ClusterLimitRequest request) {
+      ClusterLimitLog log;
 
-            if (!Boolean.TRUE.equals(log.getIsEdited())) {
-                throw new IllegalStateException("Edit not allowed. This record is not editable.");
-            }
-            if (request.getAddedBy() == null || request.getAddedBy().equals(log.getEditPermitter())) {
-                throw new IllegalStateException("Edit not allowed by admin. Another user must perform the edit.");
-            }
+      if (request.getId() != null) {
+          // update path unchanged except do not flip inActive unless explicitly intended
+          log = clusterLimitLogRepository.findById(request.getId())
+                  .orElseThrow(() -> new RuntimeException("Record not found with ID: " + request.getId()));
 
-            log.setClusterMin(request.getClusterMin());
-            log.setClusterMax(request.getClusterMax());
-            log.setRemarks(request.getRemarks());
+          if (!Boolean.TRUE.equals(log.getIsEdited())) {
+              throw new IllegalStateException("Edit not allowed. This record is not editable.");
+          }
+          if (request.getAddedBy() == null || request.getAddedBy().equals(log.getEditPermitter())) {
+              throw new IllegalStateException("Edit not allowed by admin. Another user must perform the edit.");
+          }
 
-            // If you do NOT want updates to change active status, remove this block:
-            // if (request.getInActive() != null) {
-            //     log.setInActive(request.getInActive());
-            // }
+          log.setClusterMin(request.getClusterMin());
+          log.setClusterMax(request.getClusterMax());
+          log.setRemarks(request.getRemarks());
 
-            log.setUpdatedAt(LocalDateTime.now());
-            return clusterLimitLogRepository.save(log);
-        } else {
+          // If you do NOT want updates to change active status, remove this block:
+          // if (request.getInActive() != null) {
+          //     log.setInActive(request.getInActive());
+          // }
+
+          log.setUpdatedAt(LocalDateTime.now());
+          return clusterLimitLogRepository.save(log);
+
+
+      } else {
 //      LocalDate agriStart = LocalDate.now();
 //      LocalDate agriEnd = agriStart.plusYears(1).minusDays(1);
 
-            int year = LocalDate.now().getYear();
+          int year = LocalDate.now().getYear();
 
-            LocalDate agriStart = LocalDate.of(year, 7, 1);
-            LocalDate agriEnd = LocalDate.of(year + 1, 6, 30);
-            int startYear = agriStart.getYear();
-            int endYear = agriEnd.getYear();
+          LocalDate agriStart = LocalDate.of(year, 7, 1);
+          LocalDate agriEnd = LocalDate.of(year + 1, 6, 30);
+          int startYear = agriStart.getYear();
+          int endYear = agriEnd.getYear();
 
-            // ✅ Prevent duplicate agri year by year only
-            if (clusterLimitLogRepository.existsByAgriStartAndEndYear(startYear, endYear)) {
-                throw new IllegalStateException("A record already exists for agri year " + startYear + " - " + endYear);
-            }
+          // ✅ Prevent duplicate agri year by year only
+          if (clusterLimitLogRepository.existsByAgriStartAndEndYear(startYear, endYear)) {
+              throw new IllegalStateException("A record already exists for agri year " + startYear + " - " + endYear);
+          }
 
-            // Deactivate all previous active records
-            clusterLimitLogRepository.deactivateAll();
+          // Deactivate all previous active records
+          clusterLimitLogRepository.deactivateAll();
 
-            // Create new active record (inActive=true means current active per your requirement)
-            log = new ClusterLimitLog();
-            log.setClusterMin(request.getClusterMin());
-            log.setClusterMax(request.getClusterMax());
-            log.setAddedBy(request.getAddedBy());
-            log.setRemarks(request.getRemarks());
-            log.setAgriStartYear(agriStart);
-            log.setAgriEndYear(agriEnd);
-            log.setTsoApprovalLimit(request.getTsoLimit());
-            log.setIsEdited(false);
+          // Create new active record (inActive=true means current active per your requirement)
+          log = new ClusterLimitLog();
+          log.setClusterMin(request.getClusterMin());
+          log.setClusterMax(request.getClusterMax());
+          log.setAddedBy(request.getAddedBy());
+          log.setRemarks(request.getRemarks());
+          log.setAgriStartYear(agriStart);
+          log.setAgriEndYear(agriEnd);
+          log.setTsoApprovalLimit(request.getTsoLimit());
+          log.setIsEdited(false);
 
-            // Single source of truth: inActive=true for the new active config
-            log.setInActive(true);
+          // Single source of truth: inActive=true for the new active config
+          log.setInActive(true);
 
-            // If isActive exists but is redundant, keep it aligned or remove it from the entity
-            // log.setIsActive(true);
+          // If isActive exists but is redundant, keep it aligned or remove it from the entity
+          // log.setIsActive(true);
 
-            log.setCreatedAt(LocalDateTime.now());
-            log.setUpdatedAt(LocalDateTime.now());
-            return clusterLimitLogRepository.save(log);
-        }
-    }
+          log.setCreatedAt(LocalDateTime.now());
+          log.setUpdatedAt(LocalDateTime.now());
+          return clusterLimitLogRepository.save(log);
+      }}
 
-    public List<AdminZoneResponse> getAllZonesWithSeasonDates() {
+      public List<AdminZoneResponse> getAllZonesWithSeasonDates () {
 
-        List<TblMasterZone> zones = tblMasterZoneRepository.findAll();
-        List<TblSeasonMaster> activeSeasons = seasonMasterRepository.findByIsActiveTrue();
+          List<TblMasterZone> zones = tblMasterZoneRepository.findAll();
+          List<TblSeasonMaster> activeSeasons = seasonMasterRepository.findByIsActiveTrue();
 
-        return zones.stream()
-                .map(zone -> {
+          return zones.stream()
+                  .map(zone -> {
 
-                    Integer zoneId = zone.getZoneId();
+                      Integer zoneId = zone.getZoneId();
 
-                    List<AdminZoneSeasonResponse> seasonResponses =
-                            activeSeasons.stream()
-                                    .map(season -> {
+                      List<AdminZoneSeasonResponse> seasonResponses =
+                              activeSeasons.stream()
+                                      .map(season -> {
 
-                                        LocalDate startDate = season.getDefaultStart();
-                                        LocalDate endDate = season.getDefaultEnd();
-                                        LocalDate extendedDate = null;
+                                          LocalDate startDate = season.getDefaultStart();
+                                          LocalDate endDate = season.getDefaultEnd();
+                                          LocalDate extendedDate = null;
 
-                                        Optional<TblZoneSeasonSchedule> scheduleOpt =
-                                                scheduleRepository
-                                                        .findByZoneZoneIdAndSeasonIdAndIsActiveTrue(
-                                                                zoneId,
-                                                                season.getId()
-                                                        )
-                                                        .stream()
-                                                        .findFirst();
+                                          Optional<TblZoneSeasonSchedule> scheduleOpt =
+                                                  scheduleRepository
+                                                          .findByZoneZoneIdAndSeasonIdAndIsActiveTrue(
+                                                                  zoneId,
+                                                                  season.getId()
+                                                          )
+                                                          .stream()
+                                                          .findFirst();
 
-                                        if (scheduleOpt.isPresent()) {
+                                          if (scheduleOpt.isPresent()) {
 
-                                            TblZoneSeasonSchedule schedule = scheduleOpt.get();
+                                              TblZoneSeasonSchedule schedule = scheduleOpt.get();
 
-                                            boolean startChanged =
-                                                    !schedule.getStartDate()
-                                                            .equals(season.getDefaultStart());
+                                              boolean startChanged =
+                                                      !schedule.getStartDate()
+                                                              .equals(season.getDefaultStart());
 
-                                            boolean extendedChanged =
-                                                    schedule.getExtendedDate() != null;
+                                              boolean extendedChanged =
+                                                      schedule.getExtendedDate() != null;
 
-                                            if (startChanged && !extendedChanged) {
-                                                startDate = schedule.getStartDate();
-                                                endDate = schedule.getEndDate();
-                                                extendedDate = null;
-                                            } else if (!startChanged && extendedChanged) {
-                                                startDate = season.getDefaultStart();
-                                                endDate = season.getDefaultEnd();
-                                                extendedDate = schedule.getExtendedDate();
-                                            } else if (startChanged && extendedChanged) {
-                                                startDate = schedule.getStartDate();
-                                                endDate = season.getDefaultEnd();
-                                                extendedDate = schedule.getExtendedDate();
-                                            }
-                                        }
+                                              if (startChanged && !extendedChanged) {
+                                                  startDate = schedule.getStartDate();
+                                                  endDate = schedule.getEndDate();
+                                                  extendedDate = null;
+                                              } else if (!startChanged && extendedChanged) {
+                                                  startDate = season.getDefaultStart();
+                                                  endDate = season.getDefaultEnd();
+                                                  extendedDate = schedule.getExtendedDate();
+                                              } else if (startChanged && extendedChanged) {
+                                                  startDate = schedule.getStartDate();
+                                                  endDate = season.getDefaultEnd();
+                                                  extendedDate = schedule.getExtendedDate();
+                                              }
+                                          }
 
-                                        return new AdminZoneSeasonResponse(
-                                                season.getId(),
-                                                season.getSeasonName(),
-                                                startDate,
-                                                endDate,
-                                                extendedDate
-                                        );
-                                    })
-                                    .collect(Collectors.toList());
+                                          return new AdminZoneSeasonResponse(
+                                                  season.getId(),
+                                                  season.getSeasonName(),
+                                                  startDate,
+                                                  endDate,
+                                                  extendedDate
+                                          );
+                                      })
+                                      .collect(Collectors.toList());
 
-                    return AdminZoneResponse.builder()
-                            .zoneId(zoneId)
-                            .dist_id(zone.getDistId())
-                            .zoneName(zone.getZoneNameEn())
-                            .zone_type_id(zone.getBtrType().getBtrTypeId())
-                            .zone_type_name(zone.getBtrType().getBtrType())
-                            .seasons(seasonResponses)
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
+                      return AdminZoneResponse.builder()
+                              .zoneId(zoneId)
+                              .dist_id(zone.getDistId())
+                              .zoneName(zone.getZoneNameEn())
+                              .zone_type_id(zone.getBtrType().getBtrTypeId())
+                              .zone_type_name(zone.getBtrType().getBtrType())
+                              .seasons(seasonResponses)
+                              .build();
+                  })
+                  .collect(Collectors.toList());
+      }
 
     //To get zone assigned details before interconnnection
 //    public List<ZoneUserAssignDto> getActiveZonesWithAssignment() {
 //        return tblMasterZoneRepository.findActiveZonesWithAssignment();
 //    }
-//}
-    //To get zone assigned details
+
+    //To get zone assigned details after interconnection
     public List<ZoneUserAssignDto> getAllZonesWithUsers() {
 
         List<ZoneUserAssignDto> zones = tblMasterZoneRepository.findActiveZonesWithAssignment ();

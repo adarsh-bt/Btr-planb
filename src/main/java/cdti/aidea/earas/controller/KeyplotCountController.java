@@ -1,7 +1,8 @@
 package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.Response.KeyplotCountResponse;
-import cdti.aidea.earas.service.KeyplotCountService;
+import cdti.aidea.earas.service.KeyPlots_Service;
+//import cdti.aidea.earas.service.KeyplotCountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,13 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/keyplots")
 @RequiredArgsConstructor
 public class KeyplotCountController {
-    private final KeyplotCountService keyplotCountService;
+    private final KeyPlots_Service keyPlotsService;
 
     @GetMapping("/limit-status/{zoneId}")
     public ResponseEntity<KeyplotCountResponse> getKeyplotsLimitUsage(
             @PathVariable Integer zoneId) {
         KeyplotCountResponse response =
-                keyplotCountService.getKeyplotsLimitStatus(zoneId);
+                keyPlotsService.getKeyplotsLimitStatus(zoneId);
 
 
         return ResponseEntity.ok(response);

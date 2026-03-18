@@ -144,6 +144,7 @@ public class KeyPlotsController {
     @GetMapping("/get-keyplot/{plotId}")
     public ResponseEntity<Response> getKeyPlotById(@PathVariable("plotId") UUID plotId) {
         try {
+
             KeyPlotDetailsResponse details = keyPlots_Service.getKeyPlotDetails(plotId);
 
             return ResponseEntity.ok(

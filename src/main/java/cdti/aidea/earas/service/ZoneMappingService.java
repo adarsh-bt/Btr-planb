@@ -132,35 +132,80 @@ System.out.println("localbodires "+localbodies);
   }
 
 
+//  public ZoneBtrTypeResponse getZoneBtrType(Integer zoneId) {
+//    // Find active zone by ID - return null if not found
+//    TblMasterZone zone = zoneRepository.findActiveZoneById(zoneId).orElse(null);
+//
+//    if (zone == null) {
+//      return null; // Zone not found
+//    }
+//
+//    if (zone.getBtrType().getBtrTypeId() == null) {
+//      return null; // BTR Type ID is null
+//    }
+//
+//    // Find BTR type by btrTypeId - return null if not found
+//    TblBtrType btrType = btrTypeRepository.findById(zone.getBtrType().getBtrTypeId()).orElse(null);
+//
+//    if (btrType == null) {
+//      return null; // BTR Type not found
+//    }
+//
+//    // Create and return response
+//    return new ZoneBtrTypeResponse(
+//            zone.getZoneId(),
+//            zone.getZoneNameEn(),
+//            zone.getZoneNameMal(),
+//            zone.getDistId(),
+//            zone.getDesTalukId(),
+//            btrType.getBtrTypeId(),
+//            btrType.getBtrType(),
+//            isBtrType(btrType.getBtrType()),
+//            zone.getIsActive()
+//    );
+//  }
+
   public ZoneBtrTypeResponse getZoneBtrType(Integer zoneId) {
-    // Find active zone by ID - return null if not found
+
     TblMasterZone zone = zoneRepository.findActiveZoneById(zoneId).orElse(null);
 
-    if (zone == null) {
-      return null; // Zone not found
+    if (zone == null || zone.getBtrType() == null || zone.getBtrType().getBtrTypeId() == null) {
+      return null;
     }
 
-    if (zone.getBtrType().getBtrTypeId() == null) {
-      return null; // BTR Type ID is null
-    }
-
-    // Find BTR type by btrTypeId - return null if not found
-    TblBtrType btrType = btrTypeRepository.findById(zone.getBtrType().getBtrTypeId()).orElse(null);
+    TblBtrType btrType = btrTypeRepository
+            .findById(zone.getBtrType().getBtrTypeId())
+            .orElse(null);
 
     if (btrType == null) {
-      return null; // BTR Type not found
+      return null;
     }
 
-    // Create and return response
+    String districtName = null;
+    String talukName = null;
+
+    if (zone.getDistrictMaster() != null) {
+      districtName = zone.getDistrictMaster().getDist_name_en();
+    }
+
+    if (zone.getDesTalukMaster() != null) {
+      talukName = zone.getDesTalukMaster().getDesTalukNameEn();
+    }
+
     return new ZoneBtrTypeResponse(
             zone.getZoneId(),
             zone.getZoneNameEn(),
+            zone.getZoneNameMal(),
+            zone.getDistId(),
+            zone.getDesTalukMaster().getDesTalukId(),
             btrType.getBtrTypeId(),
+            districtName,
+            talukName,
             btrType.getBtrType(),
-            isBtrType(btrType.getBtrType())
+            isBtrType(btrType.getBtrType()),
+            zone.getIsActive()
     );
   }
-
   private boolean isBtrType(String btrType) {
     return "btr".equalsIgnoreCase(btrType) ||
             "btr_with_minor_circuit".equalsIgnoreCase(btrType);

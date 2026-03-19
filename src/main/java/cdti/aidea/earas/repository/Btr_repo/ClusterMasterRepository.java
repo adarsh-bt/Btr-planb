@@ -88,4 +88,23 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
   Optional<ClusterMaster> findByKeyPlot_Id(UUID kpId);
 //  Optional<ClusterFormData> findByClusterMaster(ClusterMaster clusterMaster);
 
+  @Query("SELECT cm FROM ClusterMaster cm " +
+          "WHERE cm.zone.zoneId = :zoneId " +
+          "AND cm.clusterNumber = :clusterNumber " +
+          "AND cm.keyPlot.agriStartYear = :agriStart " +
+          "AND cm.keyPlot.agriEndYear = :agriEnd")
+  Optional<ClusterMaster> findByZoneAndClusterNumberAndAgriYear(
+          @Param("zoneId") Long zoneId,
+          @Param("clusterNumber") Integer clusterNumber,
+          @Param("agriStart") LocalDate agriStart,
+          @Param("agriEnd") LocalDate agriEnd);
+
+  @Query("SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm " +
+          "WHERE cm.zone.zoneId = :zoneId " +
+          "AND cm.keyPlot.agriStartYear = :agriStart " +
+          "AND cm.keyPlot.agriEndYear = :agriEnd")
+  Optional<Integer> findMaxClusterNumberByZoneAndAgriYear(
+          @Param("zoneId") Long zoneId,
+          @Param("agriStart") LocalDate agriStart,
+          @Param("agriEnd") LocalDate agriEnd);
 }

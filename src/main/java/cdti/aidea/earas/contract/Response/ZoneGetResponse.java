@@ -1,5 +1,6 @@
 package cdti.aidea.earas.contract.Response;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,16 +8,18 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ZoneBtrTypeResponse {
+public class ZoneGetResponse {
     private Integer zoneId;
-    private String zoneName;
+    private Integer zoneCode;
+    private String zoneNameEn;
     private String zoneNameMal;
-    private Integer distId;
-    private Integer desTalukId;
-    private Integer btrTypeId;
-    private String districtName;
-    private String TalukName;
     private String btrType;
-    private boolean isBtr;
-    private boolean isActive;
+
+    private Integer desTalukId;
+    private Integer desDistId;
+
+    private String talukName;
+    private String districtName;
+
+//    private UUID assignedUserId;
 }

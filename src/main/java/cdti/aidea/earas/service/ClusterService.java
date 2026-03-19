@@ -493,6 +493,152 @@ public class ClusterService {
             })
         .collect(Collectors.toList());
   }
+
+
+//    public Map<String, Object> updateClusterNumber(Long keyplotId, Integer newClusterNumber, String userId) {
+//        Map<String, Object> response = new HashMap<>();
+//
+//        // Find the keyplot and its cluster
+//        KeyPlots keyPlot = keyPlotsRepository.findById(keyplotId)
+//                .orElseThrow(() -> new RuntimeException("KeyPlot not found"));
+//
+//        ClusterMaster sourceCluster = clusterMasterRepository.findByKeyPlot(keyPlot)
+//                .orElseThrow(() -> new RuntimeException("Cluster not found"));
+//
+//        Integer oldClusterNumber = sourceCluster.getClusterNumber();
+//
+//        // If same number, no change needed
+//        if (oldClusterNumber.equals(newClusterNumber)) {
+//            response.put("status", "No Change");
+//            response.put("message", "Cluster number is already " + newClusterNumber);
+//            return response;
+//        }
+//
+//        // Check if new cluster number is within valid range (1-100)
+//        if (newClusterNumber < 1 || newClusterNumber > 100) {
+//            throw new RuntimeException("Cluster number must be between 1 and 100");
+//        }
+//
+//        // Check if new cluster number is already taken in the same zone and agricultural year
+//        Optional<ClusterMaster> existingCluster = clusterMasterRepository
+//                .findByZoneAndClusterNumberAndAgriYear(
+//                        keyPlot.getZone().getZoneId(),
+//                        newClusterNumber,
+//                        keyPlot.getAgriStartYear(),
+//                        keyPlot.getAgriEndYear()
+//                );
+//
+//        if (existingCluster.isPresent()) {
+//            ClusterMaster targetCluster = existingCluster.get();
+//
+//            // Option 1: Auto-swap numbers
+//            // Set the target cluster's number to the old number
+//            targetCluster.setClusterNumber(oldClusterNumber);
+//            clusterMasterRepository.save(targetCluster);
+//
+//            // Set the source cluster to the new number
+//            sourceCluster.setClusterNumber(newClusterNumber);
+//            clusterMasterRepository.save(sourceCluster);
+//
+//            response.put("status", "Swapped");
+//            response.put("message", String.format(
+//                    "Cluster numbers swapped: %d ↔ %d", oldClusterNumber, newClusterNumber));
+//            response.put("swappedWith", targetCluster.getKeyPlot().getId());
+//        } else {
+//            // Simple update if number is free
+//            sourceCluster.setClusterNumber(newClusterNumber);
+//            clusterMasterRepository.save(sourceCluster);
+//
+//            response.put("status", "Updated");
+//            response.put("message", "Cluster number updated successfully");
+//        }
+//
+//        response.put("oldNumber", oldClusterNumber);
+//        response.put("newNumber", newClusterNumber);
+//        return response;
+//    }
+//
+//    // Alternative: Manual conflict resolution with temporary number
+//    public Map<String, Object> updateClusterNumberWithTemp(
+//            Long keyplotId,
+//            Integer newClusterNumber,
+//            Integer tempClusterNumber,
+//            String userId) {
+//
+//        Map<String, Object> response = new HashMap<>();
+//
+//        KeyPlots keyPlot = keyPlotsRepository.findById(keyplotId)
+//                .orElseThrow(() -> new RuntimeException("KeyPlot not found"));
+//
+//        ClusterMaster sourceCluster = clusterMasterRepository.findByKeyPlot(keyPlot)
+//                .orElseThrow(() -> new RuntimeException("Cluster not found"));
+//
+//        // Validate numbers
+//        if (newClusterNumber < 1 || newClusterNumber > 100) {
+//            throw new RuntimeException("Cluster number must be between 1 and 100");
+//        }
+//
+//        if (tempClusterNumber != null && (tempClusterNumber < 1 || tempClusterNumber > 100)) {
+//            throw new RuntimeException("Temporary cluster number must be between 1 and 100");
+//        }
+//
+//        // Check if target is taken
+//        Optional<ClusterMaster> targetCluster = clusterMasterRepository
+//                .findByZoneAndClusterNumberAndAgriYear(
+//                        keyPlot.getZone().getZoneId(),
+//                        newClusterNumber,
+//                        keyPlot.getAgriStartYear(),
+//                        keyPlot.getAgriEndYear()
+//                );
+//
+//        if (targetCluster.isPresent() && !targetCluster.get().getKeyPlot().getId().equals(keyplotId)) {
+//            if (tempClusterNumber == null) {
+//                // Require temporary number
+//                response.put("status", "CONFLICT");
+//                response.put("message", "Cluster number " + newClusterNumber + " is already taken");
+//                response.put("conflictingKeyplotId", targetCluster.get().getKeyPlot().getId());
+//                response.put("conflictingSyNo", targetCluster.get().getKeyPlot().getBtrData().getResvno());
+//                return response;
+//            } else {
+//                // Check if temporary number is available
+//                Optional<ClusterMaster> tempCheck = clusterMasterRepository
+//                        .findByZoneAndClusterNumberAndAgriYear(
+//                                keyPlot.getZone().getZoneId(),
+//                                tempClusterNumber,
+//                                keyPlot.getAgriStartYear(),
+//                                keyPlot.getAgriEndYear()
+//                        );
+//
+//                if (tempCheck.isPresent()) {
+//                    throw new RuntimeException("Temporary number " + tempClusterNumber + " is also taken");
+//                }
+//
+//                // Move conflicting cluster to temporary number
+//                ClusterMaster conflictingCluster = targetCluster.get();
+//                conflictingCluster.setClusterNumber(tempClusterNumber);
+//                clusterMasterRepository.save(conflictingCluster);
+//
+//                // Set our cluster to new number
+//                sourceCluster.setClusterNumber(newClusterNumber);
+//                clusterMasterRepository.save(sourceCluster);
+//
+//                response.put("status", "Updated with temp");
+//                response.put("message", String.format(
+//                        "Cluster number updated. Conflicting cluster moved to %d", tempClusterNumber));
+//            }
+//        } else {
+//            // Simple update
+//            sourceCluster.setClusterNumber(newClusterNumber);
+//            clusterMasterRepository.save(sourceCluster);
+//
+//            response.put("status", "Updated");
+//            response.put("message", "Cluster number updated successfully");
+//        }
+//
+//        return response;
+//    }
+
+
   //    public List<VillagesListResponse> getVillagesListByKeyPlotId(UUID userId) {
   //        Optional<UserZoneAssignment> user = userZoneAssignmentRepositoty.findByUserId(userId);
   //
@@ -949,6 +1095,7 @@ public class ClusterService {
   ) {
 
    System.out.println("status :::  "+requestedStatus);
+   System.out.println("reddd  "+sidePlots);
     KeyPlots keyPlot =
             keyPlotsRepository.findById(keyplotId)
                     .orElseThrow(() ->
@@ -1121,6 +1268,8 @@ public class ClusterService {
                             LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
                             newPlot.setAgreStartYear(agreStart);
                             newPlot.setAgreEndYear(agreEnd);
+                            newPlot.setUpdated_by(userid);
+                            newPlot.setCreated_by(userid);
 
                           TblMasterVillage village =
                                   tblMasterVillageRepository
@@ -1366,7 +1515,8 @@ public class ClusterService {
     btrData.setResvno(request.getSvNo());
     btrData.setResbdno(request.getSubNo());
     btrData.setTotCent(request.getArea());
-
+    btrData.setCreated_by(request.getUserId());
+    btrData.setUpdated_by(request.getUserId());
     System.out.println("request>> "+keyPlot.getBtrData().getBtrtype().getBTypeId());
     System.out.println("village  "+request.getVillage());
     if(request.getVillage() != null){
@@ -1461,7 +1611,7 @@ public class ClusterService {
       if (max != null && total.compareTo(max) > 0) {
         throw new RuntimeException("Maximum cluster area exceeded.");
       } else if (tsoLimit != null && total.compareTo(tsoLimit) < 0) {
-        status = "Under Review";
+//        status = "Under Review";
 
         // Save review log
         ClusterApprovalLog reviewLog = new ClusterApprovalLog();
@@ -1472,7 +1622,7 @@ public class ClusterService {
         reviewLog.setTotalArea(total);
         clusterApprovalRepository.save(reviewLog);
       } else if (min != null && total.compareTo(min) >= 0) {
-        status = "Completed";
+//        status = "Completed";
       }
     }
 

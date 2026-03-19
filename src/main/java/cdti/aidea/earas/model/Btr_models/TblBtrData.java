@@ -65,15 +65,28 @@ public class TblBtrData {
   @JoinColumn(name = "non_btr_type_id")
   private TblNonBtr btrtype;
 
+  //    private String remarks;
+  //       private Double area;
      private LocalDateTime insertionTime;
      private LocalDateTime updationTime;
-  private LocalDate agreStartYear;
+
+     private LocalDate agreStartYear;
      private LocalDate agreEndYear;
   @Column(name = "ward_number")
     private Integer wardnumber;
     private  String cl_no;
 
-//    private Boolean isActive;
-    //private UUID userId;
+    private UUID created_by;
+    private UUID updated_by;
 
+
+  //    private Boolean reject;
+  //
+  //    private String reson;
+  //    private String localboy;
+  //
+  //    @Column(columnDefinition = "jsonb")
+  //    private String addonNotes;
+  //
+  //    private Integer fmp;
 }

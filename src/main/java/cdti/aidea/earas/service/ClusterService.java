@@ -2,6 +2,7 @@ package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.FormEntryDto.*;
+import cdti.aidea.earas.contract.RequestsDTOs.ClusterUpdateDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.PlotSaveMobileAppRequest;
 import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
@@ -1785,5 +1786,52 @@ public class ClusterService {
 
     public List<BtrClusterUsageResponse> getBtrClusterUsage(Long btrId) {
         return clusterFormDataRepository.findClusterUsageByBtrId(btrId);
+    }
+
+    @Transactional
+    public String bulkUpdateClusterNumbers(List<ClusterUpdateDTO> updates) {
+
+        if (updates == null || updates.isEmpty()) {
+            return "No updates provided";
+        }
+        Set<Integer> newNumbers = updates.stream()
+                .map(ClusterUpdateDTO::getNewClusterNumber)
+                .collect(Collectors.toSet());
+
+        if (newNumbers.size() != updates.size()) {
+            throw new RuntimeException("Duplicate cluster numbers in request");
+        }
+        
+        // 🔹 Step 1: Load all clusters
+        Map<Long, ClusterMaster> clusterMap = new HashMap<>();
+
+        for (ClusterUpdateDTO dto : updates) {
+            ClusterMaster cluster = clusterMasterRepository.findById(dto.getClusterId())
+                    .orElseThrow(() -> new RuntimeException("Cluster not found: " + dto.getClusterId()));
+
+            // ✅ Validate range
+            if (dto.getNewClusterNumber() < 1 || dto.getNewClusterNumber() > 100) {
+                throw new RuntimeException("Invalid cluster number: " + dto.getNewClusterNumber());
+            }
+
+            clusterMap.put(dto.getClusterId(), cluster);
+        }
+
+        // 🔹 Step 2: TEMP assign (-1, -2...) to avoid unique conflict
+        int temp = -1;
+        for (ClusterMaster c : clusterMap.values()) {
+            c.setClusterNumber(temp--);
+        }
+        clusterMasterRepository.saveAll(clusterMap.values());
+
+        // 🔹 Step 3: Apply final values
+        for (ClusterUpdateDTO dto : updates) {
+            ClusterMaster cluster = clusterMap.get(dto.getClusterId());
+            cluster.setClusterNumber(dto.getNewClusterNumber());
+        }
+
+        clusterMasterRepository.saveAll(clusterMap.values());
+
+        return "Bulk cluster update successful";
     }
 }

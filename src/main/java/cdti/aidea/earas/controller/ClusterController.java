@@ -314,4 +314,10 @@ public class ClusterController {
               .body(Collections.singletonMap("error", "An internal error occurred: " + e.getMessage()));
     }
   }
+
+  @PutMapping("/cluster/number-update")
+  public ResponseEntity<?> bulkUpdateCluster(@RequestBody List<ClusterUpdateDTO> updates) {
+    clusterService.bulkUpdateClusterNumbers(updates);
+    return ResponseEntity.ok("Bulk update successful");
+  }
 }

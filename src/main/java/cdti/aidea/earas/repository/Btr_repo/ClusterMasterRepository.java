@@ -113,4 +113,7 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
           @Param("zoneId") Integer zoneId,
           @Param("clusterNumber") Integer clusterNumber
   );
+
+  @Query("SELECT COUNT(c) > 0 FROM ClusterMaster c WHERE c.keyPlot.id = :keyPlotId AND c.status <> 'Not Started'")
+  boolean existsByKeyPlotIdAndStatusNotNotStarted(@Param("keyPlotId") UUID keyPlotId);
 }

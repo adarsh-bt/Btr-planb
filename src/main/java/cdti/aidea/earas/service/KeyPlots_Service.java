@@ -105,6 +105,7 @@ public class KeyPlots_Service {
                 keyPlot.getBtrData().getDcode(),
                 keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
+                keyPlot.getZone().getZoneId(),
                 cluster.get().getClusterNumber(),
                 keyPlot.getBtrData().getBtrtype().getBTypeId(),
                 keyPlot.getBtrData().getBtrtype().getBTypeName(),
@@ -1058,6 +1059,7 @@ System.out.println("enume "+enumArea);
                 keyPlot.getBtrData().getDcode(),
                 keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
+                keyPlot.getZone().getZoneId(),
                 cluster.get().getClusterNumber(),
                 keyPlot.getBtrData().getBtrtype().getBTypeId(),
                 keyPlot.getBtrData().getBtrtype().getBTypeName(),
@@ -1465,6 +1467,35 @@ System.out.println("enume "+enumArea);
     }
 
 
+    @Transactional
+    public String deleteKeyPlot(UUID keyPlotId) {
+
+        KeyPlots keyPlot = keyPlotsRepository.findById(keyPlotId)
+                .orElseThrow(() -> new RuntimeException("KeyPlot not found"));
+
+        // 🔹 1. Handle cluster
+        clusterMasterRepository.findByKeyPlot_Id(keyPlotId)
+                .ifPresent(cluster -> {
+                    if (!cluster.getStatus().equalsIgnoreCase("Not Started")) {
+                        throw new RuntimeException(
+                                "KeyPlot cannot be deleted because cluster status is: " + cluster.getStatus()
+                        );
+                    }
+                    clusterMasterRepository.delete(cluster);
+                });
+
+        // 🔹 2. Get BTR reference (DON’T delete yet)
+        TblBtrData btrData = keyPlot.getBtrData();
+
+        keyPlotsRepository.delete(keyPlot);
+
+        // 🔹 4. Now delete BTR ✅
+        if (btrData != null) {
+            tblBtrDataRepository.delete(btrData);
+        }
+
+        return "KeyPlot deleted successfully";
+    }
 //    public Object KeyplotsFormation(UUID userId) {
 //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
 //        var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(user.get().getTblMasterZone().getZoneId());

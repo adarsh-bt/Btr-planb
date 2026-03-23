@@ -54,7 +54,7 @@ public class TblBtrDataService {
 
         // 3️⃣ Fetch zone FIRST
         TblMasterZone zone = tblMasterZoneRepository
-                .findById(dto.getZoneId())
+                .findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
         // 4️⃣ Calculate agri year
@@ -180,7 +180,7 @@ public class TblBtrDataService {
         if (!dtoList.isEmpty()) {
             TblBtrDataDTO firstDto = dtoList.get(0);
             TblMasterZone zone = tblMasterZoneRepository
-                    .findById(firstDto.getZoneId())
+                    .findById(Math.toIntExact(firstDto.getZoneId()))
                     .orElseThrow(() -> new RuntimeException("Zone not found"));
 
             // Calculate agri year (same as in saveData)
@@ -225,7 +225,7 @@ public class TblBtrDataService {
         // This is the same as saveData() but without the limit check
         // Fetch zone
         TblMasterZone zone = tblMasterZoneRepository
-                .findById(dto.getZoneId())
+                .findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
         // Calculate agri year
@@ -307,6 +307,7 @@ public class TblBtrDataService {
         entity.setUpdated_by(dto.getUser_id());
         entity.setInsertionTime(LocalDateTime.now());
         entity.setUpdationTime(LocalDateTime.now());
+        entity.setZone(Long.valueOf(dto.getZoneId()));
 // 🧩 Determine type-based mapping
         if (dto.getBtrtype() != null) {
             long typeId = dto.getBtrtype();
@@ -400,7 +401,7 @@ public class TblBtrDataService {
                         : LocalDate.of(today.getYear(), 7, 31);
         Optional<Integer> maxClusterNumberOpt =
                 clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
-                        dto.getZoneId(),
+                        Math.toIntExact(dto.getZoneId()),
                         agriStart.atStartOfDay(),
                         agriEnd.atTime(23, 59, 59)
                 );
@@ -595,7 +596,7 @@ public class TblBtrDataService {
                 dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
 
         List<TblBtrData> plots;
-        TblMasterZone zone = tblMasterZoneRepository.findById(dto.getZoneId())
+        TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
         Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
@@ -661,7 +662,7 @@ public class TblBtrDataService {
 
 
     public ValidationResponse validateDuplicateForNonBtrCluster(TblBtrDataDTO dto) {
-        TblMasterZone zone = tblMasterZoneRepository.findById(dto.getZoneId())
+        TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
         System.out.println(">>>>   "+dto);
         String lbcode = dto.getLbcode() != null ? dto.getLbcode() : getLbcodeFromZone(zone);
@@ -975,19 +976,22 @@ public class TblBtrDataService {
 
 
     @Transactional
-    public String updateTotCentAndHandleClusterData(Long btrId, Double newTotCent) {
+    public String updateTotCentAndHandleClusterData(Long btrId, Double newTotCent, UUID userId) {
 
         // 1️⃣ Get total area currently used in clusters
         Double totalClusterArea = clusterFormDataRepository.getTotalEnumeratedAreaByBtrId(btrId);
         if (totalClusterArea == null) totalClusterArea = 0.0;
 
-        // 2️⃣ Always update totCent in BTR table
-        int updatedRows = tblBtrDataRepository.updateTotCent(btrId, newTotCent);
+        // 2️⃣ Prepare values
+        LocalDateTime now = LocalDateTime.now();
+
+        // 3️⃣ Update all fields
+        int updatedRows = tblBtrDataRepository.updateTotCent(btrId, newTotCent, now, userId);
         if (updatedRows == 0) {
             throw new EntityNotFoundException("TblBtrData with id " + btrId + " not found");
         }
 
-        // 3️⃣ If new totCent < totalClusterArea, delete cluster entries
+        // 4️⃣ Business logic
         if (newTotCent < totalClusterArea) {
             clusterFormDataRepository.deleteByBtrId(btrId);
             return "New totCent is less than total enumerated area. ClusterFormData entries deleted, totCent updated.";

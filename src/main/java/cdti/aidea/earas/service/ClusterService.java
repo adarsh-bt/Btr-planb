@@ -1088,6 +1088,7 @@ public class ClusterService {
   @Transactional
   public void saveClusterData(
           UUID userid,
+          Long zoneId,
           UUID keyplotId,
           Integer clusterNo,
           String requestedStatus,   // On Going | Under Review | COMPLETED
@@ -1097,6 +1098,7 @@ public class ClusterService {
 
    System.out.println("status :::  "+requestedStatus);
    System.out.println("reddd  "+sidePlots);
+//   System.out.println("zone id "+zoneId);
     KeyPlots keyPlot =
             keyPlotsRepository.findById(keyplotId)
                     .orElseThrow(() ->
@@ -1243,6 +1245,7 @@ public class ClusterService {
                         .orElseGet(() -> {
 
                           TblBtrData newPlot = new TblBtrData();
+                          newPlot.setZone(Long.valueOf(keyPlot.getZone().getZoneId()));
                           newPlot.setResvno(row.getSvNo());
                           newPlot.setResbdno(row.getSubNo());
                           newPlot.setBcode(row.getBcode());
@@ -1271,7 +1274,8 @@ public class ClusterService {
                             newPlot.setAgreEndYear(agreEnd);
                             newPlot.setUpdated_by(userid);
                             newPlot.setCreated_by(userid);
-
+                            newPlot.setInsertionTime(LocalDateTime.now());
+                            newPlot.setUpdationTime(LocalDateTime.now());
                           TblMasterVillage village =
                                   tblMasterVillageRepository
                                           .findById(Integer.valueOf(row.getVillage()))
@@ -1534,7 +1538,11 @@ public class ClusterService {
     btrData.setOwnername(request.getOwnername());
     btrData.setHouseno(request.getHouseno());
     btrData.setAddress(request.getAddress());
-
+    btrData.setCreated_by(request.getUserId());
+    btrData.setUpdated_by(request.getUserId());
+    btrData.setUpdationTime(LocalDateTime.now());
+    btrData.setInsertionTime(LocalDateTime.now());
+    btrData.setZone(keyPlotBtr.getZone());
     // btrData.setCl_no(request.getCl_no());
     // Copy values from keyplot BTR
     btrData.setDcode(keyPlotBtr.getDcode());

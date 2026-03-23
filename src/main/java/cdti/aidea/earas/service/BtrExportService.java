@@ -25,6 +25,7 @@ public class BtrExportService {
     private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
     private final TblMasterVillageRepository tblMasterVillageRepository;
     private final TblBtrRepository tblBtrRepository;
+    private final TblBtrDataRepository tblBtrDataRepository;
     private final LocalBodyRepository localBodyRepository;
     private final LandTypeClassificationService landTypeClassificationService;
     private final TblBtrDataOldRepository tblBtrDataOldRepository;
@@ -46,8 +47,9 @@ public class BtrExportService {
         List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
         List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
 
-        List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
-
+//        List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
+//        List<TblBtrData> allData = tblBtrRepository.findByZone(Long.valueOf(zoneId));
+        List<TblBtrData> allData =tblBtrDataRepository.findByZone(Long.valueOf(zoneId));
         // Prepare maps
         Map<Integer, String> villageMap =
                 villageList.stream()

@@ -1,8 +1,12 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
 import cdti.aidea.earas.model.Btr_models.TblBtrData;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -50,6 +54,8 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
   // Find all records by a list of lsgcodes
   List<TblBtrData> findAllByLsgcodeIn(List<Integer> lsgcodes);
 
+  List<TblBtrData> findByZone(Long zone);
+
   // Custom query to filter based on multiple fields
   @Query(
       "SELECT b FROM TblBtrData b WHERE b.lsgcode IN :lsgcodes AND "
@@ -88,38 +94,42 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
       Integer lsgcode, String bcode, Integer start, Integer end);
 
   @Query(
-      "SELECT b FROM TblBtrData b "
-          + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
-          + "WHERE b.lsgcode IN :lsgcodes "
-          + "ORDER BY lb.localbodyNameEn ASC, "
-          + "b.lsgcode ASC, "
-          + "b.bcode ASC, "
-          + "b.resvno ASC, "
-          + "b.resbdno ASC, "
-          + "b.ltype DESC")
-  Page<TblBtrData> findByLsgcodeInWithOrder(List<Integer> lsgcodes, Pageable pageable);
+          "SELECT b FROM TblBtrData b "
+                  + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
+                  + "WHERE b.zone = :zone "
+                  + "ORDER BY lb.localbodyNameEn ASC, "
+                  + "b.lsgcode ASC, "
+                  + "b.bcode ASC, "
+                  + "b.resvno ASC, "
+                  + "b.resbdno ASC, "
+                  + "b.ltype DESC")
+  Page<TblBtrData> findByZoneWithOrder(
+          @Param("zone") Long zone,
+          Pageable pageable);
 
   @Query(
-      "SELECT b FROM TblBtrData b "
-          + "JOIN TblMasterVillage v ON b.lsgcode = v.lsgCode "
-          + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
-          + "WHERE b.lsgcode IN :lsgcodes AND ("
-          + "LOWER(v.villageNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
-          + "LOWER(lb.localbodyNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
-          + "CAST(b.bcode AS string) LIKE CONCAT('%', :filter, '%') OR "
-          + "CAST(b.resvno AS string) LIKE CONCAT('%', :filter, '%') OR "
-          + "CAST(b.resbdno AS string) LIKE CONCAT('%', :filter, '%') OR "
-          + "LOWER(b.ltype) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
-          + "CONCAT(CAST(b.resvno AS string), '/', CAST(b.resbdno AS string)) LIKE CONCAT('%', :filter, '%')"
-          + ") "
-          + "ORDER BY lb.localbodyNameEn ASC, "
-          + "v.villageNameEn ASC, "
-          + "b.bcode ASC, "
-          + "b.resvno ASC, "
-          + "b.resbdno ASC, "
-          + "b.ltype DESC")
-  Page<TblBtrData> findByLsgcodeInWithNamesFilter(
-      @Param("lsgcodes") List<Integer> lsgcodes, @Param("filter") String filter, Pageable pageable);
+          "SELECT b FROM TblBtrData b "
+                  + "JOIN TblMasterVillage v ON b.lsgcode = v.lsgCode "
+                  + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
+                  + "WHERE b.zone = :zone AND ("
+                  + "LOWER(v.villageNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                  + "LOWER(lb.localbodyNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                  + "CAST(b.bcode AS string) LIKE CONCAT('%', :filter, '%') OR "
+                  + "CAST(b.resvno AS string) LIKE CONCAT('%', :filter, '%') OR "
+                  + "CAST(b.resbdno AS string) LIKE CONCAT('%', :filter, '%') OR "
+                  + "LOWER(b.ltype) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                  + "CONCAT(CAST(b.resvno AS string), '/', CAST(b.resbdno AS string)) LIKE CONCAT('%', :filter, '%')"
+                  + ") "
+                  + "ORDER BY lb.localbodyNameEn ASC, "
+                  + "v.villageNameEn ASC, "
+                  + "b.bcode ASC, "
+                  + "b.resvno ASC, "
+                  + "b.resbdno ASC, "
+                  + "b.ltype DESC")
+  Page<TblBtrData> findByZoneWithNamesFilter(
+          @Param("zone") Long zone,
+          @Param("filter") String filter,
+          Pageable pageable);
 
   List<TblBtrData> findByLbcode(String lbcode);
 
@@ -174,6 +184,11 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno);
 
   @Modifying
-  @Query("UPDATE TblBtrData b SET b.totCent = :totCent WHERE b.id = :btrId")
-  int updateTotCent(@Param("btrId") Long btrId, @Param("totCent") Double totCent);
+  @Query("UPDATE TblBtrData b SET b.totCent = :totCent, b.updationTime = :updationTime, b.updated_by = :updatedBy WHERE b.id = :btrId")
+  int updateTotCent(
+          @Param("btrId") Long btrId,
+          @Param("totCent") Double totCent,
+          @Param("updationTime") LocalDateTime updationTime,
+          @Param("updatedBy") UUID updatedBy
+  );
 }

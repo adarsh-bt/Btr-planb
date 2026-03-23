@@ -252,14 +252,16 @@ public class Zone_Service {
     System.out.println(lsgcodes);
 
     //        List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
-    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
+//    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
+
+    List<TblBtrData> allData = tblBtrDataRepository.findByZone(Long.valueOf(zone_id));
 
     List<String> landType =
             allData.stream()
                     .map(tblBtrData -> tblBtrData.getLtype())
                     .distinct()
                     .collect(Collectors.toList());
-    System.out.println("land Type  " + landType);
+
 
     List<String> LbcodeList =
             allData.stream().map(TblBtrData::getLbcode).distinct().collect(Collectors.toList());
@@ -291,14 +293,13 @@ public class Zone_Service {
 
     Page<TblBtrData> pageResult;
 
-    if (filter == null || filter.isEmpty()) {
-      pageResult = tblBtrDataRepository.findByLsgcodeInWithOrder(lsgcodes, pageable);
-    } else {
-      // For filtered queries, you might need a similar ORDER BY clause
-      pageResult =
-              tblBtrDataRepository.findByLsgcodeInWithNamesFilter(lsgcodes, filter, pageable);
-    }
+    Long zoneValue = Long.valueOf(zone_id);
 
+    if (filter == null || filter.isEmpty()) {
+      pageResult = tblBtrDataRepository.findByZoneWithOrder(zoneValue, pageable);
+    } else {
+      pageResult = tblBtrDataRepository.findByZoneWithNamesFilter(zoneValue, filter, pageable);
+    }
     double totalArea =
             pageResult.getContent().stream()
                     .mapToDouble(TblBtrData::getTotCent) // Assuming nsqm is the field you want to sum up
@@ -395,7 +396,7 @@ public class Zone_Service {
                     .collect(Collectors.toList());
 
     // Return paginated data along with total count and total area
-    System.out.println(responseDtos);
+
     return new BtrMainResponse<>(
             "success",
             "Data fetched successfully",
@@ -579,7 +580,8 @@ System.out.println("villages  "+villageIds);
             villageList.stream().map(TblMasterVillage::getVillageNameEn).toList();
     System.out.println("villages " + villages_names);
 
-    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
+//    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
+    List<TblBtrData> allData = tblBtrDataRepository.findByZone(Long.valueOf(zone_id));
 
     Map<String, String> landTypeClassificationMap =
             landTypeClassificationService.getLandTypeClassificationMap();

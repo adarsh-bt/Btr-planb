@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class SaveClusterRequestDTO {
   private UUID userId;
   private UUID keyplotId;
+  private Long zoneId;
   private Integer clusterNo;
   private String status;
   private String remarks;

@@ -74,9 +74,10 @@ System.out.println(">> ok >> ");
   @PutMapping("/{btrId}/update-totcent")
   public ResponseEntity<String> updateTotCent(
           @PathVariable Long btrId,
-          @RequestParam Double totCent) {
+          @RequestParam Double totCent,
+          @RequestParam UUID userId) {
 
-    String message = service.updateTotCentAndHandleClusterData(btrId, totCent);
+    String message = service.updateTotCentAndHandleClusterData(btrId, totCent, userId);
     return ResponseEntity.ok(message);
   }
 

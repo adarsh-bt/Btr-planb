@@ -36,4 +36,5 @@ public class TblBtrDataDTO {
   private String tbsubdivisionno;
   private Long clusterId;
 
+
 }

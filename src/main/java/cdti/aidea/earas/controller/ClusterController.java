@@ -191,6 +191,7 @@ public class ClusterController {
     try {
       clusterService.saveClusterData(
           request.getUserId(),
+          request.getZoneId(),
           request.getKeyplotId(),
           request.getClusterNo(),
           request.getStatus(),

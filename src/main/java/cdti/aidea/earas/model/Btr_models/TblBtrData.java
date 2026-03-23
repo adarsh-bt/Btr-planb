@@ -78,6 +78,7 @@ public class TblBtrData {
 
     private UUID created_by;
     private UUID updated_by;
+    private Long zone;
 
 
   //    private Boolean reject;

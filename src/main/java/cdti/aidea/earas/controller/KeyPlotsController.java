@@ -192,5 +192,14 @@ System.out.println("dto  "+dto);
     ));
 }
 
+    @DeleteMapping("/remove-keyPlots/{id}")
+    public ResponseEntity<?> deleteKeyPlot(@PathVariable UUID id) {
+        try {
+            String message = keyPlots_Service.deleteKeyPlot(id);
+            return ResponseEntity.ok(message);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
 }

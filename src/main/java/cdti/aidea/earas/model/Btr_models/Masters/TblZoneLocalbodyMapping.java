@@ -40,6 +40,4 @@ public class TblZoneLocalbodyMapping {
   @Column(name = "remarks")
   private String remarks;
 
-
-
 }

@@ -3,6 +3,8 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.contract.UserAccessDTOs.AssignedUserResponse;
+import cdti.aidea.earas.contract.UserAccessDTOs.UserLoginDetailsResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
@@ -51,7 +53,9 @@ public class AdminManage {
     private final TblZoneRevenueVillageMappingRepository zoneRevenueVillageMappingRepository;
     private final TblZoneVillageBlockMappingRepository tblZoneVillageBlockMappingRepository;
     private final TblZoneLocalbodyMappingRepository tblZoneLocalbodyMappingRepository;
-
+    private final TblSeasonMasterRepository seasonMasterRepository;
+    private final TblZoneSeasonScheduleRepository scheduleRepository ;
+    private final UserAccessClientService userAccessClientService;
 
     public List<KeyplotsLimitLogResponse> getAllKeyplots() {
         List<KeyplotsLimitLog> entities = repository.findAll();
@@ -390,6 +394,119 @@ public class AdminManage {
             log.setUpdatedAt(LocalDateTime.now());
             return clusterLimitLogRepository.save(log);
         }
+    }
+    public List<AdminZoneResponse> getAllZonesWithSeasonDates () {
+
+        List<TblMasterZone> zones = tblMasterZoneRepository.findAll();
+        List<TblSeasonMaster> activeSeasons = seasonMasterRepository.findByIsActiveTrue();
+
+        return zones.stream()
+                .map(zone -> {
+
+                    Integer zoneId = zone.getZoneId();
+
+                    List<AdminZoneSeasonResponse> seasonResponses =
+                            activeSeasons.stream()
+                                    .map(season -> {
+
+                                        LocalDate startDate = season.getDefaultStart();
+                                        LocalDate endDate = season.getDefaultEnd();
+                                        LocalDate extendedDate = null;
+
+                                        Optional<TblZoneSeasonSchedule> scheduleOpt =
+                                                scheduleRepository
+                                                        .findByZoneZoneIdAndSeasonIdAndIsActiveTrue(
+                                                                zoneId,
+                                                                season.getId()
+                                                        )
+                                                        .stream()
+                                                        .findFirst();
+
+                                        if (scheduleOpt.isPresent()) {
+
+                                            TblZoneSeasonSchedule schedule = scheduleOpt.get();
+
+                                            boolean startChanged =
+                                                    !schedule.getStartDate()
+                                                            .equals(season.getDefaultStart());
+
+                                            boolean extendedChanged =
+                                                    schedule.getExtendedDate() != null;
+
+                                            if (startChanged && !extendedChanged) {
+                                                startDate = schedule.getStartDate();
+                                                endDate = schedule.getEndDate();
+                                                extendedDate = null;
+                                            } else if (!startChanged && extendedChanged) {
+                                                startDate = season.getDefaultStart();
+                                                endDate = season.getDefaultEnd();
+                                                extendedDate = schedule.getExtendedDate();
+                                            } else if (startChanged && extendedChanged) {
+                                                startDate = schedule.getStartDate();
+                                                endDate = season.getDefaultEnd();
+                                                extendedDate = schedule.getExtendedDate();
+                                            }
+                                        }
+
+                                        return new AdminZoneSeasonResponse(
+                                                season.getId(),
+                                                season.getSeasonName(),
+                                                startDate,
+                                                endDate,
+                                                extendedDate
+                                        );
+                                    })
+                                    .collect(Collectors.toList());
+
+                    return AdminZoneResponse.builder()
+                            .zoneId(zoneId)
+                            .dist_id(zone.getDistId())
+                            .zoneName(zone.getZoneNameEn())
+                            .zone_type_id(zone.getBtrType().getBtrTypeId())
+                            .zone_type_name(zone.getBtrType().getBtrType())
+                            .seasons(seasonResponses)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    //To get zone assigned details before interconnnection
+//    public List<ZoneUserAssignDto> getActiveZonesWithAssignment() {
+//        return tblMasterZoneRepository.findActiveZonesWithAssignment();
+//    }
+
+    //To get zone assigned details after interconnection
+    public List<ZoneUserAssignDto> getAllZonesWithUsers() {
+
+        List<ZoneUserAssignDto> zones = tblMasterZoneRepository.findActiveZonesWithAssignment ();
+
+        zones.forEach(zone -> {
+
+            UUID loginId = zone.getAssignedUserLoginId();
+
+            if (Boolean.TRUE.equals(zone.getIsAssigned()) && loginId != null) {
+
+                UserLoginDetailsResponse userDetails =
+                        userAccessClientService.getUserDetails(loginId);
+
+                AssignedUserResponse assignedUser =
+                        AssignedUserResponse.builder()
+                                .userId(userDetails.getUserId())
+                                .name(userDetails.getName())
+                                .designationId(userDetails.getDesignationId())
+                                .designation(userDetails.getDesignation())
+                                .roleId(userDetails.getRoleId())
+                                .roles(userDetails.getRoles())
+                                .build();
+
+                zone.setAssignedUserId(assignedUser);
+
+            } else {
+                zone.setAssignedUserId(null);
+            }
+        });
+
+        return zones;
     }
 
     public ZonePageResponse getAllZones(int page, int size, String search) {

@@ -14,6 +14,7 @@ public class LocalbodyDTO {
     private Integer mappingId;
     private Integer localbodyId;
     private String localbodyName;
+    private String localbodyType;
     private Integer zoneId;
     private UUID userId;
 

@@ -107,4 +107,10 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
           @Param("zoneId") Long zoneId,
           @Param("agriStart") LocalDate agriStart,
           @Param("agriEnd") LocalDate agriEnd);
+
+  @Query("SELECT c FROM ClusterMaster c WHERE c.zone.zoneId = :zoneId AND c.clusterNumber = :clusterNumber")
+  Optional<ClusterMaster> findByZoneAndClusterNumber(
+          @Param("zoneId") Integer zoneId,
+          @Param("clusterNumber") Integer clusterNumber
+  );
 }

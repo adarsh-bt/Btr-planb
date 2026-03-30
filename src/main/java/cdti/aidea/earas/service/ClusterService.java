@@ -1842,4 +1842,20 @@ public class ClusterService {
 
         return "Bulk cluster update successful";
     }
+
+//have to link with tour diary
+public ClusterTourResponse getClusterDetails(Long clusterId) {
+
+    ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
+            .orElseThrow(() -> new RuntimeException("Cluster not found"));
+
+    ClusterTourResponse response = new ClusterTourResponse();
+
+    response.setClusterNo(cluster.getClusterNumber());
+    response.setZoneName(cluster.getZone().getZoneNameEn());
+    response.setLandType(cluster.getKeyPlot().getLandType());
+
+    return response;
+}
+
 }

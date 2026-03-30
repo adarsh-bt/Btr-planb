@@ -1,6 +1,7 @@
 package cdti.aidea.earas.model.Btr_models;
 
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,9 +25,11 @@ public class ClusterEditAllowed {
     // cluster relation
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cluster_id", nullable = false)
+    @JsonIgnore
     private ClusterMaster clusterMaster;
 
     // zone relation
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "zone_id", nullable = false)
     private TblMasterZone zone;

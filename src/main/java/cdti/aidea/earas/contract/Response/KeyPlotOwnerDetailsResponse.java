@@ -23,5 +23,7 @@ public class KeyPlotOwnerDetailsResponse {
   private String geocoordinate;
   private Double area;
   private LocalDate selectedDate;
-
+  private Integer distId;
+  private Integer zoneId;
+  private String zoneName;
 }

@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -51,7 +52,8 @@ public class AdminManage {
   private final TblZoneRevenueVillageMappingRepository zoneRevenueVillageMappingRepository;
   private final TblZoneVillageBlockMappingRepository tblZoneVillageBlockMappingRepository;
   private final TblZoneLocalbodyMappingRepository tblZoneLocalbodyMappingRepository;
-
+  private final ClusterEditAllowedRepository editAllowedRepository;
+  private final TblMasterZoneRepository masterZoneRepository;
 
   public List<KeyplotsLimitLogResponse> getAllKeyplots() {
     List<KeyplotsLimitLog> entities = repository.findAll();
@@ -821,5 +823,72 @@ System.out.println("request "+ request);
     mapping.setUpdatedBy(userId);
     mapping.setUpdatedAt(LocalDateTime.now());
     tblZoneLocalbodyMappingRepository.save(mapping);
+  }
+
+  @Transactional
+  public ClusterEditAllowed createClusterEditRequest(ClusterEditRequestDTO dto) {
+
+    // 🔹 clusterId validation
+    if (dto.getClusterId() == null) {
+      throw new RuntimeException("clusterId is required");
+    }
+
+    // 🔹 zoneId validation
+    if (dto.getZoneId() == null) {
+      throw new RuntimeException("zoneId is required");
+    }
+
+    // 🔹 status validation
+    if (dto.getStatus() == null || dto.getStatus().isBlank()) {
+      throw new RuntimeException("status is required");
+    }
+
+    // 🔹 APPROVED → approvedBy must be present
+    if ("APPROVED".equalsIgnoreCase(dto.getStatus()) && dto.getApprovedBy() == null) {
+      throw new RuntimeException("approvedBy is required when status is APPROVED");
+    }
+
+    //Fetch Cluster
+    ClusterMaster cluster = clusterMasterRepository.findById(dto.getClusterId())
+            .orElseThrow(() -> new RuntimeException("Cluster not found"));
+    //Fetch Zone
+    TblMasterZone zone = masterZoneRepository.findByZoneId(dto.getZoneId())
+            .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+    ClusterEditAllowed entity = new ClusterEditAllowed();
+    entity.setClusterMaster(cluster);
+    entity.setZone(zone);
+    entity.setRemarks(dto.getRemarks());
+//    in case of not request that will be removed
+    entity.setRequestedBy(dto.getApprovedBy());
+    entity.setApprovedBy(dto.getApprovedBy());
+    entity.setTotalArea(BigDecimal.valueOf(dto.getTotalArea()));
+    //Enum handling
+    if (dto.getStatus() != null) {
+      try {
+        entity.setStatus(EditRequestStatus.valueOf(dto.getStatus().toUpperCase()));
+        // System.out.println(dto.getStatus());
+      } catch (Exception e) {
+        // entity.setStatus(EditRequestStatus.PENDING);
+        throw new RuntimeException("Invalid status value. Allowed: PENDING, APPROVED, REJECTED");
+      }
+    }
+    entity.setIsActive(true);
+    entity.setCreatedAt(LocalDateTime.now());
+    entity.setUpdatedAt(LocalDateTime.now());
+
+    // ⚠️ Only set approvedAt if approved
+    if (entity.getStatus() == EditRequestStatus.APPROVED) {
+      entity.setApprovedAt(LocalDateTime.now());
+    }
+
+    // return editAllowedRepository.save(entity);
+    ClusterEditAllowed saved = editAllowedRepository.save(entity);
+
+    cluster.setIs_editable(true);
+    cluster.setStatus("On Going"); // match your DB value exactly
+    cluster.setUpdatedAt(LocalDateTime.now());
+    clusterMasterRepository.save(cluster);
+    return saved;
   }
 }

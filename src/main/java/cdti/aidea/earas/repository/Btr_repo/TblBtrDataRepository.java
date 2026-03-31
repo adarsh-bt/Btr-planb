@@ -157,11 +157,11 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);
 
   // For BTR type 5 - Old Survey Number
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno, String oldsubno);
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndOldsubno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,Integer oldsvno, String oldsubno);
 
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno);
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvno(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,Integer oldsvno);
 
   // Query methods to get actual data for remaining area calculation
   List<TblBtrData> findByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(

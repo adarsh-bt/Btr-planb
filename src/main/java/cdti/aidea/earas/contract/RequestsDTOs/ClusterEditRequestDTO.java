@@ -10,4 +10,7 @@ public class ClusterEditRequestDTO {
     private Integer zoneId;
     private String remarks;
     private UUID requestedBy;
+    private UUID approvedBy;
+    private double totalArea;
+    private String status;
 }

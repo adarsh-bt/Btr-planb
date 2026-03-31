@@ -2,6 +2,7 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.model.Btr_models.ClusterEditAllowed;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
@@ -273,5 +274,11 @@ System.out.println("id  "+idValue+"  : "+type);
                                            @RequestParam UUID userId) {
     adminManage.removeLocalBodyMapping(id, userId);
     return ResponseEntity.ok("LocalBody removed successfully");
+  }
+
+  @PostMapping("/edit-allow-cluster")
+  public ResponseEntity<String> create(@RequestBody ClusterEditRequestDTO dto){
+    adminManage.createClusterEditRequest(dto);
+    return ResponseEntity.ok("Cluster edit request processed successfully");
   }
 }

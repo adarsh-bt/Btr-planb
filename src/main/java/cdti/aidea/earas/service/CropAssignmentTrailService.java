@@ -29,17 +29,15 @@ public class CropAssignmentTrailService {
   private final KeyPlotsRepository keyPlotsRepository;
   private final FormEntryClient formEntryClient;
 
+
   @Transactional
   public List<Long> saveCropAssignmentTrail(List<CropAssignmentTrailSaveDto> saveDtoList) {
-
     int currentYear = LocalDateTime.now().getYear();
     int nextYear = currentYear + 1;
     String agriYear = currentYear + "-" + String.valueOf(nextYear).substring(2);
-
     for (CropAssignmentTrailSaveDto saveDto : saveDtoList) {
       try {
         log.info("Processing crop assignment trail for crop ID: {}", saveDto.getCropId());
-
         // Validate cluster exists if clusterId is provided
         ClusterMaster cluster = null;
         if (saveDto.getClusterId() != null) {

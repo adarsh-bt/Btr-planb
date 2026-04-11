@@ -321,4 +321,9 @@ public class ClusterController {
     clusterService.bulkUpdateClusterNumbers(updates);
     return ResponseEntity.ok("Bulk update successful");
   }
+
+  @GetMapping("/cluster/{id}")
+  public ClusterTourResponse getCluster(@PathVariable Long id) {
+    return clusterService.getClusterDetails(id);
+  }
 }

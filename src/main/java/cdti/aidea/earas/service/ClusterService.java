@@ -1856,4 +1856,18 @@ System.out.println("ccee "+cceResult);
 
         return "Bulk cluster update successful";
     }
+
+    public ClusterTourResponse getClusterDetails(Long clusterId) {
+
+        ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
+                .orElseThrow(() -> new RuntimeException("Cluster not found"));
+
+        ClusterTourResponse response = new ClusterTourResponse();
+
+        response.setClusterNo(cluster.getClusterNumber());
+        response.setZoneName(cluster.getZone().getZoneNameEn());
+        response.setLandType(cluster.getKeyPlot().getLandType());
+
+        return response;
+    }
 }

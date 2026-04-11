@@ -30,6 +30,19 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
 
   Optional<ClusterMaster> findByKeyPlot(KeyPlots plot);
 
+//  @Query("""
+//    SELECT c FROM ClusterMaster c
+//    WHERE c.zoneId = :zoneId
+//    AND c.landType IN :landTypes
+//    AND c.clusterNumber > :currentClusterNumber
+//    ORDER BY c.clusterNumber ASC
+//""")
+//  List<ClusterMaster> findNextClusterFlexibleLandType(
+//          @Param("zoneId") Integer zoneId,
+//          @Param("landTypes") List<String> landTypes,
+//          @Param("currentClusterNumber") Integer currentClusterNumber
+//  );
+
 //  @Query(
   ////      "SELECT cm FROM ClusterMaster cm "
   ////          + "JOIN cm.keyPlot kp "

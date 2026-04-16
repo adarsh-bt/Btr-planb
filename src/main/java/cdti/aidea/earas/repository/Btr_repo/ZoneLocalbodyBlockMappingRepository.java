@@ -10,4 +10,5 @@ public interface ZoneLocalbodyBlockMappingRepository
     extends JpaRepository<ZoneLocalbodyBlockMapping, Long> {
 
   Optional<ZoneLocalbodyBlockMapping> findByZoneAndIsValid(Integer zone, Boolean isValid);
+
 }

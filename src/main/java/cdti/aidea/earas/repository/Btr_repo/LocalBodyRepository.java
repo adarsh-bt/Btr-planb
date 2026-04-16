@@ -22,4 +22,9 @@ public interface LocalBodyRepository extends JpaRepository<TblLocalBody, Integer
 
   @Query("SELECT lb FROM TblLocalBody lb WHERE lb.localbodyId IN :lbIds")
   List<TblLocalBody> findAllByLocalbodyIdIn(@Param("lbIds") List<Integer> lbIds);
+
+  List<TblLocalBody> findByLocalbodyTypeAndDistIdAndIsActiveTrue(
+          Short localbodyType,
+          int distId
+  );
 }

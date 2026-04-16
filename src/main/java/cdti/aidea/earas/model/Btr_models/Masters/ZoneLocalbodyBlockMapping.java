@@ -2,6 +2,8 @@ package cdti.aidea.earas.model.Btr_models.Masters;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,6 +34,13 @@ public class ZoneLocalbodyBlockMapping {
 
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
+
+  @Column(name = "addedby")
+  private UUID addedby;
+
+  @Column(name = "updatedby")
+  private UUID updatedby;
+
 
   @Column(name = "is_valid", nullable = false)
   private Boolean isValid = true;

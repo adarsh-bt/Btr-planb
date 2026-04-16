@@ -5,10 +5,7 @@ import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.ClusterEditAllowed;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
-import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
-import cdti.aidea.earas.model.Btr_models.Masters.TblZoneRevenueVillageMapping;
-import cdti.aidea.earas.model.Btr_models.Masters.TblZoneVillageBlockMapping;
-import cdti.aidea.earas.model.Btr_models.Masters.ZoneRevenueTalukMapping;
+import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.TblZoneRevenueVillageMappingRepository;
 import cdti.aidea.earas.repository.Btr_repo.TblZoneVillageBlockMappingRepository;
 import cdti.aidea.earas.repository.Btr_repo.ZoneRevenueTalukMappingRepository;
@@ -280,5 +277,52 @@ System.out.println("id  "+idValue+"  : "+type);
   public ResponseEntity<String> create(@RequestBody ClusterEditRequestDTO dto){
     adminManage.createClusterEditRequest(dto);
     return ResponseEntity.ok("Cluster edit request processed successfully");
+  }
+
+  @GetMapping("/zones/{zoneId}/block-mappings")
+  public ResponseEntity<?> getBlockMappings(@PathVariable Integer zoneId) {
+
+    List<ZoneBlockMappingResponseDto> data =
+            adminManage.getBlockMappings(zoneId);
+
+    return ResponseEntity.ok(data);
+  }
+
+  @PostMapping("/zones/block-mapping")
+  public ResponseEntity<?> saveOrUpdateBlockMapping(
+          @RequestBody ZoneBlockMappingRequestDto request) {
+
+    adminManage.saveOrUpdateBlockMapping(request);
+
+    return ResponseEntity.ok("Mapping saved/updated successfully");
+  }
+
+  @GetMapping("/local-blocks")
+  public ResponseEntity<?> getBlocksByDistrict(
+          @RequestParam Integer zoneId) {
+
+    List<MasterBlock> blocks =
+            adminManage.getBlocksByDistrict(zoneId);
+
+    return ResponseEntity.ok(blocks);
+  }
+
+  @GetMapping("/local-bodies")
+  public ResponseEntity<?> getLocalBodies(
+          @RequestParam Short typeId,
+          @RequestParam int zoneId) {
+
+    List<TblLocalBody> data =
+            adminManage.getLocalBodies(typeId, zoneId);
+
+    return ResponseEntity.ok(data);
+  }
+
+  @DeleteMapping("/zones/block-mapping/{id}")
+  public ResponseEntity<?> deleteBlockMapping(@PathVariable Long id) {
+
+    adminManage.softDeleteBlockMapping(id);
+
+    return ResponseEntity.ok("Mapping deleted successfully");
   }
 }

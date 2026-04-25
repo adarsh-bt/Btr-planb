@@ -320,13 +320,13 @@ public class AdminManage {
       log.setAgriStartYear(agriStart);
       log.setAgriEndYear(agriEnd);
       log.setIsActive(true);
-
       log.setCreatedAt(LocalDateTime.now());
       log.setUpdatedAt(LocalDateTime.now());
     }
 
     return repository.save(log);
   }
+
 
 
   @Transactional

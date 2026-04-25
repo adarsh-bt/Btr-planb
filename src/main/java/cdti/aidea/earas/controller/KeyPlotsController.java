@@ -1,9 +1,11 @@
 package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.common.exception.Response;
+import cdti.aidea.earas.contract.RequestsDTOs.CropAssignmentTrailSaveDto;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.UpdateEnumeratedKeyAreaDTO;
+import cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterFormData;
@@ -44,7 +46,7 @@ public class KeyPlotsController {
     @GetMapping("/get-all/{zoneId}")
     public ResponseEntity<Response> getAllKeyPlotsWithDetails(@PathVariable("zoneId") Integer zoneId) {
         try {
-            List<KeyPlotDetailsResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId);
+            List<KeyPlotDetailsListResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId);
 
             return ResponseEntity.ok(
                     Response.builder()
@@ -57,6 +59,18 @@ public class KeyPlotsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Response.builder().message("Error fetching key plots: " + e.getMessage()).build());
         }
+    }
+
+    @DeleteMapping("/remove-crop")
+    public ResponseEntity<?> removeCrop(@RequestBody CropAssignmentTrailSaveDto dto) {
+
+        String response = keyPlots_Service.removeCropFullFlow(dto);
+
+        return ResponseEntity.ok(
+                Response.builder()
+                        .message(response)
+                        .build()
+        );
     }
 
 //    @GetMapping("/fetch-existing-keyplots/{userId}")
@@ -201,5 +215,7 @@ System.out.println("dto  "+dto);
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+
 
 }

@@ -1,5 +1,6 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterFormData;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
@@ -141,4 +142,65 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
     ORDER BY cm.clusterNumber ASC
 """)
   List<ClusterMaster> findAllByZoneOrderByClusterNumber(@Param("zone") TblMasterZone zone);
+
+
+  @Query("""
+SELECT new cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse(
+    kp.id,
+    b.dcode,
+    b.tcode,
+    cm.cluMasterId,
+    kp.zone.zoneId,
+    cm.clusterNumber,
+
+    b.id,
+    bt.bTypeName,
+
+    COALESCE(v.villageNameEn, 'Unknown'),
+    v.villageId,
+    b.bcode,
+    COALESCE(lb.localbodyNameEn, b.lbcode),
+    b.lbcode,
+
+    cm.status,
+    cm.is_editable,
+
+    CONCAT(b.resvno, '/', b.resbdno),
+    b.ownername,
+    b.address,
+    b.wardnumber,
+    b.houseno,
+    b.tpno,
+    b.tbsubdivisionno,
+    b.oldsvno,
+    b.oldsubno,
+
+    b.totCent,
+    COALESCE(cfd.enumeratedArea, 0.0),
+
+    kp.landType
+)
+FROM ClusterMaster cm
+JOIN cm.keyPlot kp
+JOIN kp.btrData b
+JOIN b.btrtype bt
+LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
+LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
+LEFT JOIN ClusterFormData cfd 
+    ON cfd.plot = b 
+    AND cfd.plotLabel = 'K' 
+    AND cfd.clusterMaster.cluMasterId = cm.cluMasterId
+WHERE cm.zone.zoneId = :zoneId
+ORDER BY cm.clusterNumber
+""")
+  List<KeyPlotDetailsListResponse> findAllKeyPlotDetails(@Param("zoneId") Integer zoneId);
+
+  @Query("""
+SELECT cm FROM ClusterMaster cm
+JOIN FETCH cm.keyPlot kp
+JOIN FETCH kp.btrData b
+WHERE cm.zone.zoneId = :zoneId
+AND cm.isReject = false
+""")
+  List<ClusterMaster> findAllWithDetails(@Param("zoneId") Integer zoneId);
 }

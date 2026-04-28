@@ -9,7 +9,6 @@ import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
-import cdti.aidea.earas.model.Btr_models.Masters.TblZoneRevenueVillageMapping;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,11 +17,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.Conditions;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeMap;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -32,12 +27,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
-import org.springframework.stereotype.Service;
-
-import static org.modelmapper.config.Configuration.AccessLevel.PRIVATE;
 
 @Service
 @RequiredArgsConstructor
@@ -62,76 +51,119 @@ public class KeyPlots_Service {
 
     @PersistenceContext private EntityManager entityManager;
 
-    public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
-        Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
+//    public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
+//        Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
+//
+////        List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
+//        List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZoneOrderByClusterNumber(zone.get());
+//
+//        return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
+//    }
+public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
 
-        List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
+    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
+            .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-        return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
-    }
+    List<ClusterMaster> clusters =
+            clusterMasterRepository.findAllByZoneOrderByClusterNumber(zone);
 
-    private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(KeyPlots keyPlot) {
+    return clusters.stream()
+            .map(cm -> mapToKeyPlotDetailsResponse(cm.getKeyPlot(), cm))
+            .collect(Collectors.toList());
+}
+
+    private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(
+            KeyPlots keyPlot,
+            ClusterMaster cm) {
+
         TblBtrData plot = keyPlot.getBtrData();
+
         String syNo = plot.getResvno() + "/" + plot.getResbdno();
         String villageBlock = plot.getBcode();
         double area = plot.getTotCent();
         String lbcode = plot.getLbcode();
 
-        String panchayath =
-                localBodyRepository
-                        .findByCodeApi(lbcode)
-                        .map(TblLocalBody::getLocalbodyNameEn)
-                        .orElse(lbcode); // fallback if name not found
+        // Panchayath
+        String panchayath = localBodyRepository
+                .findByCodeApi(lbcode)
+                .map(TblLocalBody::getLocalbodyNameEn)
+                .orElse(lbcode);
 
         String landType = keyPlot.getLandType();
 
+        // Village
         Optional<TblMasterVillage> village =
                 tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
 
-        // Fetch related SidePlotDTOs
+        String villageName = village
+                .map(TblMasterVillage::getVillageNameEn)
+                .orElse("Unknown");
+
+        Integer villageId = village
+                .map(TblMasterVillage::getVillageId)
+                .orElse(null);
+
+        // Side plots
         List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
-        Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
-        String villageName = village.map(TblMasterVillage::getVillageNameEn).orElse("Unknown");
-        Integer villageId = village.map(TblMasterVillage::getVillageId).orElse(null);
-        Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
-        BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
-        BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
-        BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
-        Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-//        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
-        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotAndPlotLabelAndClusterMaster_CluMasterId(keyPlot.getBtrData(),"K",status.get().getCluMasterId());
+
+        // Cluster limits (can be optimized further by moving outside loop)
+        Optional<ClusterLimitLog> currentActiveOpt =
+                clusterLimitLogRepository.findByInActiveTrue();
+
+        BigDecimal clustermin = currentActiveOpt
+                .map(ClusterLimitLog::getClusterMin)
+                .orElse(null);
+
+        BigDecimal clustermax = currentActiveOpt
+                .map(ClusterLimitLog::getClusterMax)
+                .orElse(null);
+
+        BigDecimal tsoclusterlimit = currentActiveOpt
+                .map(ClusterLimitLog::getTsoApprovalLimit)
+                .orElse(null);
+
+        // Enum area (use cm directly ✅)
+        Optional<ClusterFormData> enumArea =
+                clusterFormDataRepository
+                        .findByPlotAndPlotLabelAndClusterMaster_CluMasterId(
+                                keyPlot.getBtrData(),
+                                "K",
+                                cm.getCluMasterId()
+                        );
+
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
-                keyPlot.getBtrData().getDcode(),
-                keyPlot.getBtrData().getTcode(),
-                cluster.get().getCluMasterId(),
+                plot.getDcode(),
+                plot.getTcode(),
+                cm.getCluMasterId(),                 // ✅ from cm
                 keyPlot.getZone().getZoneId(),
-                cluster.get().getClusterNumber(),
-                keyPlot.getBtrData().getBtrtype().getBTypeId(),
-                keyPlot.getBtrData().getBtrtype().getBTypeName(),
+                cm.getClusterNumber(),               // ✅ ORDER maintained
+                plot.getBtrtype().getBTypeId(),
+                plot.getBtrtype().getBTypeName(),
                 villageName,
                 villageId,
                 villageBlock,
                 panchayath,
                 lbcode,
-                status.get().getStatus(),
+                cm.getStatus(),                      // ✅ from cm
                 null,
                 clustermax,
                 clustermin,
                 tsoclusterlimit,
                 syNo,
-                keyPlot.getBtrData().getOwnername(),
-                keyPlot.getBtrData().getAddress(),
-                keyPlot.getBtrData().getWardnumber(),
-                keyPlot.getBtrData().getHouseno(),
-                keyPlot.getBtrData().getTpno(),
-                keyPlot.getBtrData().getTbsubdivisionno(),
-                keyPlot.getBtrData().getOldsvno(),
-                keyPlot.getBtrData().getOldsubno(),
+                plot.getOwnername(),
+                plot.getAddress(),
+                plot.getWardnumber(),
+                plot.getHouseno(),
+                plot.getTpno(),
+                plot.getTbsubdivisionno(),
+                plot.getOldsvno(),
+                plot.getOldsubno(),
                 area,
-                enumArea.get().getEnumeratedArea(),
+                enumArea.map(ClusterFormData::getEnumeratedArea).orElse(null), // ✅ safe
                 landType,
-                sidePlots);
+                sidePlots
+        );
     }
 
 //    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
@@ -1340,42 +1372,54 @@ System.out.println("enume "+enumArea);
 
     public KeyPlotOwnerDetailsResponse getByKpId(UUID kpId) {
 
-        modelMapper.getConfiguration()
-                .setFieldMatchingEnabled(true)
-                .setFieldAccessLevel(PRIVATE)
-                .setPropertyCondition(Conditions.isNotNull());
-
         KeyPlots keyPlotDetails = keyPlotsRepository.findById(kpId)
                 .orElseThrow(() -> new IllegalArgumentException("Id not found: " + kpId));
 
-        TypeMap<KeyPlots, KeyPlotOwnerDetailsResponse> typeMap =
-                modelMapper.getTypeMap(KeyPlots.class, KeyPlotOwnerDetailsResponse.class);
-        if (typeMap == null) {
-            typeMap = modelMapper.createTypeMap(KeyPlots.class, KeyPlotOwnerDetailsResponse.class);
-            typeMap.addMappings(mapper ->
-                    mapper.map(KeyPlots::getSelectedDate,
-                            KeyPlotOwnerDetailsResponse::setSelectedDate)
+        KeyPlotOwnerDetailsResponse response = new KeyPlotOwnerDetailsResponse();
+
+        // ✅ Basic fields
+        response.setId(keyPlotDetails.getId());
+        response.setOwner_name(keyPlotDetails.getOwner_name());
+        response.setAddress(keyPlotDetails.getAddress());
+        response.setPhone_number(keyPlotDetails.getPhone_number());
+        response.setGeocoordinate(keyPlotDetails.getGeocoordinate());
+        response.setSelectedDate(keyPlotDetails.getSelectedDate());
+        response.setZoneName(keyPlotDetails.getZone().getZoneNameEn());
+
+        // ✅ Zone & District (SAFE manual mapping)
+        if (keyPlotDetails.getZone() != null) {
+            response.setZoneId(keyPlotDetails.getZone().getZoneId());
+            response.setDistId(keyPlotDetails.getZone().getDistId());
+        }
+
+        // ✅ Plot Number (from BTR)
+        if (keyPlotDetails.getBtrData() != null) {
+            response.setPlotno(
+                    keyPlotDetails.getBtrData().getResvno() + "/" +
+                            keyPlotDetails.getBtrData().getResbdno()
             );
         }
-        KeyPlotOwnerDetailsResponse response = typeMap.map(keyPlotDetails);
+
+        // ✅ Cluster + Area calculation
         Optional<ClusterMaster> clusterMasterOpt =
                 clusterMasterRepository.findByKeyPlotId(kpId);
+
         if (clusterMasterOpt.isPresent()) {
+
             ClusterMaster clusterMaster = clusterMasterOpt.get();
             response.setCluster_id(clusterMaster.getCluMasterId());
 
             List<ClusterFormData> clusterFormDataList =
                     clusterFormDataRepository.findByClusterMaster(clusterMaster);
 
-            // ✅ sum enumeratedArea where plotLabel = "K"
             Double kAreaSum = clusterFormDataList.stream()
                     .filter(data -> "K".equalsIgnoreCase(data.getPlotLabel()))
                     .map(ClusterFormData::getEnumeratedArea)
                     .filter(Objects::nonNull)
                     .mapToDouble(Double::doubleValue)
                     .sum();
-            response.setPlotno(keyPlotDetails.getBtrData().getResvno()+"/"+keyPlotDetails.getBtrData().getResbdno());
-            response.setArea(kAreaSum); // since area is String
+
+            response.setArea(kAreaSum);
         }
 
         return response;

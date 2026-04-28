@@ -798,7 +798,7 @@ System.out.println("localbody  >>>  "+localBodyNameMap);
     Optional<DistrictMaster> district_name = districtMasterRepository.findById(Long.valueOf(zone.get().getDistId()));
     Optional<DesTaluk> taluk = desTalukRepository.findById(zone.get().getDesTalukId());
 
-    String districtName = district_name.map(DistrictMaster::getDist_name_en).orElse("");
+    String districtName = district_name.map(DistrictMaster::getDistNameEn).orElse("");
     String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("");
     String zoneName = zone.get().getZoneNameEn();
 

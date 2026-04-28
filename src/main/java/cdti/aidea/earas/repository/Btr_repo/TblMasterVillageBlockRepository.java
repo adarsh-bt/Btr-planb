@@ -2,6 +2,9 @@ package cdti.aidea.earas.repository.Btr_repo;
 
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillageBlock;
 import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,4 +28,6 @@ public interface TblMasterVillageBlockRepository
            """)
   List<Integer> findBlockIdsByVillageId(@Param("villageId") Integer villageId);
 
+    Page<TblMasterVillageBlock> findByBlockCodeContainingIgnoreCaseOrVillageId(
+            String blockCode, Long villageId, Pageable pageable);
 }

@@ -551,12 +551,16 @@ public class TblBtrDataService {
 
             boolean exists;
             if (dto.getOldsubno() != null) {
-                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
-                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(),
+                System.out.println(dto.getDcode()+" " + dto.getTcode()+ " " +dto.getVcode()+" "+dto.getBcode()+
+                        " "+dto.getOldsvno()+" "+dto.getOldsubno());
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndOldsubno(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(),dto.getLbcode(),
                         dto.getOldsvno(), dto.getOldsubno());
             } else {
-                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
-                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getOldsvno());
+                System.out.println(dto.getDcode()+" " + dto.getTcode()+ " " +dto.getVcode()+" "+dto.getBcode()+
+                        " "+dto.getOldsvno()+" "+dto.getOldsubno());
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvno(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),dto.getOldsvno());
             }
 
             if (exists) {
@@ -569,10 +573,8 @@ public class TblBtrDataService {
                                 + " and Old Subdivision Number=" + dto.getOldsubno());
             }
         }
-
         return null;
     }
-
     // ---------------- Required Fields Validation ----------------
     private List<String> validateRequiredFields(TblBtrDataDTO dto) {
         List<String> errors = new ArrayList<>();

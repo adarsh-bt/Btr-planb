@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +29,19 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
   Optional<ClusterMaster> findTopByKeyPlotOrderByCreatedAtDesc(KeyPlots keyPlot);
 
   Optional<ClusterMaster> findByKeyPlot(KeyPlots plot);
+
+//  @Query("""
+//    SELECT c FROM ClusterMaster c
+//    WHERE c.zoneId = :zoneId
+//    AND c.landType IN :landTypes
+//    AND c.clusterNumber > :currentClusterNumber
+//    ORDER BY c.clusterNumber ASC
+//""")
+//  List<ClusterMaster> findNextClusterFlexibleLandType(
+//          @Param("zoneId") Integer zoneId,
+//          @Param("landTypes") List<String> landTypes,
+//          @Param("currentClusterNumber") Integer currentClusterNumber
+//  );
 
 //  @Query(
   ////      "SELECT cm FROM ClusterMaster cm "
@@ -116,4 +131,14 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
 
   @Query("SELECT COUNT(c) > 0 FROM ClusterMaster c WHERE c.keyPlot.id = :keyPlotId AND c.status <> 'Not Started'")
   boolean existsByKeyPlotIdAndStatusNotNotStarted(@Param("keyPlotId") UUID keyPlotId);
+
+  @Query("""
+    SELECT cm 
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH kp.btrData
+    WHERE cm.zone = :zone
+    ORDER BY cm.clusterNumber ASC
+""")
+  List<ClusterMaster> findAllByZoneOrderByClusterNumber(@Param("zone") TblMasterZone zone);
 }

@@ -61,5 +61,8 @@ public interface TblMasterZoneRepository extends JpaRepository<TblMasterZone, In
         ORDER BY z.zoneId
     """)
     List<ZoneUserAssignDto> findActiveZonesWithAssignment();
+
+    Page<TblMasterZone> findByZoneNameEnContainingIgnoreCaseOrZoneCodeContainingIgnoreCase(
+            String name, String code, Pageable pageable);
 }
 

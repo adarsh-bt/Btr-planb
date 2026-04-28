@@ -3,6 +3,9 @@ package cdti.aidea.earas.repository.Btr_repo;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,4 +25,8 @@ public interface LocalBodyRepository extends JpaRepository<TblLocalBody, Integer
 
   @Query("SELECT lb FROM TblLocalBody lb WHERE lb.localbodyId IN :lbIds")
   List<TblLocalBody> findAllByLocalbodyIdIn(@Param("lbIds") List<Integer> lbIds);
+
+    Page<TblLocalBody> findByLocalbodyNameEnContainingIgnoreCaseOrLocalbodyCodeContainingIgnoreCase(
+            String name, String code, Pageable pageable);
+
 }

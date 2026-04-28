@@ -5,6 +5,9 @@ import feign.Param;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -44,4 +47,6 @@ public interface TblMasterVillageRepository extends JpaRepository<TblMasterVilla
       @Param("zoneId") Integer zoneId, @Param("localBodyId") Integer localBodyId);
 
   List<TblMasterVillage> findByRevTalukIdAndIsActiveTrue(Integer revTalukId);
+    Page<TblMasterVillage> findByVillageNameEnContainingIgnoreCaseOrVillageCodeApiContainingIgnoreCase(
+            String name, String code, Pageable pageable);
 }

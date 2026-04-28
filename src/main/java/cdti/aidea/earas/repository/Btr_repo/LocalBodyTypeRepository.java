@@ -2,11 +2,15 @@ package cdti.aidea.earas.repository.Btr_repo;
 
 import cdti.aidea.earas.model.Btr_models.Masters.LocalBodyType;
 import java.util.List;
+
+import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LocalBodyTypeRepository extends JpaRepository<LocalBodyType, Long> {
 
-  List<LocalBodyType> findByIdIn(List<Long> ids);
+    List<LocalBodyType> findByIdIn(List<Long> ids);
 }

@@ -246,7 +246,7 @@ public class ClusterService {
                 .orElseThrow(() -> new NoSuchElementException("Zone not found"));
 
         Long zoneKey = Long.valueOf(zone.getZoneId());
-
+System.out.println("zone>>>  "+zoneKey);
         // 2️⃣ Fetch clusters
         List<ClusterMaster> clusters =
                 clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(Math.toIntExact(zoneKey));
@@ -273,7 +273,7 @@ public class ClusterService {
         String cceMessage = cceResult.isFallbackUsed()
                 ? "CCE data not available currently."
                 : null;
-
+System.out.println("ccee "+cceResult);
         Map<Long, Set<String>> cropMap = new HashMap<>();
         for (AvailableCcePlotResponse plot : cceResult.getPlots()) {
             if (plot.getCropId() != null &&
@@ -290,7 +290,21 @@ public class ClusterService {
         for (ClusterMaster cluster : clusters) {
 
             Long clusterId = cluster.getCluMasterId();
+            List<ExternalClusterStatusResponse> list = clusterSeasonMap.get(clusterId);
 
+            if (list != null) {
+                Map<Long, Long> counts = list.stream()
+                        .collect(Collectors.groupingBy(
+                                ExternalClusterStatusResponse::getSeasonId,
+                                Collectors.counting()
+                        ));
+
+                counts.forEach((k, v) -> {
+                    if (v > 1) {
+                        System.out.println("DUPLICATE seasonId: " + k + " count: " + v + " clusterId: " + clusterId);
+                    }
+                });
+            }
             // 🔥 Season handling (ALL edge cases covered)
             List<SeasonStatusDto> seasonStatusList =
                     buildSeasonStatus(clusterId, clusterSeasonMap);

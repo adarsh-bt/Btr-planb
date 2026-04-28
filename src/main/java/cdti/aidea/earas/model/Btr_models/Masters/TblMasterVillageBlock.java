@@ -40,5 +40,5 @@ public class TblMasterVillageBlock {
     private LocalDateTime updatedAt;
 
     @Column(name = "is_active")
-    private LocalDateTime isActive;
+    private Boolean isActive;
 }

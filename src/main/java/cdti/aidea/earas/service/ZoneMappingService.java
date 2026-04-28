@@ -185,7 +185,7 @@ System.out.println("localbodires "+localbodies);
     String talukName = null;
 
     if (zone.getDistrictMaster() != null) {
-      districtName = zone.getDistrictMaster().getDist_name_en();
+      districtName = zone.getDistrictMaster().getDistNameEn();
     }
 
     if (zone.getDesTalukMaster() != null) {

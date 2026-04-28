@@ -1,9 +1,7 @@
 package cdti.aidea.earas.model.Btr_models.Masters;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -20,8 +18,9 @@ import lombok.NoArgsConstructor;
 public class DesTaluk implements Serializable {
 
   @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "des_taluk_id")
-  private int desTalukId;
+  private Integer desTalukId;
 
   @Column(name = "des_taluk_name_en", nullable = false)
   private String desTalukNameEn;

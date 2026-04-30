@@ -1,14 +1,14 @@
 package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.config.FormEntryClient;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
-import cdti.aidea.earas.contract.RequestsDTOs.UpdateEnumeratedKeyAreaDTO;
+import cdti.aidea.earas.contract.FormEntryDto.AvailableCcePlotRemoveRequest;
+import cdti.aidea.earas.contract.FormEntryDto.CcePlotRejectionRequest;
+import cdti.aidea.earas.contract.FormEntryDto.Response;
+import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
-import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -48,123 +49,128 @@ public class KeyPlots_Service {
     private final ClusterLimitLogRepository clusterLimitLogRepository;
     private final TblMasterZoneRepository tblMasterZoneRepository;
     private final KeyplotsLimitLogRepository keyplotsLimitLogRepository;
+    private final CropAssignmentTrailRepository cropAssignmentTrailRepository;
 
     @PersistenceContext private EntityManager entityManager;
 
 //    public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
 //        Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
 //
-////        List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
+    ////        List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZone(zone.get());
 //        List<KeyPlots> allKeyPlots = keyPlotsRepository.findByZoneOrderByClusterNumber(zone.get());
 //
 //        return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
 //    }
-public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
-
-    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
-            .orElseThrow(() -> new RuntimeException("Zone not found"));
-
-    List<ClusterMaster> clusters =
-            clusterMasterRepository.findAllByZoneOrderByClusterNumber(zone);
-
-    return clusters.stream()
-            .map(cm -> mapToKeyPlotDetailsResponse(cm.getKeyPlot(), cm))
-            .collect(Collectors.toList());
-}
-
-    private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(
-            KeyPlots keyPlot,
-            ClusterMaster cm) {
-
-        TblBtrData plot = keyPlot.getBtrData();
-
-        String syNo = plot.getResvno() + "/" + plot.getResbdno();
-        String villageBlock = plot.getBcode();
-        double area = plot.getTotCent();
-        String lbcode = plot.getLbcode();
-
-        // Panchayath
-        String panchayath = localBodyRepository
-                .findByCodeApi(lbcode)
-                .map(TblLocalBody::getLocalbodyNameEn)
-                .orElse(lbcode);
-
-        String landType = keyPlot.getLandType();
-
-        // Village
-        Optional<TblMasterVillage> village =
-                tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
-
-        String villageName = village
-                .map(TblMasterVillage::getVillageNameEn)
-                .orElse("Unknown");
-
-        Integer villageId = village
-                .map(TblMasterVillage::getVillageId)
-                .orElse(null);
-
-        // Side plots
-        List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
-
-        // Cluster limits (can be optimized further by moving outside loop)
-        Optional<ClusterLimitLog> currentActiveOpt =
-                clusterLimitLogRepository.findByInActiveTrue();
-
-        BigDecimal clustermin = currentActiveOpt
-                .map(ClusterLimitLog::getClusterMin)
-                .orElse(null);
-
-        BigDecimal clustermax = currentActiveOpt
-                .map(ClusterLimitLog::getClusterMax)
-                .orElse(null);
-
-        BigDecimal tsoclusterlimit = currentActiveOpt
-                .map(ClusterLimitLog::getTsoApprovalLimit)
-                .orElse(null);
-
-        // Enum area (use cm directly ✅)
-        Optional<ClusterFormData> enumArea =
-                clusterFormDataRepository
-                        .findByPlotAndPlotLabelAndClusterMaster_CluMasterId(
-                                keyPlot.getBtrData(),
-                                "K",
-                                cm.getCluMasterId()
-                        );
-
-        return new KeyPlotDetailsResponse(
-                keyPlot.getId(),
-                plot.getDcode(),
-                plot.getTcode(),
-                cm.getCluMasterId(),                 // ✅ from cm
-                keyPlot.getZone().getZoneId(),
-                cm.getClusterNumber(),               // ✅ ORDER maintained
-                plot.getBtrtype().getBTypeId(),
-                plot.getBtrtype().getBTypeName(),
-                villageName,
-                villageId,
-                villageBlock,
-                panchayath,
-                lbcode,
-                cm.getStatus(),                      // ✅ from cm
-                null,
-                clustermax,
-                clustermin,
-                tsoclusterlimit,
-                syNo,
-                plot.getOwnername(),
-                plot.getAddress(),
-                plot.getWardnumber(),
-                plot.getHouseno(),
-                plot.getTpno(),
-                plot.getTbsubdivisionno(),
-                plot.getOldsvno(),
-                plot.getOldsubno(),
-                area,
-                enumArea.map(ClusterFormData::getEnumeratedArea).orElse(null), // ✅ safe
-                landType,
-                sidePlots
-        );
+    public List<KeyPlotDetailsListResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
+        return clusterMasterRepository.findAllKeyPlotDetails(zoneId);
     }
+//    for speed
+//public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
+//
+//    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
+//            .orElseThrow(() -> new RuntimeException("Zone not found"));
+//
+//    List<ClusterMaster> clusters =
+//            clusterMasterRepository.findAllByZoneOrderByClusterNumber(zone);
+//
+//    return clusters.stream()
+//            .map(cm -> mapToKeyPlotDetailsResponse(cm.getKeyPlot(), cm))
+//            .collect(Collectors.toList());
+//}
+//
+//    private KeyPlotDetailsResponse mapToKeyPlotDetailsResponse(
+//            KeyPlots keyPlot,
+//            ClusterMaster cm) {
+//
+//        TblBtrData plot = keyPlot.getBtrData();
+//
+//        String syNo = plot.getResvno() + "/" + plot.getResbdno();
+//        String villageBlock = plot.getBcode();
+//        double area = plot.getTotCent();
+//        String lbcode = plot.getLbcode();
+//
+//        // Panchayath
+//        String panchayath = localBodyRepository
+//                .findByCodeApi(lbcode)
+//                .map(TblLocalBody::getLocalbodyNameEn)
+//                .orElse(lbcode);
+//
+//        String landType = keyPlot.getLandType();
+//
+//        // Village
+//        Optional<TblMasterVillage> village =
+//                tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+//
+//        String villageName = village
+//                .map(TblMasterVillage::getVillageNameEn)
+//                .orElse("Unknown");
+//
+//        Integer villageId = village
+//                .map(TblMasterVillage::getVillageId)
+//                .orElse(null);
+//
+//        // Side plots
+//        List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
+//
+//        // Cluster limits (can be optimized further by moving outside loop)
+//        Optional<ClusterLimitLog> currentActiveOpt =
+//                clusterLimitLogRepository.findByInActiveTrue();
+//
+//        BigDecimal clustermin = currentActiveOpt
+//                .map(ClusterLimitLog::getClusterMin)
+//                .orElse(null);
+//
+//        BigDecimal clustermax = currentActiveOpt
+//                .map(ClusterLimitLog::getClusterMax)
+//                .orElse(null);
+//
+//        BigDecimal tsoclusterlimit = currentActiveOpt
+//                .map(ClusterLimitLog::getTsoApprovalLimit)
+//                .orElse(null);
+//
+//        // Enum area (use cm directly ✅)
+//        Optional<ClusterFormData> enumArea =
+//                clusterFormDataRepository
+//                        .findByPlotAndPlotLabelAndClusterMaster_CluMasterId(
+//                                keyPlot.getBtrData(),
+//                                "K",
+//                                cm.getCluMasterId()
+//                        );
+//
+//        return new KeyPlotDetailsResponse(
+//                keyPlot.getId(),
+//                plot.getDcode(),
+//                plot.getTcode(),
+//                cm.getCluMasterId(),                 // ✅ from cm
+//                keyPlot.getZone().getZoneId(),
+//                cm.getClusterNumber(),               // ✅ ORDER maintained
+//                plot.getBtrtype().getBTypeId(),
+//                plot.getBtrtype().getBTypeName(),
+//                villageName,
+//                villageId,
+//                villageBlock,
+//                panchayath,
+//                lbcode,
+//                cm.getStatus(),                      // ✅ from cm
+//                null,
+//                clustermax,
+//                clustermin,
+//                tsoclusterlimit,
+//                syNo,
+//                plot.getOwnername(),
+//                plot.getAddress(),
+//                plot.getWardnumber(),
+//                plot.getHouseno(),
+//                plot.getTpno(),
+//                plot.getTbsubdivisionno(),
+//                plot.getOldsvno(),
+//                plot.getOldsubno(),
+//                area,
+//                enumArea.map(ClusterFormData::getEnumeratedArea).orElse(0.0), // ✅ safe
+//                landType,
+//                sidePlots
+//        );
+//    }
 
 //    public Object getExistingKeyPlots(UUID userId,Long zone_id) {
 //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
@@ -1068,11 +1074,13 @@ public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
                         .map(TblLocalBody::getLocalbodyNameEn)
                         .orElse(lbcode); // fallback if name not found
         String landType = keyPlot.getLandType();
-
+System.out.println(">> 1 "+panchayath);
         Optional<TblMasterVillage> village =
                 tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
+        System.out.println(">> 3 "+village);
         Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
         // Fetch related SidePlotDTOs
+        System.out.println(">> 4 "+status);
         List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
         String villageName = village.get().getVillageNameEn();
         Integer villageId = village.get().getVillageId();
@@ -1081,11 +1089,11 @@ public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-        System.out.println("clsuetr  "+cluster);
+        System.out.println(">> 5 "+cluster.get());
 //        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
-        System.out.println("kkk  "+keyPlot.getBtrData()+"  K  "+status.get().getCluMasterId());
+
         Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotAndPlotLabelAndClusterMaster_CluMasterId(keyPlot.getBtrData(),"K",status.get().getCluMasterId());
-System.out.println("enume "+enumArea);
+        System.out.println(">> 1 "+enumArea);
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
@@ -1120,6 +1128,7 @@ System.out.println("enume "+enumArea);
                 sidePlots);
     }
 
+
     private List<SidePlotDTO> fetchSidePlotsForKeyPlot(KeyPlots keyPlot) {
         Optional<ClusterMaster> clusterOpt = clusterMasterRepository.findTopByKeyPlotOrderByCreatedAtDesc(keyPlot);
 
@@ -1132,7 +1141,7 @@ System.out.println("enume "+enumArea);
 //        List<ClusterFormData> formDataList = clusterFormDataRepository.findByClusterMaster(cluster);
         List<ClusterFormData> formDataList =
                 clusterFormDataRepository.findByClusterMasterOrderByDisplayOrderAsc(cluster);
-
+        System.out.println(">>>>  7 "+formDataList);
         // Step 1: Extract unique lsgcodes
         Set<Integer> lsgCodes = formDataList.stream()
                 .map(data -> data.getPlot().getLsgcode())
@@ -1517,28 +1526,105 @@ System.out.println("enume "+enumArea);
         KeyPlots keyPlot = keyPlotsRepository.findById(keyPlotId)
                 .orElseThrow(() -> new RuntimeException("KeyPlot not found"));
 
-        // 🔹 1. Handle cluster
-        clusterMasterRepository.findByKeyPlot_Id(keyPlotId)
-                .ifPresent(cluster -> {
-                    if (!cluster.getStatus().equalsIgnoreCase("Not Started")) {
-                        throw new RuntimeException(
-                                "KeyPlot cannot be deleted because cluster status is: " + cluster.getStatus()
-                        );
-                    }
-                    clusterMasterRepository.delete(cluster);
-                });
+        // 🔹 1. Get single cluster
+        Optional<ClusterMaster> clusterOpt =
+                clusterMasterRepository.findByKeyPlot_Id(keyPlotId);
 
-        // 🔹 2. Get BTR reference (DON’T delete yet)
+        if (clusterOpt.isPresent()) {
+
+            ClusterMaster cluster = clusterOpt.get();
+
+            System.out.println("ss  "+cluster.getCluMasterId());
+            boolean exists = cropAssignmentTrailRepository
+                    .existsByCluster_CluMasterIdAndIsRejectedFalse(cluster.getCluMasterId());
+            System.out.println("exyeee "+exists);
+            if (exists) {
+                throw new RuntimeException(
+                        "Crops exist. Please remove crops first before deleting KeyPlot."
+                );
+            }
+
+            // 🔹 3. Delete ClusterFormData
+            List<ClusterFormData> details =
+                    clusterFormDataRepository.findByClusterMaster(cluster);
+
+            if (!details.isEmpty()) {
+                clusterFormDataRepository.deleteAll(details);
+            }
+
+            // 🔹 4. Delete ClusterMaster
+            clusterMasterRepository.delete(cluster);
+        }
+
+        // 🔹 5. Handle BTR
         TblBtrData btrData = keyPlot.getBtrData();
 
+        // 🔹 6. Delete KeyPlot
         keyPlotsRepository.delete(keyPlot);
 
-        // 🔹 4. Now delete BTR ✅
+        // 🔹 7. Delete BTR
         if (btrData != null) {
             tblBtrDataRepository.delete(btrData);
         }
 
         return "KeyPlot deleted successfully";
+    }
+
+    @Transactional
+    public String removeCropFullFlow(CropAssignmentTrailSaveDto dto) {
+
+        // 🔴 1. VALIDATION
+        if (dto.getCropId() == null || dto.getClusterId() == null) {
+            throw new RuntimeException("CropId and ClusterId are required");
+        }
+
+        if (dto.getCceAvailablePlotId() == null) {
+            throw new RuntimeException("CCE Available Plot ID is required");
+        }
+
+        // 🔴 2. CHECK EXISTENCE (no update yet)
+        CropAssignmentTrail trail = cropAssignmentTrailRepository
+                .findByCropIdAndCluster_CluMasterIdAndIsRejectedFalse(
+                        dto.getCropId(),
+                        dto.getClusterId()
+                )
+                .orElseThrow(() -> new RuntimeException("Active crop assignment not found"));
+
+        // 🔴 3. CALL FORM SERVICE FIRST
+        try {
+            AvailableCcePlotRemoveRequest request =
+                    new AvailableCcePlotRemoveRequest();
+
+            request.setCceAvailablePlotId(dto.getCceAvailablePlotId());
+            request.setRemarks(dto.getRejectionReason());
+            request.setAddedBy(dto.getRejectedBy());
+
+            ResponseEntity<String> response =
+                    formEntryClient.deleteRandomCrop(request);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("Form service deletion failed");
+            }
+
+            System.out.println("Form service response: " + response.getBody());
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("Form service deletion failed");
+            }
+
+        } catch (Exception e) {
+            // ❌ STOP here — DB not touched
+            throw new RuntimeException("Form service failed. Crop not removed.", e);
+        }
+        // 🔴 4. NOW SAFE → UPDATE LOCAL DB
+        trail.setIsRejected(true);
+        trail.setIsCurrentAssignment(false);
+        trail.setRejectionReason(dto.getRejectionReason());
+        trail.setRejectedBy(dto.getRejectedBy());
+        trail.setRejectedAt(LocalDateTime.now());
+        cropAssignmentTrailRepository.save(trail);
+
+        return "Crop removed successfully";
     }
 //    public Object KeyplotsFormation(UUID userId) {
 //        var user = userZoneAssignmentRepositoty.findByUserId(userId);

@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -38,7 +39,7 @@ public class AdminManage {
 
   private final TblMasterZoneRepository tblMasterZoneRepository;
   private final DesTalukRepository desTalukRepository;
-  private final DistrictMasterRepository districtMasterRepository;
+  private final DistrictMasterRepository  districtMasterRepository;
   private final ClusterApprovalLogRepository clusterApprovalLogRepository;
   private final ClusterMasterRepository clusterMasterRepository;
   private final TblBtrTypeRepository tblBtrTypeRepository;
@@ -56,9 +57,10 @@ public class AdminManage {
     private final UserAccessClientService userAccessClientService;
   private final ClusterEditAllowedRepository editAllowedRepository;
   private final TblMasterZoneRepository masterZoneRepository;
-  private final LocalBodyRepository localBodyRepository;
+  private final ZoneLocalbodyBlockMappingRepository zoneLocalbodyBlockMappingRepository;
   private final MasterBlockRepository masterBlockRepository;
-  private  final LocalBodyTypeRepository localBodyTypeRepository;
+  private final LocalBodyRepository localBodyRepository;
+  private final LocalBodyTypeRepository localBodyTypeRepository;
 
   public List<KeyplotsLimitLogResponse> getAllKeyplots() {
     List<KeyplotsLimitLog> entities = repository.findAll();
@@ -896,6 +898,157 @@ System.out.println("request "+ request);
     clusterMasterRepository.save(cluster);
     return saved;
   }
+
+
+  public List<ZoneBlockMappingResponseDto> getBlockMappings(Integer zoneId) {
+
+    Optional<ZoneLocalbodyBlockMapping> optionalMapping =
+            zoneLocalbodyBlockMappingRepository.findByZoneAndIsValid(zoneId, true);
+
+    List<ZoneBlockMappingResponseDto> response = new ArrayList<>();
+
+    if (optionalMapping.isPresent()) {
+      ZoneLocalbodyBlockMapping map = optionalMapping.get();
+
+      ZoneBlockMappingResponseDto dto = new ZoneBlockMappingResponseDto();
+      dto.setId(map.getId());
+      dto.setTypeCode(map.getBlockPanchayatMunicipalArea());
+      dto.setIsActive(map.getIsValid());
+
+      if (map.getBlockPanchayatMunicipalArea() == 1) {
+
+        Optional<MasterBlock> block =
+                masterBlockRepository.findById(map.getBlockDetails());
+
+        dto.setType("Block Panchayat");
+        dto.setName(block.map(MasterBlock::getBlockName).orElse(""));
+        dto.setIsActive(map.getIsValid());
+
+      } else {
+
+        Optional<TblLocalBody> localBody =
+                localBodyRepository.findById(map.getBlockDetails());
+
+        if (localBody.isPresent()) {
+
+          dto.setName(localBody.get().getLocalbodyNameEn());
+
+          Optional<LocalBodyType> type =
+                  localBodyTypeRepository.findById(
+                          (long) localBody.get().getLocalbodyType()
+                  );
+
+          dto.setType(type.map(LocalBodyType::getName).orElse("Local Body"));
+        }
+      }
+
+      response.add(dto);
+    }
+
+    return response;
+  }
+
+  @Transactional
+  public void saveOrUpdateBlockMapping(ZoneBlockMappingRequestDto request) {
+
+    // ✅ 1. Basic Validation
+    if (request.getZoneId() == null) {
+      throw new RuntimeException("Zone ID is required");
+    }
+
+    if (request.getTypeCode() == null) {
+      throw new RuntimeException("Type is required");
+    }
+
+    if (request.getReferenceId() == null) {
+      throw new RuntimeException("Reference ID is required");
+    }
+
+    // ✅ 2. Validate based on type
+    if (request.getTypeCode() == 1) {
+
+      boolean exists = masterBlockRepository.existsById(request.getReferenceId());
+      if (!exists) {
+        throw new RuntimeException("Invalid Block selected");
+      }
+
+    } else {
+
+      boolean exists = localBodyRepository.existsById(request.getReferenceId());
+      if (!exists) {
+        throw new RuntimeException("Invalid Local Body selected");
+      }
+    }
+
+    // ✅ 3. Check existing mapping
+    Optional<ZoneLocalbodyBlockMapping> existing =
+            zoneLocalbodyBlockMappingRepository.findByZoneAndIsValid(
+                    request.getZoneId(), true);
+
+    // 🔁 4. Soft delete old mapping (if exists)
+    if (existing.isPresent()) {
+      ZoneLocalbodyBlockMapping old = existing.get();
+
+      old.setIsValid(false);
+      old.setUpdatedAt(LocalDateTime.now());
+      old.setUpdatedby(request.getUserId());
+
+      zoneLocalbodyBlockMappingRepository.save(old);
+    }
+
+    // ✅ 5. Insert new mapping
+    ZoneLocalbodyBlockMapping entity = new ZoneLocalbodyBlockMapping();
+
+    entity.setZone(request.getZoneId());
+    entity.setBlockPanchayatMunicipalArea(request.getTypeCode());
+    entity.setBlockDetails(request.getReferenceId());
+    entity.setCreatedAt(LocalDateTime.now());
+    entity.setAddedby(request.getUserId());
+    entity.setIsValid(true);
+
+    zoneLocalbodyBlockMappingRepository.save(entity);
+  }
+
+  public List<MasterBlock> getBlocksByDistrict(Integer zoneId) {
+
+    if (zoneId == null) {
+      throw new RuntimeException("Zone ID is required");
+    }
+    Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
+
+    return masterBlockRepository.findByDistrictAndIsValidTrue(zone.get().getDesDistId());
+  }
+
+  public List<TblLocalBody> getLocalBodies(Short typeId, int zonetId) {
+
+    if (typeId == null) {
+      throw new RuntimeException("Type and Zone are required");
+    }
+  Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zonetId);
+    if (zone.isEmpty()){
+      throw new IllegalArgumentException("Zone Id not Match");
+    }
+    return localBodyRepository
+            .findByLocalbodyTypeAndDistIdAndIsActiveTrue(typeId, zone.get().getDesDistId());
+  }
+  @Transactional
+  public void softDeleteBlockMapping(Long id) {
+
+    ZoneLocalbodyBlockMapping mapping =
+            zoneLocalbodyBlockMappingRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Mapping not found"));
+
+    // Already deleted check (optional)
+    if (!mapping.getIsValid()) {
+      return; // already deleted, no action
+    }
+
+    mapping.setIsValid(false);
+    mapping.setUpdatedAt(LocalDateTime.now());
+
+    zoneLocalbodyBlockMappingRepository.save(mapping);
+  }
+
     //To get zone assigned details after interconnection
     public List<ZoneUserAssignDto> getAllZonesWithUsers() {
 

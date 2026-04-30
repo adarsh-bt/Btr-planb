@@ -38,4 +38,5 @@ public class CropAssignmentTrailSaveDto {
   private LocalDateTime rejectedAt;
 
   private LocalDateTime assignedOn;
+  private UUID cceAvailablePlotId;  // ✅ REQUIRED for Feign
 }

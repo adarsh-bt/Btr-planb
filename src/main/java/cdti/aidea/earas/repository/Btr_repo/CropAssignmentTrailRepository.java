@@ -22,4 +22,10 @@ public interface CropAssignmentTrailRepository extends JpaRepository<CropAssignm
 
   long countByCropIdAndIsRejectedTrue(Long cropId);
   Optional<CropAssignmentTrail> findByCropIdAndCluster_CluMasterIdAndIsCurrentAssignmentTrue(Long cropId ,Long clusterId);
+
+  List<CropAssignmentTrail> findByCluster_CluMasterIdAndIsRejectedTrue(Long clusterId);
+
+  boolean existsByCluster_CluMasterIdAndIsRejectedFalse(Long clusterId);
+  Optional<CropAssignmentTrail>
+  findByCropIdAndCluster_CluMasterIdAndIsRejectedFalse(Long cropId, Long clusterId);
 }

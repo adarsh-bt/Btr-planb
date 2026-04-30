@@ -17,7 +17,7 @@ public interface TblMasterVillageRepository extends JpaRepository<TblMasterVilla
   List<TblMasterVillage> findAllById(Iterable<Integer> villageIds);
 
   List<TblMasterVillage> findByLsgCodeIn(Set<Integer> lsgCodes);
-
+  List<TblMasterVillage> findAllByLsgCodeIn(Set<Integer> lsgCodes);
   Optional<TblMasterVillage> findByLsgCode(Integer lsgCode);
 
   Optional<TblMasterVillage> findFirstByLsgCode(Integer lsgCode);

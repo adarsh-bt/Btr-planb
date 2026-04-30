@@ -13,4 +13,13 @@ public class CcePlotRejectionRequest {
   private Long oldClusterId;
   private String reson;
   private UUID userId;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class AvailableCcePlotRemoveRequest {
+        private UUID cceAvailablePlotId;
+        private String remarks;
+        private UUID addedBy;
+    }
 }

@@ -142,12 +142,31 @@ public class TblBtrDataService {
         return response;
     }
 
-
     // ---------------- Save All ----------------
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
         List<ValidationErrorResponse> allErrors = new ArrayList<>();
 
+        //Adding addition code to catch duplication
+        Set<String> seen = new HashSet<>();
+
+        for (TblBtrDataDTO dto : dtoList) {
+
+            String key = dto.getDcode() + "-" + dto.getTcode() + "-" +
+                    dto.getVcode() + "-" + dto.getBcode() + "-" +
+                    dto.getLbcode() + "-" +
+                    (dto.getResvno() != null ? dto.getResvno() : "null") + "-" +
+                    (dto.getResbdno() != null ? dto.getResbdno() : "null");
+
+            if (!seen.add(key)) {
+                allErrors.add(new ValidationErrorResponse(
+                        dto.getResvno(), dto.getResbdno(),
+                        dto.getWardno(), dto.getHouseno(),
+                        dto.getTotCent(),
+                        "Duplicate record in request payload"
+                ));
+            }
+        }
         // Validate all DTOs first
         for (TblBtrDataDTO dto : dtoList) {
             // Required validation
@@ -261,7 +280,7 @@ public class TblBtrDataService {
         keyPlot.setIsRejected(false);
         keyPlot.setStatus(true);
         keyPlot.setLandType(btrData.getLtype());
-        keyPlot.setCreated_by(UUID.randomUUID());
+        keyPlot.setCreated_by(dto.getUser_id());
         keyPlotsRepository.save(keyPlot);
 
         // Get next cluster number
@@ -284,7 +303,7 @@ public class TblBtrDataService {
         clusterFormData.setPlot(btrData);
         clusterFormData.setPlotLabel("K");
         clusterFormData.setEnumeratedArea(btrData.getTotCent());
-        clusterFormData.setCreatedBy(UUID.randomUUID());
+        clusterFormData.setCreatedBy(dto.getUser_id());
         clusterFormData.setStatus(true);
         clusterFormDataRepository.save(clusterFormData);
 
@@ -304,6 +323,10 @@ public class TblBtrDataService {
         entity.setTotCent(dto.getTotCent());
         entity.setResvno(dto.getResvno());
         entity.setResbdno(dto.getResbdno());
+        entity.setCreated_by(dto.getUser_id());
+        entity.setUpdated_by(dto.getUser_id());
+        entity.setInsertionTime(LocalDateTime.now());
+        entity.setUpdationTime(LocalDateTime.now());
 // 🧩 Determine type-based mapping
         if (dto.getBtrtype() != null) {
             long typeId = dto.getBtrtype();

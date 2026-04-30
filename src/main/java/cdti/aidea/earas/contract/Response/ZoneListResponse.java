@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Builder
 //@AllArgsConstructor
 @Getter
@@ -21,9 +23,10 @@ public class ZoneListResponse {
   private int desDistId;
   private String talukName;
   private String districtName;
+  private UUID assignedUserId;
 
   public ZoneListResponse(int zoneId, Integer zoneCode, String zoneNameEn, String zoneNameMal,String zoneType,
-                          int desTalukId, int desDistId, String talukName, String districtName) {
+                          int desTalukId, int desDistId, String talukName, String districtName, UUID assignedUserId) {
     this.zoneId = zoneId;
     this.zoneCode = zoneCode;
     this.zoneNameEn = zoneNameEn;
@@ -33,6 +36,8 @@ public class ZoneListResponse {
     this.desDistId = desDistId;
     this.talukName = talukName;
     this.districtName = districtName;
+    this.assignedUserId = assignedUserId;
+
   }
 
   // Getters and setters (or use Lombok @Data if preferred)

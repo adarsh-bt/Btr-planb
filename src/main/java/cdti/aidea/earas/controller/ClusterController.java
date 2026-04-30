@@ -73,8 +73,6 @@ public class ClusterController {
   }
 
 
-
-
   //    cluster labels for App
   @PostMapping("/cluster-labels")
   public ResponseEntity<Map<String, Object>> getGroupedClusterFormData(
@@ -313,5 +311,11 @@ public class ClusterController {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
               .body(Collections.singletonMap("error", "An internal error occurred: " + e.getMessage()));
     }
+  }
+
+  //have to link with tourdiary
+  @GetMapping("/cluster/{id}")
+  public ClusterTourResponse getCluster(@PathVariable Long id) {
+    return clusterService.getClusterDetails(id);
   }
 }

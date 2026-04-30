@@ -4,10 +4,7 @@ import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.UpdateEnumeratedKeyAreaDTO;
-import cdti.aidea.earas.contract.Response.ClusterFormRowDTO;
-import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
-import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
-import cdti.aidea.earas.contract.Response.SidePlotDTO;
+import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
@@ -61,6 +58,7 @@ public class KeyPlots_Service {
     private final FormEntryClient formEntryClient;
     private final ClusterLimitLogRepository clusterLimitLogRepository;
     private final TblMasterZoneRepository tblMasterZoneRepository;
+    private final KeyplotsLimitLogRepository keyplotsLimitLogRepository;
 
     @PersistenceContext private EntityManager entityManager;
 
@@ -100,12 +98,14 @@ public class KeyPlots_Service {
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+//        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotAndPlotLabelAndClusterMaster_CluMasterId(keyPlot.getBtrData(),"K",status.get().getCluMasterId());
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
                 keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
+                cluster.get().getClusterNumber(),
                 keyPlot.getBtrData().getBtrtype().getBTypeId(),
                 keyPlot.getBtrData().getBtrtype().getBTypeName(),
                 villageName,
@@ -1048,12 +1048,17 @@ public class KeyPlots_Service {
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+        System.out.println("clsuetr  "+cluster);
+//        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
+        System.out.println("kkk  "+keyPlot.getBtrData()+"  K  "+status.get().getCluMasterId());
+        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotAndPlotLabelAndClusterMaster_CluMasterId(keyPlot.getBtrData(),"K",status.get().getCluMasterId());
+System.out.println("enume "+enumArea);
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
                 keyPlot.getBtrData().getTcode(),
                 cluster.get().getCluMasterId(),
+                cluster.get().getClusterNumber(),
                 keyPlot.getBtrData().getBtrtype().getBTypeId(),
                 keyPlot.getBtrData().getBtrtype().getBTypeName(),
                 villageName,
@@ -1090,7 +1095,9 @@ public class KeyPlots_Service {
 
         ClusterMaster cluster = clusterOpt.get();
 
-        List<ClusterFormData> formDataList = clusterFormDataRepository.findByClusterMaster(cluster);
+//        List<ClusterFormData> formDataList = clusterFormDataRepository.findByClusterMaster(cluster);
+        List<ClusterFormData> formDataList =
+                clusterFormDataRepository.findByClusterMasterOrderByDisplayOrderAsc(cluster);
 
         // Step 1: Extract unique lsgcodes
         Set<Integer> lsgCodes = formDataList.stream()
@@ -1109,35 +1116,68 @@ public class KeyPlots_Service {
                 ));
 
         // Step 4: Build grouped map
-        Map<String, List<ClusterFormRowDTO>> grouped = formDataList.stream()
-                .collect(Collectors.groupingBy(
-                        ClusterFormData::getPlotLabel,
-                        Collectors.mapping(data -> {
-                            TblBtrData plot = data.getPlot();
-                            String villageNameMal = lsgcodeToVillageNameMap.getOrDefault(plot.getLsgcode(), "Unknown");
+//        Map<String, List<ClusterFormRowDTO>> grouped = formDataList.stream()
+//                .collect(Collectors.groupingBy(
+//                        ClusterFormData::getPlotLabel,
+//                        Collectors.mapping(data -> {
+//                            TblBtrData plot = data.getPlot();
+//                            String villageNameMal = lsgcodeToVillageNameMap.getOrDefault(plot.getLsgcode(), "Unknown");
+//
+//                            return new ClusterFormRowDTO(
+//                                    data.getCluDetailId(),
+//                                    plot.getId(),
+//                                    Double.valueOf(data.getEnumeratedArea()),
+//                                    plot.getResvno(),
+//                                    plot.getResbdno(),
+//                                    BigDecimal.valueOf(plot.getTotCent())
+//                                            .setScale(2, RoundingMode.HALF_UP)
+//                                            .doubleValue(),
+//                                    plot.getBcode(),
+//                                    villageNameMal,
+//                                    plot.getWardnumber(),
+//                                    plot.getHouseno(),
+//                                    plot.getOwnername(),
+//                                    plot.getAddress(),
+//                                    plot.getTpno(),
+//                                    plot.getTbsubdivisionno(),
+//                                    plot.getOldsvno(),
+//                                    plot.getOldsubno()
+//                            );
+//                        }, Collectors.toList())
+//                ));
+        Map<String, List<ClusterFormRowDTO>> grouped =
+                formDataList.stream()
+                        .collect(Collectors.groupingBy(
+                                ClusterFormData::getPlotLabel,
+                                LinkedHashMap::new,   // ✅ THIS FIXES ORDER
+                                Collectors.mapping(data -> {
+                                    TblBtrData plot = data.getPlot();
+                                    String villageNameMal =
+                                            lsgcodeToVillageNameMap.getOrDefault(plot.getLsgcode(), "Unknown");
 
-                            return new ClusterFormRowDTO(
-                                    data.getCluDetailId(),
-                                    plot.getId(),
-                                    Double.valueOf(data.getEnumeratedArea()),
-                                    plot.getResvno(),
-                                    plot.getResbdno(),
-                                    BigDecimal.valueOf(plot.getTotCent())
-                                            .setScale(2, RoundingMode.HALF_UP)
-                                            .doubleValue(),
-                                    plot.getBcode(),
-                                    villageNameMal,
-                                    plot.getWardnumber(),
-                                    plot.getHouseno(),
-                                    plot.getOwnername(),
-                                    plot.getAddress(),
-                                    plot.getTpno(),
-                                    plot.getTbsubdivisionno(),
-                                    plot.getOldsvno(),
-                                    plot.getOldsubno()
-                            );
-                        }, Collectors.toList())
-                ));
+                                    return new ClusterFormRowDTO(
+                                            data.getCluDetailId(),
+                                            plot.getId(),
+                                            Double.valueOf(data.getEnumeratedArea()),
+                                            plot.getResvno(),
+                                            plot.getResbdno(),
+                                            BigDecimal.valueOf(plot.getTotCent())
+                                                    .setScale(2, RoundingMode.HALF_UP)
+                                                    .doubleValue(),
+                                            plot.getBcode(),
+                                            villageNameMal,
+                                            plot.getWardnumber(),
+                                            plot.getHouseno(),
+                                            plot.getOwnername(),
+                                            plot.getAddress(),
+                                            plot.getTpno(),
+                                            plot.getTbsubdivisionno(),
+                                            plot.getOldsvno(),
+                                            plot.getOldsubno()
+                                    );
+                                }, Collectors.toList())
+                        ));
+
 
         return grouped.entrySet().stream()
                 .map(entry -> new SidePlotDTO(entry.getKey(), entry.getValue()))
@@ -1387,7 +1427,42 @@ public class KeyPlots_Service {
     }
 
 
+    public KeyplotCountResponse getKeyplotsLimitStatus(Integer zoneId) {
 
+        // 1️⃣ Get keyplots limit where in_active = true
+        KeyplotsLimitLog activeLimit =
+                keyplotsLimitLogRepository.findFirstByIsActiveTrueAndIsInActiveTrueOrderByCreatedAtDesc();
+        if (activeLimit != null) {
+            System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
+            System.out.println("system "+keyplotsLimitLogRepository.findByIsInActiveTrueAndIsActiveFalse());
+        }
+        System.out.println("  > Active limit =  "+activeLimit);
+
+        if (activeLimit != null) {
+            System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
+        }
+        if (activeLimit == null) {
+            throw new IllegalStateException(
+                    "No active keyplots limit found (in_active = true)"
+            );
+        }
+
+        Long allowedLimit = activeLimit.getKeyplotsLimit();
+
+        // 2️⃣ Count only VALID keyplots
+        Long usedCount =
+                keyPlotsRepository.countActiveKeyplotsByZone(zoneId);
+        usedCount = (usedCount == null) ? 0L : usedCount;
+        System.out.println(">>>> "+usedCount);
+        // 3️⃣ Remaining count
+        Long remaining = allowedLimit - usedCount;
+        return new KeyplotCountResponse(
+                zoneId,
+                allowedLimit,
+                usedCount,
+                Math.max(remaining, 0)
+        );
+    }
 
 
 //    public Object KeyplotsFormation(UUID userId) {

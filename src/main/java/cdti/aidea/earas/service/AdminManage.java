@@ -1,19 +1,21 @@
 package cdti.aidea.earas.service;
 
+import cdti.aidea.earas.contract.*;
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.Response.*;
-import cdti.aidea.earas.contract.UserAccessDTOs.AssignedUserResponse;
-import cdti.aidea.earas.contract.UserAccessDTOs.UserLoginDetailsResponse;
 import cdti.aidea.earas.model.Btr_models.*;
-import cdti.aidea.earas.model.Btr_models.Masters.DesTaluk;
-import cdti.aidea.earas.model.Btr_models.Masters.DistrictMaster;
-import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -23,6 +25,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @Service
 @RequiredArgsConstructor
@@ -38,11 +42,19 @@ public class AdminManage {
   private final DistrictMasterRepository districtMasterRepository;
   private final ClusterApprovalLogRepository clusterApprovalLogRepository;
   private final ClusterMasterRepository clusterMasterRepository;
-  private final TblSeasonMasterRepository seasonMasterRepository;
-  private final  TblZoneSeasonScheduleRepository scheduleRepository;
-  private final UserAccessClientService userAccessClientService;
+  private final TblBtrTypeRepository tblBtrTypeRepository;
 
   private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
+  private final ZoneRevenueTalukMappingRepository zoneRevenueTalukMappingRepository;
+  private final RevenueTalukRepository revenueTalukRepository;
+  private final TblMasterVillageRepository tblMasterVillageRepository;
+  private final TblMasterVillageBlockRepository tblMasterVillageBlockRepository;
+  private final TblZoneRevenueVillageMappingRepository zoneRevenueVillageMappingRepository;
+  private final TblZoneVillageBlockMappingRepository tblZoneVillageBlockMappingRepository;
+  private final LocalBodyTypeRepository localBodyTypeRepository;
+  private final LocalBodyRepository localBodyRepository;
+  private final MasterBlockRepository masterBlockRepository;
+
 
   public List<KeyplotsLimitLogResponse> getAllKeyplots() {
     List<KeyplotsLimitLog> entities = repository.findAll();
@@ -66,7 +78,7 @@ public class AdminManage {
   public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
     try {
       List<TblMasterZone> zones = null;
-
+      System.out.println("sssss");
       // Decide which ID to use based on the type (Taluk, District, or Directorate)
       if ("Taluk".equalsIgnoreCase(type)) {
         zones = tblMasterZoneRepository.findByDesTalukId(idValue);
@@ -87,27 +99,31 @@ public class AdminManage {
       List<ZoneListResponse> zoneList = zones.stream()
               .map(zone -> {
                 // Fetch taluk
-
-                Optional<DesTaluk> taluk = desTalukRepository.findById(zone.getDesTalukId());
+                Optional<DesTaluk> taluk = desTalukRepository.findById(Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()));
                 String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("Unknown Taluk");
-
-
 
                 // Fetch district
                 Optional<DistrictMaster> district = districtMasterRepository.findById(Long.valueOf(zone.getDistId()));
-                String districtName = district.map(DistrictMaster::getDist_name_en).orElse("Unknown District");
+                String districtName = district.map(DistrictMaster::getDistNameEn).orElse("Unknown District");
 
-                // Build response
+                // Fetch active user assignment
+                Optional<UserZoneAssignment> activeAssignment =
+                        userZoneAssignmentRepositoty.findByTblMasterZoneAndIsActiveTrue(zone);
+
+                UUID assignedUserId = activeAssignment.map(UserZoneAssignment::getUserId).orElse(null);
+
+                // Build response including assigned user
                 return new ZoneListResponse(
                         zone.getZoneId(),
                         zone.getZoneCode(),
                         zone.getZoneNameEn(),
                         zone.getZoneNameMal(),
                         zone.getBtrType().getBtrType(),
-                        zone.getDesTalukId(),
-                        zone.getDesDistId(),
+                        Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()),
+                        zone.getDistrictMaster().getDistId(),
                         talukName,
-                        districtName
+                        districtName,
+                        assignedUserId  // <-- New field added
                 );
               })
               .collect(Collectors.toList());
@@ -122,6 +138,7 @@ public class AdminManage {
 
   public List<ClusterApprovalTableDTO> zoneListForClusters(String type, Integer idValue) {
     List<ClusterApprovalLog> approvalLogs;
+    System.out.println("type " + type + " : " + idValue);
     if ("Taluk".equalsIgnoreCase(type)) {
       approvalLogs = clusterApprovalLogRepository
               .findByZone_DesTalukId(idValue);
@@ -165,7 +182,7 @@ public class AdminManage {
     if (request.getIs_edit() != null && request.getIs_edit()) {
       clusterMaster.setIs_editable(true);
       clusterMaster.setStatus("On Going");
-    }else{
+    } else {
       clusterMaster.setStatus("Completed");
     }
 
@@ -215,7 +232,7 @@ public class AdminManage {
 
     // Taluk
     DesTaluk taluk = desTalukRepository
-            .findById(zone.getDesTalukId())
+            .findById(Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()))
             .orElse(null);
 
     // District
@@ -239,8 +256,8 @@ public class AdminManage {
             taluk != null ? taluk.getDesTalukId() : null,
             taluk != null ? taluk.getDesTalukNameEn() : null,
             // District
-            district != null ? district.getDist_id() : null,
-            district != null ? district.getDist_name_en() : null,
+            district != null ? district.getDistId() : null,
+            district != null ? district.getDistNameEn() : null,
             // Area & status
             log.getTotalArea(),
             log.getInApproved(),
@@ -288,7 +305,7 @@ public class AdminManage {
       // ❗ Prevent duplicate active agri year
       boolean exists = repository.existsByAgriStartYearAndIsActive(agriStart, true);
       if (exists) {
-        throw new RuntimeException("A record already exists for the current agri year: " + agriStart +" To "+agriEnd);
+        throw new RuntimeException("A record already exists for the current agri year: " + agriStart + " To " + agriEnd);
       }
 
       log = new KeyplotsLimitLog();
@@ -378,112 +395,1085 @@ public class AdminManage {
     }
   }
 
-  public List<AdminZoneResponse> getAllZonesWithSeasonDates() {
+  public ZonePageResponse getAllZones(int page, int size) {
 
-    List<TblMasterZone> zones = tblMasterZoneRepository.findAll();
-    List<TblSeasonMaster> activeSeasons = seasonMasterRepository.findByIsActiveTrue();
+    Pageable pageable = PageRequest.of(page, size, Sort.by("zoneId").ascending());
 
-    return zones.stream()
+    Page<TblMasterZone> zonePage = tblMasterZoneRepository.findAll(pageable);
+
+    List<ZoneListResponse> zoneList = zonePage.getContent().stream()
             .map(zone -> {
 
-              Integer zoneId = zone.getZoneId();
+              String talukName = desTalukRepository
+                      .findById(Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()))
+                      .map(DesTaluk::getDesTalukNameEn)
+                      .orElse("Unknown Taluk");
 
-              List<AdminZoneSeasonResponse> seasonResponses =
-                      activeSeasons.stream()
-                              .map(season -> {
+              String districtName = districtMasterRepository
+                      .findById(Long.valueOf(zone.getDistId()))
+                      .map(DistrictMaster::getDistNameEn)
+                      .orElse("Unknown District");
 
-                                LocalDate startDate = season.getDefaultStart();
-                                LocalDate endDate = season.getDefaultEnd();
-                                LocalDate extendedDate = null;
-
-                                Optional<TblZoneSeasonSchedule> scheduleOpt =
-                                        scheduleRepository
-                                                .findByZoneZoneIdAndSeasonIdAndIsActiveTrue(
-                                                        zoneId,
-                                                        season.getId()
-                                                )
-                                                .stream()
-                                                .findFirst();
-
-                                if (scheduleOpt.isPresent()) {
-
-                                  TblZoneSeasonSchedule schedule = scheduleOpt.get();
-
-                                  boolean startChanged =
-                                          !schedule.getStartDate()
-                                                  .equals(season.getDefaultStart());
-
-                                  boolean extendedChanged =
-                                          schedule.getExtendedDate() != null;
-
-                                  if (startChanged && !extendedChanged) {
-                                    startDate = schedule.getStartDate();
-                                    endDate = schedule.getEndDate();
-                                    extendedDate = null;
-                                  } else if (!startChanged && extendedChanged) {
-                                    startDate = season.getDefaultStart();
-                                    endDate = season.getDefaultEnd();
-                                    extendedDate = schedule.getExtendedDate();
-                                  } else if (startChanged && extendedChanged) {
-                                    startDate = schedule.getStartDate();
-                                    endDate = season.getDefaultEnd();
-                                    extendedDate = schedule.getExtendedDate();
-                                  }
-                                }
-
-                                return new AdminZoneSeasonResponse(
-                                        season.getId(),
-                                        season.getSeasonName(),
-                                        startDate,
-                                        endDate,
-                                        extendedDate
-                                );
-                              })
-                              .collect(Collectors.toList());
-
-              return AdminZoneResponse.builder()
-                      .zoneId(zoneId)
-                      .dist_id(zone.getDistId())
-                      .zoneName(zone.getZoneNameEn())
-                      .zone_type_id(zone.getBtrType().getBtrTypeId())
-                      .zone_type_name(zone.getBtrType().getBtrType())
-                      .seasons(seasonResponses)
-                      .build();
+              return new ZoneListResponse(
+                      zone.getZoneId(),
+                      zone.getZoneCode(),
+                      zone.getZoneNameEn(),
+                      zone.getZoneNameMal(),
+                      zone.getBtrType() != null ? zone.getBtrType().getBtrType() : null,
+                      Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()),
+                      zone.getDistrictMaster().getDistId(),
+                      talukName,
+                      districtName,
+                      null
+              );
             })
-            .collect(Collectors.toList());
+            .toList();
+
+    return new ZonePageResponse(
+            zoneList,
+            zonePage.getNumber(),
+            zonePage.getTotalElements(),
+            zonePage.getTotalPages()
+    );
   }
 
-  //To get zone assigned details
-  public List<ZoneUserAssignDto> getAllZonesWithUsers() {
+  public ZoneMappingResponseDTO getZoneDetails(Integer zoneId) {
 
-    List<ZoneUserAssignDto> zones = tblMasterZoneRepository.findActiveZonesWithAssignment ();
+    TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
+            .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-    zones.forEach(zone -> {
+    List<Object[]> rows = zoneRevenueTalukMappingRepository.getZoneHierarchy(zoneId);
 
-      UUID loginId = zone.getAssignedUserLoginId();
+    Map<Integer, TalukDTO> talukMap = new LinkedHashMap<>();
 
-      if (Boolean.TRUE.equals(zone.getIsAssigned()) && loginId != null) {
+    for (Object[] row : rows) {
 
-        UserLoginDetailsResponse userDetails =
-                userAccessClientService.getUserDetails(loginId);
+      Long talukMappingId = row[0] != null ? Long.valueOf(row[0].toString()) : null;
+      Integer talukId = row[1] != null ? Integer.valueOf(row[1].toString()) : null;
+      String talukName = row[2] != null ? row[2].toString() : null;
 
-        AssignedUserResponse assignedUser =
-                AssignedUserResponse.builder()
-                        .userId(userDetails.getUserId())
-                        .name(userDetails.getName())
-                        .designationId(userDetails.getDesignationId())
-                        .designation(userDetails.getDesignation())
-                        .roleId(userDetails.getRoleId())
-                        .roles(userDetails.getRoles())
-                        .build();
+      Long villageMappingId = row[3] != null ? Long.valueOf(row[3].toString()) : null;
+      Integer villageId = row[4] != null ? Integer.valueOf(row[4].toString()) : null;
+      String villageName = row[5] != null ? row[5].toString() : null;
 
-        zone.setAssignedUserId(assignedUser);
+      Long blockMappingId = row[6] != null ? Long.valueOf(row[6].toString()) : null;
+      String blockCode = row[7] != null ? row[7].toString() : null;
 
-      } else {
-        zone.setAssignedUserId(null);
+      TalukDTO talukDTO = talukMap.computeIfAbsent(
+              talukId,
+              id -> new TalukDTO(talukMappingId, talukId, talukName)
+      );
+
+      // If village is null → skip village/block processing
+      if (villageId == null) {
+        continue;
       }
-    });
 
-    return zones;
+      VillageDTO villageDTO = talukDTO.getVillages()
+              .stream()
+              .filter(v -> v.getVillageId().equals(villageId))
+              .findFirst()
+              .orElseGet(() -> {
+
+                VillageDTO newVillage =
+                        new VillageDTO(villageMappingId, villageId, villageName);
+
+                talukDTO.getVillages().add(newVillage);
+                return newVillage;
+
+              });
+
+      if (blockCode != null) {
+
+        boolean exists = villageDTO.getBlocks()
+                .stream()
+                .anyMatch(b -> b.getBlockCode().equals(blockCode));
+
+        if (!exists) {
+          villageDTO.getBlocks().add(
+                  new BlockDTO(blockMappingId, blockCode)
+          );
+        }
+      }
+    }
+
+    return new ZoneMappingResponseDTO(
+            zone.getZoneId(),
+            zone.getZoneNameEn(),
+            zone.getBtrType() != null ? zone.getBtrType().getBtrType() : null,
+            new ArrayList<>(talukMap.values())
+    );
+  }
+
+  public List<TalukDTO> getTaluksByZone(Integer zoneId) {
+
+    TblMasterZone zone = tblMasterZoneRepository
+            .findByZoneIdAndIsActiveTrue(zoneId)
+            .orElseThrow(() -> new RuntimeException("Zone not found"));
+
+    Integer distId = zone.getDistId();
+
+    List<RevTaluk> taluks = revenueTalukRepository
+            .findByDistIdAndIsActiveTrue(distId);
+
+    return taluks.stream()
+            .map(t -> new TalukDTO(
+                    Math.toIntExact(t.getRevTalukId()),
+                    t.getRevTalukNameEn()
+            ))
+            .toList();
+  }
+
+  public List<VillageDTO> getVillages(Integer talukId) {
+
+    List<TblMasterVillage> villages =
+            tblMasterVillageRepository.findByRevTalukIdAndIsActiveTrue(talukId);
+
+    return villages.stream()
+            .map(v -> new VillageDTO(
+                    null,
+                    v.getVillageId(),
+                    v.getVillageNameEn()
+            ))
+            .toList();
+  }
+
+  public List<BlockDTO> getBlocksByVillage(Integer villageId) {
+
+    List<TblMasterVillageBlock> blocks =
+            tblMasterVillageBlockRepository.findByVillageId(villageId);
+
+    return blocks.stream()
+            .map(b -> new BlockDTO(
+                    b.getVillageBlockId().longValue(),
+                    b.getBlockCode()
+            ))
+            .toList();
+  }
+
+
+  @Transactional
+  public void saveZoneMapping(AddZoneMappingRequest request) {
+System.out.println("request "+ request);
+    Integer zoneId = Math.toIntExact(request.getZoneId());
+
+    zoneRevenueTalukMappingRepository
+            .findByZoneAndRevenueTalukAndIsValidTrue(zoneId, request.getTalukId())
+            .orElseGet(() -> {
+
+              ZoneRevenueTalukMapping taluk = new ZoneRevenueTalukMapping();
+              taluk.setZone(zoneId);
+              taluk.setRevenueTaluk(request.getTalukId());
+              taluk.setIsValid(true);
+              taluk.setCreatedAt(LocalDateTime.now());
+              taluk.setAddedBy(request.getUserId());
+              return zoneRevenueTalukMappingRepository.save(taluk);
+            });
+
+    if (request.getVillageId() == null) {
+      return;
+    }
+
+    zoneRevenueVillageMappingRepository
+            .findByZoneAndRevenueVillageAndIsValidTrue(zoneId, request.getVillageId())
+            .orElseGet(() -> {
+
+              TblZoneRevenueVillageMapping village = new TblZoneRevenueVillageMapping();
+              village.setZone(zoneId);
+              village.setRevenueVillage(request.getVillageId());
+              village.setIsValid(true);
+              village.setCreatedAt(LocalDateTime.now());
+              village.setAddedBy(request.getUserId());
+              village.setRevenueTaluk(request.getTalukId());
+
+              return zoneRevenueVillageMappingRepository.save(village);
+            });
+
+    /* AUTO MAP BLOCKS IF NONE PROVIDED */
+
+    if (request.getBlockCodes() == null || request.getBlockCodes().isEmpty()) {
+
+      List<TblMasterVillageBlock> blocks =
+              tblMasterVillageBlockRepository.findByVillageId(request.getVillageId());
+
+      for (TblMasterVillageBlock block : blocks) {
+
+        Integer blockId = block.getVillageBlockId();
+
+        boolean exists =
+                tblZoneVillageBlockMappingRepository
+                        .existsByZoneAndVillageBlockIdAndIsValidTrue(zoneId, blockId);
+
+        if (!exists) {
+
+          TblZoneVillageBlockMapping blockMapping = new TblZoneVillageBlockMapping();
+          blockMapping.setZone(zoneId);
+          blockMapping.setVillageBlockId(blockId);
+          blockMapping.setVillageId(request.getVillageId());
+          blockMapping.setIsValid(true);
+          blockMapping.setCreatedAt(LocalDateTime.now());
+          blockMapping.setAddedBy(request.getUserId());
+
+          tblZoneVillageBlockMappingRepository.save(blockMapping);
+        }
+      }
+
+      return;
+    }
+
+    /* USER SELECTED BLOCKS */
+
+    for (String blockId : request.getBlockCodes()) {
+
+      Integer block = Integer.valueOf(blockId);
+
+      boolean exists =
+              tblZoneVillageBlockMappingRepository
+                      .existsByZoneAndVillageBlockIdAndIsValidTrue(zoneId, block);
+
+      if (!exists) {
+
+        TblZoneVillageBlockMapping blockMapping = new TblZoneVillageBlockMapping();
+        blockMapping.setZone(zoneId);
+        blockMapping.setVillageBlockId(block);
+        blockMapping.setVillageId(request.getVillageId()); // ✅ FIX
+        blockMapping.setIsValid(true);
+        blockMapping.setCreatedAt(LocalDateTime.now());
+        blockMapping.setAddedBy(request.getUserId());
+
+        tblZoneVillageBlockMappingRepository.save(blockMapping);
+      }
+    }
+  }
+
+
+  public TblMasterZone saveOrUpdate(ZoneCreateRequest request) {
+
+    TblMasterZone zone;
+
+    // 🔹 UPDATE
+    if (request.getZoneId() != null) {
+
+      zone = tblMasterZoneRepository.findById(request.getZoneId())
+              .orElseThrow(() -> new RuntimeException("Zone not found with id: " + request.getZoneId()));
+
+      if (request.getZoneNameEn() != null) zone.setZoneNameEn(request.getZoneNameEn());
+      if (request.getZoneNameMal() != null) zone.setZoneNameMal(request.getZoneNameMal());
+      if (request.getIsActive() != null) zone.setIsActive(request.getIsActive());
+      if (request.getZoneUser() != null) zone.setZoneUser(request.getZoneUser());
+
+      if (request.getBtrTypeId() != null) {
+        TblBtrType btr = tblBtrTypeRepository.findById(request.getBtrTypeId())
+                .orElseThrow(() -> new RuntimeException("BTR Type not found with id: " + request.getBtrTypeId()));
+        zone.setBtrType(btr);
+      }
+
+      if (request.getDesDistId() != null) {
+        DistrictMaster district = districtMasterRepository.findById(Long.valueOf(request.getDesDistId()))
+                .orElseThrow(() -> new RuntimeException("District not found with id: " + request.getDesDistId()));
+        zone.setDistId(district.getDistId());
+        zone.setDistrictMaster(district);
+      }
+
+      if (request.getDesTalukId() != null) {
+        DesTaluk taluk = desTalukRepository.findById(request.getDesTalukId())
+                .orElseThrow(() -> new RuntimeException("Taluk not found with id: " + request.getDesTalukId()));
+        zone.setDesTalukId(taluk.getDesTalukId());
+        zone.setDesTalukMaster(taluk);
+      }
+      zone.setUpdatedAt(LocalDateTime.now());
+      zone.setUpdatedBy(request.getUserId());
+    } else {
+      // 🔹 CREATE
+      if (request.getDesDistId() == null) throw new RuntimeException("District ID is required");
+      if (request.getDesTalukId() == null) throw new RuntimeException("Taluk ID is required");
+
+      zone = new TblMasterZone();
+      zone.setZoneCode(request.getZoneCode());
+      zone.setZoneNameEn(request.getZoneNameEn());
+      zone.setZoneNameMal(request.getZoneNameMal());
+      zone.setZoneUser(request.getZoneUser());
+      zone.setAddedBy(request.getUserId());
+      zone.setCreatedAt(LocalDateTime.now());
+      zone.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+
+      // Fetch and set Taluk
+      DesTaluk taluk = desTalukRepository.findById(request.getDesTalukId())
+              .orElseThrow(() -> new RuntimeException("Taluk not found with id: " + request.getDesTalukId()));
+      zone.setDesTalukId(taluk.getDesTalukId());
+      zone.setDesTalukMaster(taluk);
+
+      // Fetch and set District
+      DistrictMaster district = districtMasterRepository.findById(Long.valueOf(request.getDesDistId()))
+              .orElseThrow(() -> new RuntimeException("District not found with id: " + request.getDesDistId()));
+      zone.setDistId(district.getDistId());
+      zone.setDistrictMaster(district);
+
+      // Set BTR Type if provided
+      if (request.getBtrTypeId() != null) {
+        TblBtrType btr = tblBtrTypeRepository.findById(request.getBtrTypeId())
+                .orElseThrow(() -> new RuntimeException("BTR Type not found with id: " + request.getBtrTypeId()));
+        zone.setBtrType(btr);
+      }
+    }
+
+    return tblMasterZoneRepository.save(zone);
+  }
+
+  //saveOrUpdate of DistrictMaster
+  public String saveOrUpdateDistrict(DistrictRequestDTO dto) {
+
+    // 🔹 Duplicate check by English Name
+    Optional<DistrictMaster> duplicate =
+            districtMasterRepository.findByDistNameEnIgnoreCase(dto.getDist_name_en());
+
+    // ==================================================
+    // UPDATE CASE (if ID exists)
+    // ==================================================
+    if (dto.getDist_id() != null) {
+
+      DistrictMaster district = districtMasterRepository
+              .findById(Long.valueOf(dto.getDist_id()))
+              .orElseThrow(() -> new RuntimeException("District ID not found"));
+
+      // Duplicate check excluding same ID
+      if (duplicate.isPresent()
+              && !duplicate.get().getDistId().equals(dto.getDist_id())) {
+        return "District name already exists";
+      }
+
+      district.setDistNameEn(dto.getDist_name_en());
+      district.setDistNameMal(dto.getDist_name_mal());
+      district.setDist_lsg_code(dto.getDist_lsg_code());
+      district.setDist_code(dto.getDist_code());
+      district.setCensus_code_2011(dto.getCensus_code_2011());
+      district.setCensus_code_2001(dto.getCensus_code_2001());
+      district.setDes_dist_code(dto.getDes_dist_code());
+      district.setActive(dto.is_active());
+      district.setUpdatedBy(dto.getAddedBy());
+      district.setUpdatedAt(LocalDateTime.now());
+
+
+      districtMasterRepository.save(district);
+
+      return "District updated successfully";
+    }
+
+    // ==================================================
+    // INSERT CASE (if ID not present)
+    // ==================================================
+    if (duplicate.isPresent()) {
+      return "District name already exists";
+    }
+
+    DistrictMaster district = DistrictMaster.builder()
+            .distNameEn(dto.getDist_name_en())
+            .distNameMal(dto.getDist_name_mal())
+            .des_dist_code(dto.getDes_dist_code())
+            .dist_code(dto.getDist_code())
+            .census_code_2011(dto.getCensus_code_2011())
+            .census_code_2001(dto.getCensus_code_2001())
+            .dist_lsg_code(dto.getDist_lsg_code())
+            .isActive(dto.is_active())
+            .addedBy(dto.getAddedBy())
+            .createdAt(LocalDateTime.now())
+            .build();
+
+    districtMasterRepository.save(district);
+
+    return "District added successfully";
+  }
+
+  //saveOrUpdate of DesTalukMaster
+  public String saveOrUpdate(DesTalukDTO dto) {
+
+    // USER ID VALIDATION
+    if (dto.getUserId() == null ) {
+      return "User Id is required";
+    }
+    //DistId validation
+    if (dto.getDistId() == null ) {
+      return "Dist Id is required";
+    }
+
+
+    // IF ID COMES -> UPDATE
+    if (dto.getDesTalukId() != null) {
+
+      Optional<DesTaluk> existing =
+              desTalukRepository.findById(dto.getDesTalukId());
+
+      if (existing.isPresent()) {
+
+        // UPDATE
+        DesTaluk taluk = existing.get();
+
+        taluk.setDesTalukNameEn(dto.getDesTalukNameEn());
+        taluk.setDesTalukNameMal(dto.getDesTalukNameMal());
+        taluk.setDistId(dto.getDistId());
+        taluk.setActive(dto.getIsActive());
+        taluk.setUpdatedBy(dto.getUserId());
+        taluk.setUpdatedAt(LocalDateTime.now());
+
+        desTalukRepository.save(taluk);
+
+        return "Updated Successfully";
+      }
+    }
+
+    // SAVE NEW (AUTO INCREMENT ID FROM DB)
+    DesTaluk taluk = new DesTaluk();
+
+    taluk.setDesTalukNameEn(dto.getDesTalukNameEn());
+    taluk.setDesTalukNameMal(dto.getDesTalukNameMal());
+    taluk.setDistId(dto.getDistId());
+    taluk.setActive(dto.getIsActive());
+    taluk.setAddedBy(dto.getUserId());
+    // taluk.setUpdatedBy(dto.getUpdatedBy());
+    taluk.setCreatedAt(LocalDateTime.now());
+    taluk.setUpdatedAt(LocalDateTime.now());
+
+    desTalukRepository.save(taluk);
+
+    return "Saved Successfully";
+  }
+  //getAll method of DesTalukMaster
+  public List<DesTalukResponse> getAllDesTalukMaster() {
+
+    List<DesTaluk> destaluk = desTalukRepository.findAll();
+
+    return destaluk.stream()
+            .map(taluk -> DesTalukResponse.builder()
+                    .desTalukId(taluk.getDesTalukId())
+                    .desTalukNameEn(taluk.getDesTalukNameEn())
+                    .desTalukNameMal(taluk.getDesTalukNameMal())
+                    .distId(taluk.getDistId())
+                    .isActive(taluk.isActive())
+                    .addedBy(taluk.getAddedBy())
+                    .build())
+            .toList();
+  }
+
+
+  // saveOrUpdate of RevTalukMaster
+  public String saveOrUpdateRev(RevTalukDTO dto) {
+
+    // USER ID VALIDATION
+    if (dto.getUserId() == null) {
+      return "User Id is required";
+    }
+
+    // UPDATE IF ID EXISTS
+    if (dto.getRevTalukId() != null) {
+
+      Optional<RevTaluk> existing =
+              revenueTalukRepository.findById(dto.getRevTalukId());
+
+      if (existing.isPresent()) {
+
+        RevTaluk taluk = existing.get();
+
+        taluk.setRevTalukNameEn(dto.getRevTalukNameEn());
+        taluk.setRevTalukNameMal(dto.getRevTalukNameMal());
+        taluk.setDistId(dto.getDistId());
+        taluk.setIsActive(dto.getIsActive());
+        taluk.setLsgCode(dto.getLsgCode());
+        taluk.setCensusCode2001(dto.getCensusCode2001());
+        taluk.setCensusCode2011(dto.getCensusCode2011());
+        taluk.setTalukCodeApi(dto.getTalukCodeApi());
+        taluk.setUpdatedBy(dto.getUserId());
+        taluk.setUpdatedAt(LocalDateTime.now());
+
+        revenueTalukRepository.save(taluk);
+
+        return "Updated Successfully";
+      }
+    }
+
+    // SAVE NEW RECORD
+    RevTaluk taluk = new RevTaluk();
+
+    taluk.setRevTalukNameEn(dto.getRevTalukNameEn());
+    taluk.setRevTalukNameMal(dto.getRevTalukNameMal());
+    taluk.setDistId(dto.getDistId());
+    taluk.setIsActive(dto.getIsActive());
+    taluk.setLsgCode(dto.getLsgCode());
+    taluk.setCensusCode2001(dto.getCensusCode2001());
+    taluk.setCensusCode2011(dto.getCensusCode2011());
+    taluk.setTalukCodeApi(dto.getTalukCodeApi());
+    taluk.setCreatedBy(dto.getUserId());
+    // taluk.setUpdatedBy(dto.getUserId());
+    taluk.setCreatedAt(LocalDateTime.now());
+    taluk.setUpdatedAt(LocalDateTime.now());
+
+    revenueTalukRepository.save(taluk);
+
+    return "Saved Successfully";
+  }
+
+
+  // getAll method of RevTalukMaster
+  public List<RevTalukResponse> getAllRevTalukMaster() {
+
+    List<RevTaluk> talukList = revenueTalukRepository.findAll();
+
+    return talukList.stream()
+            .map(taluk -> RevTalukResponse.builder()
+                    .revTalukId(taluk.getRevTalukId())
+                    .revTalukNameEn(taluk.getRevTalukNameEn())
+                    .revTalukNameMal(taluk.getRevTalukNameMal())
+                    .distId(taluk.getDistId())
+                    .isActive(taluk.getIsActive())
+                    .lsgCode(taluk.getLsgCode())
+                    .censusCode2001(taluk.getCensusCode2001())
+                    .censusCode2011(taluk.getCensusCode2011())
+                    .talukCodeApi(taluk.getTalukCodeApi())
+                    .createdBy(taluk.getCreatedBy())
+                    .updatedBy(taluk.getUpdatedBy())
+                    .build())
+            .toList();
+  }
+  // saveOrUpdate of TblMasterVillage
+  public String saveOrUpdateVillage(TblMasterVillageRequest dto) {
+
+    // USER ID VALIDATION
+    if (dto.getUserId() == null) {
+      return "User Id is required";
+    }
+
+    // REQUIRED FIELD VALIDATION
+    if (dto.getVillageNameEn() == null || dto.getVillageNameEn().trim().isEmpty()) {
+      return "Village Name English is required";
+    }
+
+    if (dto.getVillageNameMal() == null || dto.getVillageNameMal().trim().isEmpty()) {
+      return "Village Name Malayalam is required";
+    }
+
+    if (dto.getRevTalukId() == null) {
+      return "Revenue Taluk Id is required";
+    }
+
+    // ✅ REVENUE TALUK ID EXISTENCE VALIDATION
+    if (!revenueTalukRepository.existsById(Long.valueOf(dto.getRevTalukId()))) {
+      return "Invalid Revenue Taluk Id";
+    }
+
+    // UPDATE IF ID EXISTS
+    if (dto.getVillageId() != null) {
+
+      Optional<TblMasterVillage> existing =
+              tblMasterVillageRepository.findById(dto.getVillageId());
+
+      if (existing.isPresent()) {
+
+        TblMasterVillage village = existing.get();
+
+        village.setVillageNameEn(dto.getVillageNameEn());
+        village.setVillageNameMal(dto.getVillageNameMal());
+        village.setRevTalukId(dto.getRevTalukId());
+        village.setVillageCodeApi(dto.getVillageCodeApi());
+        village.setLsgCode(dto.getLsgCode());
+        village.setCensusCode2001(dto.getCensusCode2001());
+        village.setCensusCode2011(dto.getCensusCode2011());
+
+        // update can be true / false
+        village.setIsActive(dto.getIsActive());
+
+        village.setUpdatedBy(dto.getUserId());
+        village.setUpdatedAt(LocalDateTime.now());
+
+        tblMasterVillageRepository.save(village);
+
+        return "Updated Successfully";
+      }
+    }
+
+    // SAVE NEW RECORD
+    TblMasterVillage village = new TblMasterVillage();
+
+    village.setVillageNameEn(dto.getVillageNameEn());
+    village.setVillageNameMal(dto.getVillageNameMal());
+    village.setRevTalukId(dto.getRevTalukId());
+    village.setVillageCodeApi(dto.getVillageCodeApi());
+    village.setLsgCode(dto.getLsgCode());
+    village.setCensusCode2001(dto.getCensusCode2001());
+    village.setCensusCode2011(dto.getCensusCode2011());
+
+    // always true while save
+    village.setIsActive(true);
+
+    village.setAddedBy(dto.getUserId());
+    // village.setUpdatedBy(dto.getUserId());
+    village.setCreatedAt(LocalDateTime.now());
+    village.setUpdatedAt(LocalDateTime.now());
+
+    tblMasterVillageRepository.save(village);
+
+    return "Saved Successfully";
+  }
+
+  // getAll method of TblMasterVillage
+  public List<TblMasterVillageRequest> getAllVillage() {
+
+    List<TblMasterVillage> list =
+            tblMasterVillageRepository.findAll();
+
+    return list.stream()
+            .map(data -> TblMasterVillageRequest.builder()
+                    .villageId(data.getVillageId())
+                    .villageNameEn(data.getVillageNameEn())
+                    .villageNameMal(data.getVillageNameMal())
+                    .revTalukId(data.getRevTalukId())
+                    .isActive(data.getIsActive())
+                    .villageCodeApi(data.getVillageCodeApi())
+                    .lsgCode(data.getLsgCode())
+                    .censusCode2001(data.getCensusCode2001())
+                    .censusCode2011(data.getCensusCode2011())
+                    .userId(data.getAddedBy())
+                    .build())
+            .toList();
+  }
+
+  // saveOrUpdate of TblMasterVillageBlock
+  public String saveOrUpdateVillageBlock(TblMasterVillageBlockRequest dto) {
+
+    // USER ID VALIDATION
+    if (dto.getUserId() == null) {
+      return "User Id is required";
+    }
+
+    // REQUIRED FIELD VALIDATION
+    if (dto.getBlockCode() == null || dto.getBlockCode().trim().isEmpty()) {
+      return "Block Code is required";
+    }
+
+    if (dto.getVillageId() == null) {
+      return "Village Id is required";
+    }
+
+    // CHECK VILLAGE EXISTS (tbl_master_village PK)
+    boolean villageExists =
+            tblMasterVillageRepository.existsById(dto.getVillageId());
+
+    if (!villageExists) {
+      return "Invalid Village Id";
+    }
+
+    // UPDATE IF ID EXISTS
+    if (dto.getVillageBlockId() != null) {
+
+      Optional<TblMasterVillageBlock> existing =
+              tblMasterVillageBlockRepository.findById(dto.getVillageBlockId());
+
+      if (existing.isPresent()) {
+
+        TblMasterVillageBlock block = existing.get();
+
+        block.setBlockCode(dto.getBlockCode());
+        block.setVillageId(dto.getVillageId());
+        block.setUpdatedBy(dto.getUserId());
+        block.setUpdatedAt(LocalDateTime.now());
+
+        // update active status from request
+        block.setIsActive(dto.getIsActive());
+
+        tblMasterVillageBlockRepository.save(block);
+
+        return "Updated Successfully";
+      }
+    }
+
+    // SAVE NEW RECORD
+    TblMasterVillageBlock block = new TblMasterVillageBlock();
+
+    block.setBlockCode(dto.getBlockCode());
+    block.setVillageId(dto.getVillageId());
+    block.setAddedBy(dto.getUserId());
+    // block.setUpdatedBy(dto.getUserId());
+    block.setCreatedAt(LocalDateTime.now());
+    block.setUpdatedAt(LocalDateTime.now());
+
+    // active true while save
+    block.setIsActive(true);
+
+    tblMasterVillageBlockRepository.save(block);
+
+    return "Saved Successfully";
+  }
+
+  //getallVillageBlock
+  public List<TblMasterVillageBlockRequest> getAllVillageBlocks() {
+
+    List<TblMasterVillageBlock> list =
+            tblMasterVillageBlockRepository.findAll();
+
+    return list.stream()
+            .map(data -> TblMasterVillageBlockRequest.builder()
+                    .villageBlockId(data.getVillageBlockId())
+                    .blockCode(data.getBlockCode())
+                    .villageId(data.getVillageId())
+                    .isActive(data.getIsActive())
+                    .userId(data.getAddedBy()) // optional
+                    .build())
+            .toList();
+  }
+
+  //saveOrUpdate TblMasterZone
+  public String saveOrUpdateZone(MasterZoneRequest dto) {
+
+    // =========================
+    // USER VALIDATION
+    // =========================
+    if (dto.getUserId() == null) {
+      return "User Id is required";
+    }
+
+    // =========================
+    // REQUIRED FIELDS
+    // =========================
+    if (dto.getZoneNameEn() == null || dto.getZoneNameEn().trim().isEmpty()) {
+      return "Zone Name English is required";
+    }
+
+    if (dto.getDesTalukId() == null) {
+      return "Des Taluk Id is required";
+    }
+
+    if (dto.getDistId() == null) {
+      return "District Id is required";
+    }
+
+    if (dto.getBtrTypeId() == null) {
+      return "BTR Type Id is required";
+    }
+
+    // =========================
+    // FOREIGN KEY VALIDATIONS
+    // =========================
+
+    // 🔹 Check DesTaluk
+    boolean talukExists =
+            desTalukRepository.existsById(dto.getDesTalukId());
+
+    if (!talukExists) {
+      return "Invalid Des Taluk Id";
+    }
+
+    // 🔹 Check District
+    boolean districtExists =
+            districtMasterRepository.existsById(Long.valueOf(dto.getDistId()));
+
+    if (!districtExists) {
+      return "Invalid District Id";
+    }
+
+    // 🔹 Check BTR Type
+    Optional<TblBtrType> btrType =
+            tblBtrTypeRepository.findById(dto.getBtrTypeId());
+
+    if (btrType.isEmpty()) {
+      return "Invalid BTR Type Id";
+    }
+
+    // =========================
+    // UPDATE CASE
+    // =========================
+    if (dto.getZoneId() != null) {
+
+      Optional<TblMasterZone> existing =
+              tblMasterZoneRepository.findById(dto.getZoneId());
+
+      if (existing.isPresent()) {
+
+        TblMasterZone zone = existing.get();
+
+        zone.setZoneCode(dto.getZoneCode());
+        zone.setZoneNameEn(dto.getZoneNameEn());
+        zone.setZoneNameMal(dto.getZoneNameMal());
+        zone.setDesTalukId(dto.getDesTalukId());
+        zone.setDesDistId(dto.getDesDistId());
+        zone.setDistId(dto.getDistId());
+        zone.setZoneUser(dto.getZoneUser());
+
+        // update active from request
+        zone.setIsActive(dto.getIsActive());
+
+        zone.setBtrType(btrType.get());
+        zone.setUpdatedBy(dto.getUserId());
+        zone.setUpdatedAt(LocalDateTime.now());
+
+        tblMasterZoneRepository.save(zone);
+
+        return "Updated Successfully";
+      }
+    }
+
+    // =========================
+    // SAVE NEW
+    // =========================
+    TblMasterZone zone = new TblMasterZone();
+
+    zone.setZoneCode(dto.getZoneCode());
+    zone.setZoneNameEn(dto.getZoneNameEn());
+    zone.setZoneNameMal(dto.getZoneNameMal());
+    zone.setDesTalukId(dto.getDesTalukId());
+    zone.setDesDistId(dto.getDesDistId());
+    zone.setDistId(dto.getDistId());
+    zone.setZoneUser(dto.getZoneUser());
+
+    // always true while saving
+    zone.setIsActive(true);
+
+    zone.setBtrType(btrType.get());
+    zone.setAddedBy(dto.getUserId());
+    // zone.setUpdatedBy(dto.getUserId());
+    zone.setCreatedAt(LocalDateTime.now());
+    zone.setUpdatedAt(LocalDateTime.now());
+
+    tblMasterZoneRepository.save(zone);
+
+    return "Saved Successfully";
+  }
+
+  //getAll TblMasterZone
+  public List<MasterZoneRequest> getAllZones() {
+
+    List<TblMasterZone> list = tblMasterZoneRepository.findAll();
+
+    return list.stream()
+            .map(data -> MasterZoneRequest.builder()
+                    .zoneId(data.getZoneId())
+                    .zoneCode(data.getZoneCode())
+                    .zoneNameEn(data.getZoneNameEn())
+                    .zoneNameMal(data.getZoneNameMal())
+                    .desTalukId(data.getDesTalukId())
+                    .desDistId(data.getDesDistId())
+                    .distId(data.getDistId())
+                    .btrTypeId(
+                            data.getBtrType() != null
+                                    ? data.getBtrType().getBtrTypeId()
+                                    : null
+                    )
+                    .zoneUser(data.getZoneUser())
+                    .isActive(data.getIsActive())
+                    .userId(data.getAddedBy())
+                    .build())
+            .toList();
+  }
+
+  //saveOrUpdate TblLocalBody
+  public String saveOrUpdateLocalBody(TblLocalBodyRequest dto) {
+
+    // =========================
+    // USER VALIDATION
+    // =========================
+    if (dto.getUserId() == null) {
+      return "User Id is required";
+    }
+
+    // =========================
+    // REQUIRED FIELDS
+    // =========================
+    if (dto.getLocalbodyNameEn() == null || dto.getLocalbodyNameEn().trim().isEmpty()) {
+      return "Local Body Name English is required";
+    }
+
+    if (dto.getDistId() == null) {
+      return "District Id is required";
+    }
+    if (dto.getLocalbodyType() == null) {
+      return "Local Body Type is required";
+    }
+
+    boolean typeExists =
+            localBodyTypeRepository.existsById(Long.valueOf(dto.getLocalbodyType()));
+
+    if (!typeExists) {
+      return "Invalid Local Body Type";
+    }
+
+    // =========================
+    // UPDATE CASE
+    // =========================
+    if (dto.getLocalbodyId() != null) {
+
+      Optional<TblLocalBody> existing =
+              localBodyRepository.findById(dto.getLocalbodyId());
+
+      if (existing.isPresent()) {
+
+        TblLocalBody entity = existing.get();
+
+        entity.setLocalbodyCode(dto.getLocalbodyCode());
+        entity.setDistId(dto.getDistId());
+        entity.setLocalbodyNameEn(dto.getLocalbodyNameEn());
+        entity.setLocalbodyNameMal(dto.getLocalbodyNameMal());
+        entity.setLocalbodyType(dto.getLocalbodyType());
+        entity.setCodeApi(dto.getCodeApi());
+        entity.setLsgCode(dto.getLsgCode());
+
+        // update active from request
+        // entity.setIsActive(dto.getIsActive());
+        entity.setIsActive(
+                dto.getIsActive() != null ? dto.getIsActive() : entity.getIsActive()
+        );
+        entity.setUpdatedBy(dto.getUserId());
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        localBodyRepository.save(entity);
+
+        return "Updated Successfully";
+      }
+    }
+
+    // =========================
+    // SAVE NEW
+    // =========================
+    TblLocalBody entity = new TblLocalBody();
+
+    // entity.setLocalbodyId(dto.getLocalbodyId()); // must be provided OR change to auto-gen
+    entity.setLocalbodyCode(dto.getLocalbodyCode());
+    entity.setDistId(dto.getDistId());
+    entity.setLocalbodyNameEn(dto.getLocalbodyNameEn());
+    entity.setLocalbodyNameMal(dto.getLocalbodyNameMal());
+    entity.setLocalbodyType(dto.getLocalbodyType());
+    entity.setCodeApi(dto.getCodeApi());
+    entity.setLsgCode(dto.getLsgCode());
+
+    // always true while save
+    entity.setIsActive(true);
+
+    entity.setAddedBy(dto.getUserId());
+    //entity.setUpdatedBy(dto.getUserId());
+    entity.setCreatedAt(LocalDateTime.now());
+    entity.setUpdatedAt(LocalDateTime.now());
+
+    localBodyRepository.save(entity);
+
+    return "Saved Successfully";
+  }
+
+  //getAll of TblMasterLocalBody
+  public List<TblLocalBodyRequest> getAllLocalBodies() {
+
+    List<TblLocalBody> list = localBodyRepository.findAll();
+
+    return list.stream()
+            .map(data -> TblLocalBodyRequest.builder()
+                    .localbodyId(data.getLocalbodyId())
+                    .localbodyCode(data.getLocalbodyCode())
+                    .distId(data.getDistId())
+                    .localbodyNameEn(data.getLocalbodyNameEn())
+                    .localbodyNameMal(data.getLocalbodyNameMal())
+                    .localbodyType(data.getLocalbodyType())
+                    .codeApi(data.getCodeApi())
+                    .lsgCode(data.getLsgCode())
+                    .isActive(data.getIsActive())
+                    .userId(data.getAddedBy()) // or updatedBy if needed
+                    .build())
+            .toList();
+  }
+  //saveOrUpdate MasterBlock
+  public String saveOrUpdateBlock(MasterBlockRequest dto) {
+
+    // =========================
+    // USER VALIDATION
+    // =========================
+    if (dto.getUserId() == null) {
+      return "User Id is required";
+    }
+
+    // =========================
+    // REQUIRED FIELDS
+    // =========================
+    if (dto.getBlockName() == null || dto.getBlockName().trim().isEmpty()) {
+      return "Block Name is required";
+    }
+
+    if (dto.getDistrict() == null) {
+      return "District is required";
+    }
+
+    // =========================
+    // UPDATE CASE
+    // =========================
+    if (dto.getBlockId() != null) {
+
+      Optional<MasterBlock> existing =
+              masterBlockRepository.findById(dto.getBlockId());
+
+      if (existing.isPresent()) {
+
+        MasterBlock block = existing.get();
+
+        block.setBlockCode(dto.getBlockCode());
+        block.setBlockName(dto.getBlockName());
+        block.setDistrict(dto.getDistrict());
+        block.setLsgCode(dto.getLsgCode());
+
+        // update value from request
+        block.setValid(dto.isValid());
+
+        block.setUpdatedBy(dto.getUserId());
+        block.setUpdatedAt(LocalDateTime.now());
+
+        masterBlockRepository.save(block);
+
+        return "Updated Successfully";
+      }
+    }
+
+    // =========================
+    // SAVE NEW
+    // =========================
+    MasterBlock block = new MasterBlock();
+
+    block.setBlockCode(dto.getBlockCode());
+    block.setBlockName(dto.getBlockName());
+    block.setDistrict(dto.getDistrict());
+    block.setLsgCode(dto.getLsgCode());
+
+    // default true while saving
+    block.setValid(true);
+
+    block.setAddedBy(dto.getUserId());
+    //  block.setUpdatedBy(dto.getUserId());
+    block.setCreatedAt(LocalDateTime.now());
+    block.setUpdatedAt(LocalDateTime.now());
+
+    masterBlockRepository.save(block);
+
+    return "Saved Successfully";
+  }
+
+  //getAll masterBlock
+  public List<MasterBlockRequest> getAllBlocks() {
+
+    List<MasterBlock> list = masterBlockRepository.findAll();
+
+    return list.stream()
+            .map(data -> MasterBlockRequest.builder()
+                    .blockId(data.getBlockId())
+                    .blockCode(data.getBlockCode())
+                    .blockName(data.getBlockName())
+                    .district(data.getDistrict())
+                    .lsgCode(data.getLsgCode())
+                    .isValid(data.isValid())
+                    .userId(data.getAddedBy()) // optional
+                    .build())
+            .toList();
+  }
+
+  // In AdminManage.java
+  public List<DistrictResponse> getAllDistricts() {
+    List<DistrictMaster> districts = districtMasterRepository.findAll();
+    return districts.stream()
+            .map(d -> DistrictResponse.builder()
+                    .districtId(d.getDistId())
+                    .districtNameEn(d.getDistNameEn())
+                    .districtNameMal(d.getDistNameMal())
+                    .build())
+            .collect(Collectors.toList());
   }
 }

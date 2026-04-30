@@ -84,7 +84,7 @@ public class Zone_Service {
                                               zone.getZoneCode(),
                                               zone.getZoneNameEn(),
                                               zone.getZoneNameMal(), zone.getBtrType().getBtrType(),
-                                              0,0,null,null))
+                                              0,0,null,null,null))
                       .collect(Collectors.toList());
 
       return zoneList;
@@ -127,8 +127,6 @@ public class Zone_Service {
             )
             .collect(Collectors.toList());
   }
-
-
 
   public UserZoneAssignment updateZoneAssignmentStatus(ZoneAssignedRequset request) {
     try {
@@ -573,9 +571,10 @@ public class Zone_Service {
 
     List<Integer> villageIds =
             zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
-
+System.out.println("villages  "+villageIds);
     List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
     List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
+    System.out.println("lsgcode   "+lsgcodes);
     List<String> villages_names =
             villageList.stream().map(TblMasterVillage::getVillageNameEn).toList();
     System.out.println("villages " + villages_names);
@@ -587,14 +586,15 @@ public class Zone_Service {
 
     List<String> LbcodeList =
             allData.stream().map(TblBtrData::getLbcode).distinct().collect(Collectors.toList());
-
+    System.out.println("localbode  "+LbcodeList);
     List<TblLocalBody> localBodies_full = localBodyRepository.findAllByCodeApiIn(LbcodeList);
 
     // Map lbcode -> local body name
+    System.out.println("fulll >>  "+localBodies_full);
     Map<String, String> localBodyNameMap = new HashMap<>();
     localBodies_full.forEach(
             localBody -> localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn()));
-
+System.out.println("localbody  >>>  "+localBodyNameMap);
     // Fetch unique localbody type IDs and load LocalBodyType entities
     List<Short> localbodyTypeIds =
             localBodies_full.stream()
@@ -730,7 +730,7 @@ public class Zone_Service {
     Optional<DistrictMaster> district_name = districtMasterRepository.findById(Long.valueOf(zone.get().getDistId()));
     Optional<DesTaluk> taluk = desTalukRepository.findById(zone.get().getDesTalukId());
 
-    String districtName = district_name.map(DistrictMaster::getDist_name_en).orElse("");
+    String districtName = district_name.map(DistrictMaster::getDistNameEn).orElse("");
     String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("");
     String zoneName = zone.get().getZoneNameEn();
 

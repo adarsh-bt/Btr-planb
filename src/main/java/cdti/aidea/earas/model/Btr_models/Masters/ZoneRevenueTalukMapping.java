@@ -2,6 +2,8 @@ package cdti.aidea.earas.model.Btr_models.Masters;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,4 +37,12 @@ public class ZoneRevenueTalukMapping {
 
   @Column(name = "rev_taluk_name_en")
   private String revTalukNameEn;
+  @Column(name = "added_by")
+  private UUID addedBy;
+
+  @Column(name = "updated_by")
+  private UUID updatedBy;
+
+  @Column(name = "remarks")
+  private String remarks;
 }

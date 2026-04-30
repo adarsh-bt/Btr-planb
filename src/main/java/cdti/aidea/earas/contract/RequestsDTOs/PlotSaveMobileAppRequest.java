@@ -21,8 +21,8 @@ public class PlotSaveMobileAppRequest {
     private Integer svNo;
     private String subNo;
     private Double actual;
-    private Double area;
     private UUID userId;
+    private Double area;
     private Integer old_survey_number;
     private String old_subdivision_number;
     private Integer ward_number;

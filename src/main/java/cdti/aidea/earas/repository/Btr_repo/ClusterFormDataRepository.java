@@ -1,9 +1,8 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
 import cdti.aidea.earas.contract.Response.BtrClusterUsageResponse;
-import cdti.aidea.earas.model.Btr_models.ClusterFormData;
-import cdti.aidea.earas.model.Btr_models.ClusterMaster;
-import cdti.aidea.earas.model.Btr_models.TblBtrData;
+import cdti.aidea.earas.model.Btr_models.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +25,17 @@ public interface ClusterFormDataRepository extends JpaRepository<ClusterFormData
       TblBtrData plot, LocalDateTime localDateTime, LocalDateTime localDateTime1);
 
   Optional<ClusterFormData> findByClusterMasterAndPlotAndPlotLabel(ClusterMaster clusterMaster, TblBtrData plot, String label);
-
+  List<ClusterFormData> findByClusterMasterOrderByDisplayOrderAsc(ClusterMaster clusterMaster);
+  @Query("""
+SELECT MAX(c.displayOrder)
+FROM ClusterFormData c
+WHERE c.clusterMaster = :clusterMaster
+AND c.plotLabel = :plotLabel
+""")
+  Integer findMaxDisplayOrderByLabel(
+          ClusterMaster clusterMaster,
+          String plotLabel
+  );
   @Query("""
     SELECT c.clusterMaster.cluMasterId AS clusterId,
            COALESCE(SUM(c.enumeratedArea), 0)
@@ -86,5 +95,17 @@ public interface ClusterFormDataRepository extends JpaRepository<ClusterFormData
           String plotLabel,
           Long cluMasterId
   );
+  Optional<ClusterFormData> findByPlotAndPlotLabelAndClusterMaster_CluMasterId(
+          TblBtrData plot,
+          String plotLabel,
+          Long cluMasterId
+  );
 
+  @Query("SELECT c FROM ClusterMaster c WHERE c.keyPlot = :keyPlot AND c.is_active = true AND c.isReject = false ORDER BY c.createdAt DESC")
+  List<ClusterMaster> findAllActiveByKeyPlot(@Param("keyPlot") KeyPlots keyPlot);
+
+  default Optional<ClusterMaster> findActiveByKeyPlot(KeyPlots keyPlot) {
+    List<ClusterMaster> clusters = findAllActiveByKeyPlot(keyPlot);
+    return clusters.isEmpty() ? Optional.empty() : Optional.of(clusters.get(0));
+  }
 }

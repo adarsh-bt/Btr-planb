@@ -1,12 +1,12 @@
 package cdti.aidea.earas.model.Btr_models.Masters;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 public class MasterBlock {
 
   @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "block_id")
   private int blockId;
 
@@ -33,4 +34,16 @@ public class MasterBlock {
 
   @Column(name = "lsg_code", nullable = false)
   private int lsgCode;
+
+  @Column(name = "added_by")
+  private UUID addedBy;
+
+  @Column(name = "updated_by")
+  private UUID updatedBy;
+
+  @Column(name = "created_at")
+  private LocalDateTime createdAt;
+
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 }

@@ -17,8 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(name = "tbl_master_zone")
-
-public class  TblMasterZone {
+public class TblMasterZone {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,10 +36,16 @@ public class  TblMasterZone {
   @Column(name = "des_taluk_id", nullable = false)
   private Integer desTalukId;
 
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "des_taluk_id", referencedColumnName = "des_taluk_id", insertable = false, updatable = false)
+  private DesTaluk desTalukMaster;
 
-  @Column(name = "des_dist_id", nullable = false)
+  @Column(name = "des_dist_id", nullable = true)
   private Integer desDistId;
 
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "dist_id", referencedColumnName = "dist_id", insertable = false, updatable = false)
+  private DistrictMaster districtMaster;
 
   @Column(name = "is_active", nullable = false)
   private Boolean isActive;
@@ -51,22 +56,21 @@ public class  TblMasterZone {
   @Column(name = "dist_id")
   private Integer distId;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "btr_type_id", referencedColumnName = "btr_type_id")
   private TblBtrType btrType;
 
-//  @Column(name = "added_by")
-//  private UUID addedBy;
-//
-//  @Column(name = "updated_by")
-//  private UUID updatedBy;
+  @Column(name = "added_by")
+  private UUID addedBy;
 
-//    @Column(name = "created_at")
-//    @CreationTimestamp
-//    private LocalDateTime createdAt;
-//
-//    @Column(name = "updated_at")
-//    @UpdateTimestamp
-//    private LocalDateTime updatedAt;
+  @Column(name = "updated_by")
+  private UUID updatedBy;
 
+  @Column(name = "created_at")
+  @CreationTimestamp
+  private LocalDateTime createdAt;
+
+  @Column(name = "updated_at")
+  @UpdateTimestamp
+  private LocalDateTime updatedAt;
 }

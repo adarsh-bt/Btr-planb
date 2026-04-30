@@ -39,7 +39,7 @@ public class ZoneMappingService {
   public List<LocalbodyDto> getLocalbodiesByZone(Integer zoneId, String lang) {
     List<TblZoneLocalbodyMapping> mappings =
         zoneLbRepo.findAllByZoneAndIsValid(zoneId, Boolean.TRUE);
-
+System.out.println("mappingsss "+mappings);
     if (mappings.isEmpty()) return List.of();
 
     List<Integer> lbIds =
@@ -48,11 +48,11 @@ public class ZoneMappingService {
             .filter(Objects::nonNull)
             .distinct()
             .toList();
-
+System.out.println("sss s s "+lbIds);
     List<TblLocalBody> localbodies = localBodyRepo.findAllById(lbIds);
 
     boolean mal = "mal".equalsIgnoreCase(lang) || "ml".equalsIgnoreCase(lang);
-
+System.out.println("localbodires "+localbodies);
     return localbodies.stream()
         .filter(lb -> Boolean.TRUE.equals(lb.getIsActive()))
         .map(
@@ -132,41 +132,80 @@ public class ZoneMappingService {
   }
 
 
+//  public ZoneBtrTypeResponse getZoneBtrType(Integer zoneId) {
+//    // Find active zone by ID - return null if not found
+//    TblMasterZone zone = zoneRepository.findActiveZoneById(zoneId).orElse(null);
+//
+//    if (zone == null) {
+//      return null; // Zone not found
+//    }
+//
+//    if (zone.getBtrType().getBtrTypeId() == null) {
+//      return null; // BTR Type ID is null
+//    }
+//
+//    // Find BTR type by btrTypeId - return null if not found
+//    TblBtrType btrType = btrTypeRepository.findById(zone.getBtrType().getBtrTypeId()).orElse(null);
+//
+//    if (btrType == null) {
+//      return null; // BTR Type not found
+//    }
+//
+//    // Create and return response
+//    return new ZoneBtrTypeResponse(
+//            zone.getZoneId(),
+//            zone.getZoneNameEn(),
+//            zone.getZoneNameMal(),
+//            zone.getDistId(),
+//            zone.getDesTalukId(),
+//            btrType.getBtrTypeId(),
+//            btrType.getBtrType(),
+//            isBtrType(btrType.getBtrType()),
+//            zone.getIsActive()
+//    );
+//  }
+
   public ZoneBtrTypeResponse getZoneBtrType(Integer zoneId) {
-    // Find active zone by ID - return null if not found
+
     TblMasterZone zone = zoneRepository.findActiveZoneById(zoneId).orElse(null);
 
-    if (zone == null) {
-      return null; // Zone not found
+    if (zone == null || zone.getBtrType() == null || zone.getBtrType().getBtrTypeId() == null) {
+      return null;
     }
 
-    if (zone.getBtrType().getBtrTypeId() == null) {
-      return null; // BTR Type ID is null
-    }
-
-    // Find BTR type by btrTypeId - return null if not found
-    TblBtrType btrType = btrTypeRepository.findById(zone.getBtrType().getBtrTypeId()).orElse(null);
+    TblBtrType btrType = btrTypeRepository
+            .findById(zone.getBtrType().getBtrTypeId())
+            .orElse(null);
 
     if (btrType == null) {
-      return null; // BTR Type not found
+      return null;
     }
 
-    // Create and return response
+    String districtName = null;
+    String talukName = null;
+
+    if (zone.getDistrictMaster() != null) {
+      districtName = zone.getDistrictMaster().getDistNameEn();
+    }
+
+    if (zone.getDesTalukMaster() != null) {
+      talukName = zone.getDesTalukMaster().getDesTalukNameEn();
+    }
+
     return new ZoneBtrTypeResponse(
             zone.getZoneId(),
             zone.getZoneNameEn(),
+            zone.getZoneNameMal(),
+            zone.getDistId(),
+            zone.getDesTalukMaster().getDesTalukId(),
             btrType.getBtrTypeId(),
+            districtName,
+            talukName,
             btrType.getBtrType(),
-            isBtrType(btrType.getBtrType())
+            isBtrType(btrType.getBtrType()),
+            zone.getIsActive()
     );
   }
-
-  /**
-   * Classification logic based on your database:
-   * btrTypeId = 1 (btr) -> true (Show BTR component)
-   * btrTypeId = 2 (non_btr) -> false (Show Non-BTR component)
-   * btrTypeId = 3 (btr_with_minor_circuit) -> true (Show BTR component)
-   */
   private boolean isBtrType(String btrType) {
     return "btr".equalsIgnoreCase(btrType) ||
             "btr_with_minor_circuit".equalsIgnoreCase(btrType);

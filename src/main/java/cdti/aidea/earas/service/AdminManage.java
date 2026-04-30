@@ -39,7 +39,7 @@ public class AdminManage {
 
   private final TblMasterZoneRepository tblMasterZoneRepository;
   private final DesTalukRepository desTalukRepository;
-  private final DistrictMasterRepository  districtMasterRepository;
+  private final DistrictMasterRepository districtMasterRepository;
   private final ClusterApprovalLogRepository clusterApprovalLogRepository;
   private final ClusterMasterRepository clusterMasterRepository;
   private final TblBtrTypeRepository tblBtrTypeRepository;

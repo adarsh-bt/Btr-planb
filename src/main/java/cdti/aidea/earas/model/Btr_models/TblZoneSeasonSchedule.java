@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.UUID;
 
 @Data
@@ -14,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(name = "tbl_zone_season_schedule")
-public class  TblZoneSeasonSchedule {
+public class TblZoneSeasonSchedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "schedule_id")
@@ -62,5 +63,5 @@ public class  TblZoneSeasonSchedule {
     @Column(name = "updated_at", insertable = false)
     private LocalDateTime updatedAt;
 
-}
 
+}

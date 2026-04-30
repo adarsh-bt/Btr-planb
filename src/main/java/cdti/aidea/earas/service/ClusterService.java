@@ -246,7 +246,7 @@ public class ClusterService {
                 .orElseThrow(() -> new NoSuchElementException("Zone not found"));
 
         Long zoneKey = Long.valueOf(zone.getZoneId());
-System.out.println("zone>>>  "+zoneKey);
+
         // 2️⃣ Fetch clusters
         List<ClusterMaster> clusters =
                 clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(Math.toIntExact(zoneKey));
@@ -1823,7 +1823,7 @@ System.out.println("ccee "+cceResult);
         if (newNumbers.size() != updates.size()) {
             throw new RuntimeException("Duplicate cluster numbers in request");
         }
-        
+
         // 🔹 Step 1: Load all clusters
         Map<Long, ClusterMaster> clusterMap = new HashMap<>();
 

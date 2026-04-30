@@ -41,7 +41,7 @@ public class  TblMasterZone {
   @JoinColumn(name = "des_taluk_id", referencedColumnName = "des_taluk_id", insertable = false, updatable = false)
   private DesTaluk desTalukMaster;
 
-  @Column(name = "des_dist_id", nullable = false)
+  @Column(name = "des_dist_id", nullable = true)
   private Integer desDistId;
 
   @ManyToOne(fetch = FetchType.EAGER)

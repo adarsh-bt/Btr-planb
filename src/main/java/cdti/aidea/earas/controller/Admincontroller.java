@@ -132,10 +132,13 @@ System.out.println("id  "+idValue+"  : "+type);
     return ResponseEntity.ok(result);
   }
 
+
   @GetMapping("/taluks")
   public List<TalukDTO> getTaluks(@RequestParam Integer zoneId) {
+
     return adminManage.getTaluksByZone(zoneId);
   }
+
 
   @GetMapping("/villages")
   public List<VillageDTO> getVillages(@RequestParam Integer talukId) {

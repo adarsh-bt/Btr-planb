@@ -21,8 +21,8 @@ public class TblMasterVillageBlock {
     @Column(name = "village_block_id")
     private Integer villageBlockId;
 
-    @Column(name = "block_code", nullable = false)
-    private String blockCode;
+  @Column(name = "block_code", nullable = false)
+  private String blockCode;
 
     @Column(name = "village_id", nullable = false)
     private Integer villageId;

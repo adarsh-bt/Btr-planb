@@ -20,17 +20,17 @@ public class MasterBlock {
     @Column(name = "block_id")
     private int blockId;
 
-    @Column(name = "block_code", nullable = false, length = 32)
-    private String blockCode;
+  @Column(name = "block_code", nullable = false, length = 32)
+  private String blockCode;
 
-    @Column(name = "block_name", nullable = false, length = 255)
-    private String blockName;
+  @Column(name = "block_name", nullable = false, length = 255)
+  private String blockName;
 
-    @Column(name = "district", nullable = false)
-    private int district;
+  @Column(name = "district", nullable = false)
+  private int district;
 
-    @Column(name = "is_valid", nullable = false)
-    private boolean isValid;
+  @Column(name = "is_valid", nullable = false)
+  private boolean isValid;
 
     @Column(name = "lsg_code", nullable = false)
     private int lsgCode;

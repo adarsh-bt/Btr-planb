@@ -1045,8 +1045,10 @@ public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
                                 + " and Old Subdivision Number=" + dto.getOldsubno());
             }
         }
+
         return null;
     }
+
     // ---------------- Required Fields Validation ----------------
     private List<String> validateRequiredFields(TblBtrDataDTO dto) {
         List<String> errors = new ArrayList<>();
@@ -1063,6 +1065,7 @@ public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
 
         return errors;
     }
+
 
     public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
         String cleanedResbdno = dto.getResbdno() != null ?

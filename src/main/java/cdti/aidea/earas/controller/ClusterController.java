@@ -186,25 +186,42 @@ public class ClusterController {
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/save-cluster")
-  public ResponseEntity<?> saveClusterForm(@RequestBody SaveClusterRequestDTO request) {
+//  @PostMapping("/save-cluster")
+//  public ResponseEntity<?> saveClusterForm(@RequestBody SaveClusterRequestDTO request) {
+//    try {
+//      clusterService.saveClusterData(
+//          request.getUserId(),
+//          request.getKeyplotId(),
+//          request.getClusterNo(),
+//          request.getStatus(),
+//          request.getRemarks(),
+//          request.getSidePlots());
+//      return ResponseEntity.ok(
+//          Collections.singletonMap("message", "Cluster form saved successfully."));
+//
+//    } catch (Exception e) {
+//      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//          .body(e.getMessage());
+//    }
+//  }
+@PostMapping("/save-cluster")
+public ResponseEntity<?> saveClusterForm(@RequestBody SaveClusterRequestDTO request) {
     try {
-      clusterService.saveClusterData(
-          request.getUserId(),
-          request.getZoneId(),
-          request.getKeyplotId(),
-          request.getClusterNo(),
-          request.getStatus(),
-          request.getRemarks(),
-          request.getSidePlots());
-      return ResponseEntity.ok(
-          Collections.singletonMap("message", "Cluster form saved successfully."));
+        clusterService.saveClusterData(
+                request.getUserId(),
+                request.getKeyplotId(),
+                request.getClusterNo(),
+                request.getStatus(),
+                request.getRemarks(),
+                request.getSidePlots());
+        return ResponseEntity.ok(
+                Collections.singletonMap("message", "Cluster form saved successfully."));
 
     } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(e.getMessage());
     }
-  }
+}
 
   @DeleteMapping("/delete-sideplot/{id}")
   public ResponseEntity<?> deleteClusterFormData(@PathVariable Long id) {

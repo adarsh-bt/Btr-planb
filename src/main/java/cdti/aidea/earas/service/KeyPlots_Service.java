@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -62,7 +63,9 @@ public class KeyPlots_Service {
 //        return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
 //    }
     public List<KeyPlotDetailsListResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
-        return clusterMasterRepository.findAllKeyPlotDetails(zoneId);
+        return clusterMasterRepository
+                .findAllKeyPlotDetails(zoneId, PageRequest.of(0, 150)) // 🔥 LIMIT
+                .getContent();
     }
 //    for speed
 //public List<KeyPlotDetailsResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
@@ -1074,13 +1077,13 @@ public class KeyPlots_Service {
                         .map(TblLocalBody::getLocalbodyNameEn)
                         .orElse(lbcode); // fallback if name not found
         String landType = keyPlot.getLandType();
-System.out.println(">> 1 "+panchayath);
+
         Optional<TblMasterVillage> village =
                 tblMasterVillageRepository.findByLsgCode(plot.getLsgcode());
-        System.out.println(">> 3 "+village);
+
         Optional<ClusterMaster> status = clusterMasterRepository.findByKeyPlot(keyPlot);
         // Fetch related SidePlotDTOs
-        System.out.println(">> 4 "+status);
+
         List<SidePlotDTO> sidePlots = fetchSidePlotsForKeyPlot(keyPlot);
         String villageName = village.get().getVillageNameEn();
         Integer villageId = village.get().getVillageId();
@@ -1089,11 +1092,11 @@ System.out.println(">> 1 "+panchayath);
         BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
         BigDecimal tsoclusterlimit = currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
         Optional<ClusterMaster> cluster = clusterMasterRepository.findByKeyPlotId(keyPlot.getId());
-        System.out.println(">> 5 "+cluster.get());
+
 //        Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotLabelAndClusterMaster_CluMasterId("K",status.get().getCluMasterId());
 
         Optional<ClusterFormData> enumArea = clusterFormDataRepository.findByPlotAndPlotLabelAndClusterMaster_CluMasterId(keyPlot.getBtrData(),"K",status.get().getCluMasterId());
-        System.out.println(">> 1 "+enumArea);
+
         return new KeyPlotDetailsResponse(
                 keyPlot.getId(),
                 keyPlot.getBtrData().getDcode(),
@@ -1141,7 +1144,7 @@ System.out.println(">> 1 "+panchayath);
 //        List<ClusterFormData> formDataList = clusterFormDataRepository.findByClusterMaster(cluster);
         List<ClusterFormData> formDataList =
                 clusterFormDataRepository.findByClusterMasterOrderByDisplayOrderAsc(cluster);
-        System.out.println(">>>>  7 "+formDataList);
+
         // Step 1: Extract unique lsgcodes
         Set<Integer> lsgCodes = formDataList.stream()
                 .map(data -> data.getPlot().getLsgcode())
@@ -1488,10 +1491,10 @@ System.out.println(">> 1 "+panchayath);
         KeyplotsLimitLog activeLimit =
                 keyplotsLimitLogRepository.findFirstByIsActiveTrueAndIsInActiveTrueOrderByCreatedAtDesc();
         if (activeLimit != null) {
-            System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
+
             System.out.println("system "+keyplotsLimitLogRepository.findByIsInActiveTrueAndIsActiveFalse());
         }
-        System.out.println("  > Active limit =  "+activeLimit);
+
 
         if (activeLimit != null) {
             System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
@@ -1508,7 +1511,7 @@ System.out.println(">> 1 "+panchayath);
         Long usedCount =
                 keyPlotsRepository.countActiveKeyplotsByZone(zoneId);
         usedCount = (usedCount == null) ? 0L : usedCount;
-        System.out.println(">>>> "+usedCount);
+
         // 3️⃣ Remaining count
         Long remaining = allowedLimit - usedCount;
         return new KeyplotCountResponse(
@@ -1537,7 +1540,7 @@ System.out.println(">> 1 "+panchayath);
             System.out.println("ss  "+cluster.getCluMasterId());
             boolean exists = cropAssignmentTrailRepository
                     .existsByCluster_CluMasterIdAndIsRejectedFalse(cluster.getCluMasterId());
-            System.out.println("exyeee "+exists);
+
             if (exists) {
                 throw new RuntimeException(
                         "Crops exist. Please remove crops first before deleting KeyPlot."
@@ -1598,7 +1601,7 @@ System.out.println(">> 1 "+panchayath);
             request.setCceAvailablePlotId(dto.getCceAvailablePlotId());
             request.setRemarks(dto.getRejectionReason());
             request.setAddedBy(dto.getRejectedBy());
-
+System.out.println("response  "+request);
             ResponseEntity<String> response =
                     formEntryClient.deleteRandomCrop(request);
 
@@ -1606,7 +1609,7 @@ System.out.println(">> 1 "+panchayath);
                 throw new RuntimeException("Form service deletion failed");
             }
 
-            System.out.println("Form service response: " + response.getBody());
+
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 throw new RuntimeException("Form service deletion failed");

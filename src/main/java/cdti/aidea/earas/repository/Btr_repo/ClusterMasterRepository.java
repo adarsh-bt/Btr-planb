@@ -1,7 +1,9 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection;
+import cdti.aidea.earas.contract.Projection.ClusterSummaryProjection;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse;
-import cdti.aidea.earas.model.Btr_models.ClusterFormData;
+//import cdti.aidea.earas.model.Btr_models.ClusterFormData;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
 import java.time.LocalDate;
@@ -11,6 +13,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+import cdti.aidea.earas.repository.Btr_repo.projection.ClusterAreaProjection;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,34 +36,6 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
 
   Optional<ClusterMaster> findByKeyPlot(KeyPlots plot);
 
-//  @Query("""
-//    SELECT c FROM ClusterMaster c
-//    WHERE c.zoneId = :zoneId
-//    AND c.landType IN :landTypes
-//    AND c.clusterNumber > :currentClusterNumber
-//    ORDER BY c.clusterNumber ASC
-//""")
-//  List<ClusterMaster> findNextClusterFlexibleLandType(
-//          @Param("zoneId") Integer zoneId,
-//          @Param("landTypes") List<String> landTypes,
-//          @Param("currentClusterNumber") Integer currentClusterNumber
-//  );
-
-//  @Query(
-  ////      "SELECT cm FROM ClusterMaster cm "
-  ////          + "JOIN cm.keyPlot kp "
-  ////          + "JOIN kp.zone.zoneId uza "
-  ////          + "WHERE uza = :zoneId "
-  ////          + "AND (:landType = 'Wet / Dry' OR kp.landType = :landType) "
-  ////          + "AND (:landType = 'Wet / Dry' OR kp.landType IN ('Wet', 'Dry')) "
-  ////          + "AND cm.clusterNumber > :currentClusterNumber "
-  ////          + "AND cm.is_active = true "
-  ////          + "AND cm.isReject = false "
-  ////          + "ORDER BY cm.clusterNumber ASC")
-  ////  List<ClusterMaster> findNextClusterFlexibleLandType(
-  ////      @Param("zoneId") int zoneId,
-  ////      @Param("landType") String landType,
-  ////      @Param("currentClusterNumber") int currentClusterNumber);
 
 
   @Query(
@@ -152,19 +129,15 @@ SELECT new cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse(
     cm.cluMasterId,
     kp.zone.zoneId,
     cm.clusterNumber,
-
     b.id,
     bt.bTypeName,
-
     COALESCE(v.villageNameEn, 'Unknown'),
     v.villageId,
     b.bcode,
     COALESCE(lb.localbodyNameEn, b.lbcode),
     b.lbcode,
-
     cm.status,
     cm.is_editable,
-
     CONCAT(b.resvno, '/', b.resbdno),
     b.ownername,
     b.address,
@@ -174,10 +147,8 @@ SELECT new cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse(
     b.tbsubdivisionno,
     b.oldsvno,
     b.oldsubno,
-
     b.totCent,
     COALESCE(cfd.enumeratedArea, 0.0),
-
     kp.landType
 )
 FROM ClusterMaster cm
@@ -193,7 +164,10 @@ LEFT JOIN ClusterFormData cfd
 WHERE cm.zone.zoneId = :zoneId
 ORDER BY cm.clusterNumber
 """)
-  List<KeyPlotDetailsListResponse> findAllKeyPlotDetails(@Param("zoneId") Integer zoneId);
+  Page<KeyPlotDetailsListResponse> findAllKeyPlotDetails(
+          @Param("zoneId") Integer zoneId,
+          Pageable pageable
+  );
 
   @Query("""
 SELECT cm FROM ClusterMaster cm
@@ -203,4 +177,85 @@ WHERE cm.zone.zoneId = :zoneId
 AND cm.isReject = false
 """)
   List<ClusterMaster> findAllWithDetails(@Param("zoneId") Integer zoneId);
+
+
+  @Query("""
+SELECT new cdti.aidea.earas.contract.Projection.ClusterSummaryProjection(
+
+    cm.cluMasterId,
+    cm.clusterNumber,
+
+    kp.id,
+    kp.landType,
+
+    COALESCE(v.villageNameEn, 'Village not found'),
+    b.vcode,
+
+    COALESCE(lb.localbodyNameEn, 'Local body not found'),
+    COALESCE(lbt.name, 'Unknown'),
+    b.lbcode,
+
+    b.bcode,
+    CONCAT(b.resvno, '/', b.resbdno),
+
+    cm.status
+)
+FROM ClusterMaster cm
+JOIN cm.keyPlot kp
+JOIN kp.btrData b
+
+LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
+LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
+LEFT JOIN LocalBodyType lbt ON lbt.id = lb.localbodyType
+
+WHERE cm.zone.zoneId = :zoneId
+AND cm.isReject = false
+
+ORDER BY cm.clusterNumber
+""")
+  List<ClusterSummaryProjection> findClusterSummary(@Param("zoneId") Integer zoneId);
+  @Query("""
+SELECT cfd.clusterMaster.cluMasterId as clusterId,
+       SUM(cfd.enumeratedArea) as totalArea
+FROM ClusterFormData cfd
+WHERE cfd.clusterMaster.cluMasterId IN :clusterIds
+GROUP BY cfd.clusterMaster.cluMasterId
+""")
+  List<ClusterAreaProjection> findTotalAreaByClusterIds(List<Long> clusterIds);
+
+  @Query("""
+SELECT new cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection(
+
+    cm.cluMasterId,
+    cm.clusterNumber,
+
+    kp.id,
+    kp.landType,
+
+    COALESCE(v.villageNameEn, 'Village not found'),
+    b.vcode,
+
+    COALESCE(lb.localbodyNameEn, 'Local body not found'),
+    COALESCE(lbt.name, 'Unknown'),
+    b.lbcode,
+
+    b.bcode,
+    CONCAT(b.resvno, '/', b.resbdno),
+
+    b.totCent
+)
+FROM ClusterMaster cm
+JOIN cm.keyPlot kp
+JOIN kp.btrData b
+
+LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
+LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
+LEFT JOIN LocalBodyType lbt ON lbt.id = lb.localbodyType
+
+WHERE cm.zone.zoneId = :zoneId
+AND cm.isReject = false
+
+ORDER BY cm.clusterNumber
+""")
+  List<ClusterSummaryFastProjection> getClusterSummaryFast(@Param("zoneId") Integer zoneId);
 }

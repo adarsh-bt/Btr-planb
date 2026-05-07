@@ -39,7 +39,7 @@ public class ZoneMappingService {
   public List<LocalbodyDto> getLocalbodiesByZone(Integer zoneId, String lang) {
     List<TblZoneLocalbodyMapping> mappings =
         zoneLbRepo.findAllByZoneAndIsValid(zoneId, Boolean.TRUE);
-System.out.println("mappingsss "+mappings);
+
     if (mappings.isEmpty()) return List.of();
 
     List<Integer> lbIds =
@@ -48,7 +48,7 @@ System.out.println("mappingsss "+mappings);
             .filter(Objects::nonNull)
             .distinct()
             .toList();
-System.out.println("sss s s "+lbIds);
+
     List<TblLocalBody> localbodies = localBodyRepo.findAllById(lbIds);
 
     boolean mal = "mal".equalsIgnoreCase(lang) || "ml".equalsIgnoreCase(lang);

@@ -1546,7 +1546,7 @@ public class KeyPlots_Service {
                         "Crops exist. Please remove crops first before deleting KeyPlot."
                 );
             }
-
+System.out.println(">>>  "+cluster.getCluMasterId());
             // 🔹 3. Delete ClusterFormData
             List<ClusterFormData> details =
                     clusterFormDataRepository.findByClusterMaster(cluster);

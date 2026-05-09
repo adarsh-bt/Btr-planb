@@ -203,4 +203,108 @@ WHERE cm.zone.zoneId = :zoneId
 AND cm.isReject = false
 """)
   List<ClusterMaster> findAllWithDetails(@Param("zoneId") Integer zoneId);
+
+  //Report Generation
+//  @Query("""
+//        SELECT cm
+//        FROM ClusterMaster cm
+//        JOIN FETCH cm.keyPlot kp
+//        JOIN FETCH cm.zone z
+//        LEFT JOIN FETCH z.districtMaster dm
+//
+//        WHERE
+//        (:landType IS NULL
+//            OR LOWER(kp.landType) = LOWER(:landType))
+//
+//        AND
+//        (
+//            :startDate IS NULL
+//            OR kp.selectedDate >= :startDate
+//        )
+//
+//        AND
+//        (
+//            :endDate IS NULL
+//            OR kp.selectedDate <= :endDate
+//        )
+//    """)
+//  List<ClusterMaster> getDashboardData(
+//
+//          @Param("landType")
+//          String landType,
+//
+//          @Param("startDate")
+//          LocalDate startDate,
+//
+//          @Param("endDate")
+//          LocalDate endDate
+//  );
+//  @Query("""
+//    SELECT cm
+//    FROM ClusterMaster cm
+//    JOIN FETCH cm.keyPlot kp
+//    JOIN FETCH cm.zone z
+//    LEFT JOIN FETCH z.districtMaster
+//
+//    WHERE
+//    (:landType IS NULL
+//    OR UPPER(CAST(kp.landType as string)) = UPPER(:landType))
+//
+//    AND
+//    (
+//        :startDate IS NULL
+//        OR kp.selectedDate >= :startDate
+//    )
+//
+//    AND
+//    (
+//        :endDate IS NULL
+//        OR kp.selectedDate <= :endDate
+//    )
+//""")
+//  List<ClusterMaster> getDashboardData(
+//
+//          @Param("landType")
+//          String landType,
+//
+//          @Param("startDate")
+//          LocalDate startDate,
+//
+//          @Param("endDate")
+//          LocalDate endDate
+//  );
+  @Query("""
+    SELECT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    LEFT JOIN FETCH z.districtMaster
+
+    WHERE
+    (
+                      :landType IS NULL
+                        OR TRIM(UPPER(kp.landType)) = TRIM(UPPER(:landType))
+                  )
+
+    AND
+    (
+        kp.selectedDate >= COALESCE(:startDate, kp.selectedDate)
+    )
+
+    AND
+    (
+        kp.selectedDate <= COALESCE(:endDate, kp.selectedDate)
+    )
+""")
+  List<ClusterMaster> getDashboardData(
+
+          @Param("landType")
+          String landType,
+
+          @Param("startDate")
+          LocalDate startDate,
+
+          @Param("endDate")
+          LocalDate endDate
+  );
 }

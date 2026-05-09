@@ -209,6 +209,7 @@ public ResponseEntity<?> saveClusterForm(@RequestBody SaveClusterRequestDTO requ
     try {
         clusterService.saveClusterData(
                 request.getUserId(),
+                request.getZoneId(),
                 request.getKeyplotId(),
                 request.getClusterNo(),
                 request.getStatus(),

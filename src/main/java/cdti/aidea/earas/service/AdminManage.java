@@ -1145,6 +1145,17 @@ System.out.println("request "+ request);
 
         return "District added successfully";
     }
+    //getAll Districts
+    public List<DistrictResponse> getAllDistricts() {
+        List<DistrictMaster> districts = districtMasterRepository.findAll();
+        return districts.stream()
+                .map(d -> DistrictResponse.builder()
+                        .districtId(d.getDistId())
+                        .districtNameEn(d.getDistNameEn())
+                        .districtNameMal(d.getDistNameMal())
+                        .build())
+                .collect(Collectors.toList());
+    }
 
     //saveOrUpdate of DesTalukMaster
     public String saveOrUpdate(DesTalukDTO dto) {

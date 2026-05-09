@@ -347,7 +347,11 @@ System.out.println("id  "+idValue+"  : "+type);
     public ResponseEntity<String> saveDistrict(@RequestBody DistrictRequestDTO dto) {
         return ResponseEntity.ok(adminManage.saveOrUpdateDistrict(dto));
     }
-
+//getAll Districts
+@GetMapping("/districts")
+public ResponseEntity<List<DistrictResponse>> getAllDistricts() {
+    return ResponseEntity.ok(adminManage.getAllDistricts());
+}
     //saveOrUpdate in DesTaluk
     @PostMapping("/saveOrUpdate")
     public String saveOrUpdate(@RequestBody DesTalukDTO dto) {

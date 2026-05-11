@@ -20,5 +20,5 @@ public class ClusterReportResponse {
 
     private Long underView ;
 
-    private Map<String, DistrictClusterStatusResponse> allDistricts;
+    private Map<String, SubDetailsClusterStatusResponse> allSubDetails;
 }

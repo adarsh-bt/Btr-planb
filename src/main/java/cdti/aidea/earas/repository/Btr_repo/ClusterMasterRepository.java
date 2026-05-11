@@ -205,64 +205,73 @@ AND cm.isReject = false
   List<ClusterMaster> findAllWithDetails(@Param("zoneId") Integer zoneId);
 
   //Report Generation
-//  @Query("""
-//        SELECT cm
-//        FROM ClusterMaster cm
-//        JOIN FETCH cm.keyPlot kp
-//        JOIN FETCH cm.zone z
-//        LEFT JOIN FETCH z.districtMaster dm
-//
-//        WHERE
-//        (:landType IS NULL
-//            OR LOWER(kp.landType) = LOWER(:landType))
-//
-//        AND
-//        (
-//            :startDate IS NULL
-//            OR kp.selectedDate >= :startDate
-//        )
-//
-//        AND
-//        (
-//            :endDate IS NULL
-//            OR kp.selectedDate <= :endDate
-//        )
-//    """)
-//  List<ClusterMaster> getDashboardData(
-//
-//          @Param("landType")
-//          String landType,
-//
-//          @Param("startDate")
-//          LocalDate startDate,
-//
-//          @Param("endDate")
-//          LocalDate endDate
-//  );
+    //state and district wise list
+    @Query("""
+    SELECT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    LEFT JOIN FETCH z.districtMaster
+
+    WHERE
+    (
+        :landType IS NULL
+        OR kp.landType = :landType
+    )
+
+    AND
+    (
+        CAST(:startDate AS timestamp) IS NULL
+        OR cm.createdAt >= :startDate
+    )
+
+    AND
+    (
+        CAST(:endDate AS timestamp) IS NULL
+        OR cm.createdAt <= :endDate
+    )
+""")
+    List<ClusterMaster> getDashboardData(
+
+            @Param("landType")
+            String landType,
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
+  //based on districtId district and talukwise status list
 //  @Query("""
 //    SELECT cm
 //    FROM ClusterMaster cm
 //    JOIN FETCH cm.keyPlot kp
 //    JOIN FETCH cm.zone z
-//    LEFT JOIN FETCH z.districtMaster
+//    JOIN FETCH z.desTalukMaster dt
 //
-//    WHERE
-//    (:landType IS NULL
-//    OR UPPER(CAST(kp.landType as string)) = UPPER(:landType))
+//    WHERE z.distId = :districtId
 //
 //    AND
 //    (
-//        :startDate IS NULL
-//        OR kp.selectedDate >= :startDate
+//        :landType IS NULL
+//        OR kp.landType = :landType
 //    )
 //
 //    AND
 //    (
-//        :endDate IS NULL
-//        OR kp.selectedDate <= :endDate
+//        kp.selectedDate >= COALESCE(:startDate, kp.selectedDate)
+//    )
+//
+//    AND
+//    (
+//        kp.selectedDate <= COALESCE(:endDate, kp.selectedDate)
 //    )
 //""")
-//  List<ClusterMaster> getDashboardData(
+//  List<ClusterMaster> getTalukWiseDashboardData(
+//
+//          @Param("districtId")
+//          Integer districtId,
 //
 //          @Param("landType")
 //          String landType,
@@ -278,33 +287,40 @@ AND cm.isReject = false
     FROM ClusterMaster cm
     JOIN FETCH cm.keyPlot kp
     JOIN FETCH cm.zone z
-    LEFT JOIN FETCH z.districtMaster
+    JOIN FETCH z.desTalukMaster dt
 
-    WHERE
-    (
-                      :landType IS NULL
-                        OR TRIM(UPPER(kp.landType)) = TRIM(UPPER(:landType))
-                  )
+    WHERE z.distId = :districtId
 
     AND
     (
-        kp.selectedDate >= COALESCE(:startDate, kp.selectedDate)
+        :landType IS NULL
+        OR kp.landType = :landType
     )
 
     AND
     (
-        kp.selectedDate <= COALESCE(:endDate, kp.selectedDate)
+        CAST(:startDate AS timestamp) IS NULL
+        OR cm.createdAt >= :startDate
+    )
+
+    AND
+    (
+        CAST(:endDate AS timestamp) IS NULL
+        OR cm.createdAt <= :endDate
     )
 """)
-  List<ClusterMaster> getDashboardData(
+  List<ClusterMaster> getTalukWiseDashboardData(
+
+          @Param("districtId")
+          Integer districtId,
 
           @Param("landType")
           String landType,
 
           @Param("startDate")
-          LocalDate startDate,
+          LocalDateTime startDate,
 
           @Param("endDate")
-          LocalDate endDate
+          LocalDateTime endDate
   );
 }

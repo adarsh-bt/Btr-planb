@@ -37,4 +37,31 @@ public class ReportController {
 
         );
     }
+
+    //based on districtId talukwise status list
+    @GetMapping("/clusters/district/taluk-wise")
+    public ClusterReportResponse getTalukWiseDashboard(
+
+            @RequestParam
+            Integer districtId,
+
+            @RequestParam(required = false)
+            String landType,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "yyyy-MM")
+            YearMonth startMonth,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "yyyy-MM")
+            YearMonth endMonth
+    ) {
+
+        return reportService.getTalukWiseDashboardData(
+                districtId,
+                landType,
+                startMonth,
+                endMonth
+        );
+    }
 }

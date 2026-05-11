@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DistrictClusterStatusResponse {
+public class SubDetailsClusterStatusResponse {
+    private Long id;
+
     private Long completed ;
 
     private Long ongoing ;

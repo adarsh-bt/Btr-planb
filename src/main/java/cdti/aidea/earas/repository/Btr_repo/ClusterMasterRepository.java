@@ -204,22 +204,17 @@ AND cm.isReject = false
 """)
   List<ClusterMaster> findAllWithDetails(@Param("zoneId") Integer zoneId);
 
-  //Report Generation
+  //Report Generation Status of Cluster details
+
     //state and district wise list
-    @Query("""
-    SELECT cm
+  @Query("""
+    SELECT DISTINCT cm
     FROM ClusterMaster cm
     JOIN FETCH cm.keyPlot kp
     JOIN FETCH cm.zone z
     LEFT JOIN FETCH z.districtMaster
 
     WHERE
-    (
-        :landType IS NULL
-        OR kp.landType = :landType
-    )
-
-    AND
     (
         CAST(:startDate AS timestamp) IS NULL
         OR cm.createdAt >= :startDate
@@ -231,72 +226,25 @@ AND cm.isReject = false
         OR cm.createdAt <= :endDate
     )
 """)
-    List<ClusterMaster> getDashboardData(
+  List<ClusterMaster> getDashboardData(
 
-            @Param("landType")
-            String landType,
+          @Param("startDate")
+          LocalDateTime startDate,
 
-            @Param("startDate")
-            LocalDateTime startDate,
+          @Param("endDate")
+          LocalDateTime endDate
+  );
 
-            @Param("endDate")
-            LocalDateTime endDate
-    );
   //based on districtId district and talukwise status list
-//  @Query("""
-//    SELECT cm
-//    FROM ClusterMaster cm
-//    JOIN FETCH cm.keyPlot kp
-//    JOIN FETCH cm.zone z
-//    JOIN FETCH z.desTalukMaster dt
-//
-//    WHERE z.distId = :districtId
-//
-//    AND
-//    (
-//        :landType IS NULL
-//        OR kp.landType = :landType
-//    )
-//
-//    AND
-//    (
-//        kp.selectedDate >= COALESCE(:startDate, kp.selectedDate)
-//    )
-//
-//    AND
-//    (
-//        kp.selectedDate <= COALESCE(:endDate, kp.selectedDate)
-//    )
-//""")
-//  List<ClusterMaster> getTalukWiseDashboardData(
-//
-//          @Param("districtId")
-//          Integer districtId,
-//
-//          @Param("landType")
-//          String landType,
-//
-//          @Param("startDate")
-//          LocalDate startDate,
-//
-//          @Param("endDate")
-//          LocalDate endDate
-//  );
   @Query("""
-    SELECT cm
+    SELECT DISTINCT cm
     FROM ClusterMaster cm
     JOIN FETCH cm.keyPlot kp
     JOIN FETCH cm.zone z
     JOIN FETCH z.desTalukMaster dt
 
     WHERE z.distId = :districtId
-
-    AND
-    (
-        :landType IS NULL
-        OR kp.landType = :landType
-    )
-
+  
     AND
     (
         CAST(:startDate AS timestamp) IS NULL
@@ -314,13 +262,44 @@ AND cm.isReject = false
           @Param("districtId")
           Integer districtId,
 
-          @Param("landType")
-          String landType,
-
           @Param("startDate")
           LocalDateTime startDate,
 
           @Param("endDate")
           LocalDateTime endDate
   );
+
+  //based on taluk id gets details of zone status
+    @Query("""
+    SELECT DISTINCT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    JOIN FETCH z.desTalukMaster dt
+
+    WHERE z.desTalukId = :talukId
+
+    AND
+    (
+        CAST(:startDate AS timestamp) IS NULL
+        OR cm.createdAt >= :startDate
+    )
+
+    AND
+    (
+        CAST(:endDate AS timestamp) IS NULL
+        OR cm.createdAt <= :endDate
+    )
+""")
+    List<ClusterMaster> getZoneWiseDashboardData(
+
+            @Param("talukId")
+            Integer talukId,
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
 }

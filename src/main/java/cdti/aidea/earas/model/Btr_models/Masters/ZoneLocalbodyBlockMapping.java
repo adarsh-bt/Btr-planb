@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "tbl_zone_localbody_block_mapping")
-public class ZoneLocalbodyBlockMapping {
+public class  ZoneLocalbodyBlockMapping {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

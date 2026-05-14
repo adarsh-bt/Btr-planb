@@ -8,13 +8,22 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SubDetailsClusterStatusResponse {
+
     private Long id;
 
-    private Long completed ;
+    private Long dryCompleted ;
 
-    private Long ongoing ;
+    private Long dryOngoing ;
 
-    private Long notStarted ;
+    private Long dryNotStarted ;
 
-    private Long underView ;
+    private Long dryUnderView ;
+
+    private Long wetCompleted ;
+
+    private Long wetOngoing ;
+
+    private Long wetNotStarted ;
+
+    private Long wetUnderView ;
 }

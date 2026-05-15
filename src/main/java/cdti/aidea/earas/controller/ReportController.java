@@ -66,33 +66,6 @@ public class ReportController {
     }
     //based on talukId gets the details of zone status
 //    @GetMapping("/clusters/taluk/{talukId}/zones")
-//    public ClusterReportResponse getZoneWiseDashboardData(
-//
-//            @PathVariable
-//            Integer talukId,
-//
-//            @RequestParam(required = false)
-//            String landType,
-//
-//            @RequestParam
-//            @DateTimeFormat(pattern = "yyyy-MM")
-//            YearMonth startMonth,
-//
-//            @RequestParam(required = false)
-//            @DateTimeFormat(pattern = "yyyy-MM")
-//            YearMonth endMonth
-//    ) {
-//
-//        return reportService.getZoneWiseDashboardData(
-//                talukId,
-//                landType,
-//                startMonth,
-//                endMonth
-//        );
-//    }
-
-    //trail:2
-//    @GetMapping("/clusters/taluk/{talukId}/zones")
 //    public ClusterReportResponse getZoneWiseDashboard(
 //
 //            @PathVariable Integer talukId,
@@ -106,8 +79,22 @@ public class ReportController {
 //
 //            @RequestParam(required = false)
 //            @DateTimeFormat(pattern = "yyyy-MM")
-//            YearMonth endMonth
+//            YearMonth endMonth,
+//
+//            @RequestParam("page")
+//            int page,
+//
+//            @RequestParam("size")
+//            int size
 //    ) {
+//
+//        if (page < 0) {
+//            throw new RuntimeException("Page number must be greater than or equal to 0");
+//        }
+//
+//        if (size <= 0 || size > 100) {
+//            throw new RuntimeException("Page size must be between 1 and 100" );
+//        }
 //
 //        return reportService.getZoneWiseDashboardData(
 //                talukId,
@@ -115,7 +102,9 @@ public class ReportController {
 //                startMonth,
 //                endMonth
 //        );
+//    }
 
+    //added pagination and search based on zoneName
     @GetMapping("/clusters/taluk/{talukId}/zones")
     public ClusterReportResponse getZoneWiseDashboard(
 
@@ -136,22 +125,30 @@ public class ReportController {
             int page,
 
             @RequestParam("size")
-            int size
+            int size,
+
+            @RequestParam(required = false)
+            String search
     ) {
 
         if (page < 0) {
-            throw new RuntimeException("Page number must be greater than or equal to 0");
+            throw new RuntimeException(
+                    "Page number must be greater than or equal to 0"
+            );
         }
 
         if (size <= 0 || size > 100) {
-            throw new RuntimeException("Page size must be between 1 and 100" );
+            throw new RuntimeException(
+                    "Page size must be between 1 and 100"
+            );
         }
 
         return reportService.getZoneWiseDashboardData(
                 talukId,
                 landType,
                 startMonth,
-                endMonth
+                endMonth,
+                search
         );
     }
     }

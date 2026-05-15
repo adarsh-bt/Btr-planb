@@ -531,437 +531,577 @@ public ClusterReportResponse getTalukWiseDashboardData(
 }
 
     //based on talukId list zone status details
-//    public ClusterReportResponse getZoneWiseDashboardData(
+    //trail2:
+//public ClusterReportResponse getZoneWiseDashboardData(
 //
-//            Integer talukId,
-//            String landType,
-//            YearMonth startMonth,
-//            YearMonth endMonth
-//    ) {
+//        Integer talukId,
+//        String landType,
+//        YearMonth startMonth,
+//        YearMonth endMonth
+//) {
 //
-//        if (startMonth == null) {
-//            throw new RuntimeException("Start month is required");
-//        }
+//    if (startMonth == null) {
+//        throw new RuntimeException("Start month is required");
+//    }
 //
-//        if (landType != null) {
-//            landType = landType.toUpperCase();
-//        }
+//    if (landType != null) {
+//        landType = landType.toUpperCase().trim();
+//    }
 //
-//        LocalDateTime startDate =
-//                startMonth.atDay(1).atStartOfDay();
+//    LocalDateTime startDate =
+//            startMonth.atDay(1).atStartOfDay();
 //
-//        LocalDateTime endDate;
+//    LocalDateTime endDate;
 //
-//        if (endMonth == null) {
+//    if (endMonth == null) {
 //
-//            endDate =
-//                    startMonth
-//                            .atEndOfMonth()
-//                            .atTime(23, 59, 59);
+//        endDate =
+//                startMonth
+//                        .atEndOfMonth()
+//                        .atTime(23, 59, 59);
 //
-//        } else {
+//    } else {
 //
-//            endDate =
-//                    endMonth
-//                            .atEndOfMonth()
-//                            .atTime(23, 59, 59);
-//        }
+//        endDate =
+//                endMonth
+//                        .atEndOfMonth()
+//                        .atTime(23, 59, 59);
+//    }
 //
-//        List<ClusterMaster> clusters =
-//                clusterMasterRepository.getZoneWiseDashboardData(
-//                        talukId,
-//                        landType,
-//                        startDate,
-//                        endDate
-//                );
-//
-//        ClusterReportResponse response =
-//                new ClusterReportResponse();
-//
-//        Map<String, SubDetailsClusterStatusResponse> zoneMap =
-//                new HashMap<>();
-//
-//        long completed = 0;
-//        long ongoing = 0;
-//        long notStarted = 0;
-//        long underView = 0;
-//
-//        for (ClusterMaster cluster : clusters) {
-//
-//            String status = cluster.getStatus();
-//
-//            String zoneName = "UNKNOWN";
-//            Long zoneId = null;
-//
-//            if (cluster.getZone() != null) {
-//
-//                zoneName =
-//                        cluster.getZone()
-//                                .getZoneNameEn();
-//
-//                zoneId =
-//                        cluster.getZone()
-//                                .getZoneId()
-//                                .longValue();
-//            }
-//
-//            zoneMap.putIfAbsent(
-//                    zoneName,
-//                    new SubDetailsClusterStatusResponse(
-//                            zoneId,
-//                            0L,
-//                            0L,
-//                            0L,
-//                            0L
-//                    )
+//    List<ClusterMaster> clusters =
+//            clusterMasterRepository.getZoneWiseDashboardData(
+//                    talukId,
+//                    startDate,
+//                    endDate
 //            );
 //
-//            SubDetailsClusterStatusResponse zoneStats =
-//                    zoneMap.get(zoneName);
+//    ClusterReportResponse response =
+//            new ClusterReportResponse();
 //
-//            if (status == null) {
-//                continue;
+//    Map<String, BlockZoneWiseClusterStatusResponse> zoneMap =
+//            new LinkedHashMap<>();
+//
+//    long completed = 0;
+//    long ongoing = 0;
+//    long notStarted = 0;
+//    long underView = 0;
+//
+//    boolean includeWet =
+//            landType == null
+//                    || "WET".equalsIgnoreCase(landType);
+//
+//    boolean includeDry =
+//            landType == null
+//                    || "DRY".equalsIgnoreCase(landType);
+//
+//    for (ClusterMaster cluster : clusters) {
+//
+//        String status = cluster.getStatus();
+//
+//        String zoneName = "UNKNOWN";
+//
+//        Long zoneId = null;
+//
+//        Integer blockId = null;
+//
+//        String blockName = null;
+//
+//        String clusterLandType = null;
+//
+//        if (cluster.getKeyPlot() != null) {
+//
+//            clusterLandType =
+//                    cluster.getKeyPlot()
+//                            .getLandType();
+//        }
+//
+//        if (cluster.getZone() != null) {
+//
+//            zoneName =
+//                    cluster.getZone()
+//                            .getZoneNameEn();
+//
+//            zoneId =
+//                    cluster.getZone()
+//                            .getZoneId()
+//                            .longValue();
+//
+//            List<ZoneLocalbodyBlockMapping> mappings =
+//                    zoneLocalbodyBlockMappingRepository
+//                            .findByZone(
+//                                    cluster.getZone().getZoneId()
+//                            );
+//
+//            if (mappings != null && !mappings.isEmpty()) {
+//
+//                ZoneLocalbodyBlockMapping mapping =
+//                        mappings.get(0);
+//
+//                if (mapping.getBlockDetails() != null) {
+//
+//                    MasterBlock block =
+//                            masterBlockRepository
+//                                    .findById(
+//                                            mapping.getBlockDetails()
+//                                    )
+//                                    .orElse(null);
+//
+//                    if (block != null) {
+//
+//                        blockId = block.getBlockId();
+//
+//                        blockName = block.getBlockName();
+//                    }
+//                }
 //            }
+//        }
 //
-//            switch (status.trim().toLowerCase()) {
+//        zoneMap.putIfAbsent(
+//                zoneName,
+//                new BlockZoneWiseClusterStatusResponse(
+//                        zoneId,
+//                        blockId,
+//                        blockName,
+//                        0L,
+//                        0L,
+//                        0L,
+//                        0L,
+//                        0L,
+//                        0L,
+//                        0L,
+//                        0L
+//                )
+//        );
 //
-//                case "completed":
+//        BlockZoneWiseClusterStatusResponse zoneStats =
+//                zoneMap.get(zoneName);
+//
+//        if (status == null || clusterLandType == null) {
+//            continue;
+//        }
+//
+//        switch (status.trim().toLowerCase()) {
+//
+//            case "completed":
+//
+//                if (
+//                        clusterLandType.equalsIgnoreCase("WET")
+//                                && includeWet
+//                ) {
 //
 //                    completed++;
 //
-//                    zoneStats.setCompleted(
-//                            zoneStats.getCompleted() + 1
+//                    zoneStats.setWetCompleted(
+//                            zoneStats.getWetCompleted() + 1
 //                    );
+//                }
 //
-//                    break;
+//                if (
+//                        clusterLandType.equalsIgnoreCase("DRY")
+//                                && includeDry
+//                ) {
 //
-//                case "ongoing":
+//                    completed++;
+//
+//                    zoneStats.setDryCompleted(
+//                            zoneStats.getDryCompleted() + 1
+//                    );
+//                }
+//
+//                break;
+//
+//            case "ongoing":
+//
+//                if (
+//                        clusterLandType.equalsIgnoreCase("WET")
+//                                && includeWet
+//                ) {
 //
 //                    ongoing++;
 //
-//                    zoneStats.setOngoing(
-//                            zoneStats.getOngoing() + 1
+//                    zoneStats.setWetOngoing(
+//                            zoneStats.getWetOngoing() + 1
 //                    );
+//                }
 //
-//                    break;
+//                if (
+//                        clusterLandType.equalsIgnoreCase("DRY")
+//                                && includeDry
+//                ) {
 //
-//                case "not started":
+//                    ongoing++;
+//
+//                    zoneStats.setDryOngoing(
+//                            zoneStats.getDryOngoing() + 1
+//                    );
+//                }
+//
+//                break;
+//
+//            case "not started":
+//
+//                if (
+//                        clusterLandType.equalsIgnoreCase("WET")
+//                                && includeWet
+//                ) {
 //
 //                    notStarted++;
 //
-//                    zoneStats.setNotStarted(
-//                            zoneStats.getNotStarted() + 1
+//                    zoneStats.setWetNotStarted(
+//                            zoneStats.getWetNotStarted() + 1
 //                    );
+//                }
 //
-//                    break;
+//                if (
+//                        clusterLandType.equalsIgnoreCase("DRY")
+//                                && includeDry
+//                ) {
 //
-//                case "under view":
+//                    notStarted++;
+//
+//                    zoneStats.setDryNotStarted(
+//                            zoneStats.getDryNotStarted() + 1
+//                    );
+//                }
+//
+//                break;
+//
+//            case "under view":
+//
+//                if (
+//                        clusterLandType.equalsIgnoreCase("WET")
+//                                && includeWet
+//                ) {
 //
 //                    underView++;
 //
-//                    zoneStats.setUnderView(
-//                            zoneStats.getUnderView() + 1
+//                    zoneStats.setWetUnderView(
+//                            zoneStats.getWetUnderView() + 1
 //                    );
+//                }
 //
-//                    break;
-//            }
+//                if (
+//                        clusterLandType.equalsIgnoreCase("DRY")
+//                                && includeDry
+//                ) {
+//
+//                    underView++;
+//
+//                    zoneStats.setDryUnderView(
+//                            zoneStats.getDryUnderView() + 1
+//                    );
+//                }
+//
+//                break;
 //        }
-//
-//        response.setTotalCluster((long) clusters.size());
-//
-//        response.setCompleted(completed);
-//
-//        response.setOngoing(ongoing);
-//
-//        response.setNotStarted(notStarted);
-//
-//        response.setUnderView(underView);
-//
-//        response.setAllSubDetails(zoneMap);
-//
-//        return response;
 //    }
+//
+//    response.setTotalCluster(
+//            completed + ongoing + notStarted + underView
+//    );
+//
+//    response.setCompleted(completed);
+//
+//    response.setOngoing(ongoing);
+//
+//    response.setNotStarted(notStarted);
+//
+//    response.setUnderView(underView);
+//
+//    response.setAllSubDetails(zoneMap);
+//
+//    return response;
+//}
+    //added pagination and search in db reacords based on zoneName
+    public ClusterReportResponse getZoneWiseDashboardData(
 
+            Integer talukId,
+            String landType,
+            YearMonth startMonth,
+            YearMonth endMonth,
+            String search
+    ) {
 
-    //trail2:
-public ClusterReportResponse getZoneWiseDashboardData(
-
-        Integer talukId,
-        String landType,
-        YearMonth startMonth,
-        YearMonth endMonth
-) {
-
-    if (startMonth == null) {
-        throw new RuntimeException("Start month is required");
-    }
-
-    if (landType != null) {
-        landType = landType.toUpperCase().trim();
-    }
-
-    LocalDateTime startDate =
-            startMonth.atDay(1).atStartOfDay();
-
-    LocalDateTime endDate;
-
-    if (endMonth == null) {
-
-        endDate =
-                startMonth
-                        .atEndOfMonth()
-                        .atTime(23, 59, 59);
-
-    } else {
-
-        endDate =
-                endMonth
-                        .atEndOfMonth()
-                        .atTime(23, 59, 59);
-    }
-
-    List<ClusterMaster> clusters =
-            clusterMasterRepository.getZoneWiseDashboardData(
-                    talukId,
-                    startDate,
-                    endDate
-            );
-
-    ClusterReportResponse response =
-            new ClusterReportResponse();
-
-    Map<String, BlockZoneWiseClusterStatusResponse> zoneMap =
-            new LinkedHashMap<>();
-
-    long completed = 0;
-    long ongoing = 0;
-    long notStarted = 0;
-    long underView = 0;
-
-    boolean includeWet =
-            landType == null
-                    || "WET".equalsIgnoreCase(landType);
-
-    boolean includeDry =
-            landType == null
-                    || "DRY".equalsIgnoreCase(landType);
-
-    for (ClusterMaster cluster : clusters) {
-
-        String status = cluster.getStatus();
-
-        String zoneName = "UNKNOWN";
-
-        Long zoneId = null;
-
-        Integer blockId = null;
-
-        String blockName = null;
-
-        String clusterLandType = null;
-
-        if (cluster.getKeyPlot() != null) {
-
-            clusterLandType =
-                    cluster.getKeyPlot()
-                            .getLandType();
+        if (startMonth == null) {
+            throw new RuntimeException("Start month is required");
         }
 
-        if (cluster.getZone() != null) {
+        if (landType != null) {
+            landType = landType.toUpperCase().trim();
+        }
 
-            zoneName =
-                    cluster.getZone()
-                            .getZoneNameEn();
+        LocalDateTime startDate =
+                startMonth.atDay(1).atStartOfDay();
 
-            zoneId =
-                    cluster.getZone()
-                            .getZoneId()
-                            .longValue();
+        LocalDateTime endDate;
 
-            List<ZoneLocalbodyBlockMapping> mappings =
-                    zoneLocalbodyBlockMappingRepository
-                            .findByZone(
-                                    cluster.getZone().getZoneId()
-                            );
+        if (endMonth == null) {
 
-            if (mappings != null && !mappings.isEmpty()) {
+            endDate =
+                    startMonth
+                            .atEndOfMonth()
+                            .atTime(23, 59, 59);
 
-                ZoneLocalbodyBlockMapping mapping =
-                        mappings.get(0);
+        } else {
 
-                if (mapping.getBlockDetails() != null) {
+            endDate =
+                    endMonth
+                            .atEndOfMonth()
+                            .atTime(23, 59, 59);
+        }
 
-                    MasterBlock block =
-                            masterBlockRepository
-                                    .findById(
-                                            mapping.getBlockDetails()
-                                    )
-                                    .orElse(null);
+        List<ClusterMaster> clusters =
+                clusterMasterRepository.getZoneWiseDashboardData(
+                        talukId,
+                        startDate,
+                        endDate
+                );
 
-                    if (block != null) {
+        ClusterReportResponse response =
+                new ClusterReportResponse();
 
-                        blockId = block.getBlockId();
+        Map<String, BlockZoneWiseClusterStatusResponse> zoneMap =
+                new LinkedHashMap<>();
 
-                        blockName = block.getBlockName();
+        long completed = 0;
+        long ongoing = 0;
+        long notStarted = 0;
+        long underView = 0;
+
+        boolean includeWet =
+                landType == null
+                        || "WET".equalsIgnoreCase(landType);
+
+        boolean includeDry =
+                landType == null
+                        || "DRY".equalsIgnoreCase(landType);
+
+        for (ClusterMaster cluster : clusters) {
+
+            String status = cluster.getStatus();
+
+            String zoneName = "UNKNOWN";
+
+            Long zoneId = null;
+
+            Integer blockId = null;
+
+            String blockName = null;
+
+            String clusterLandType = null;
+
+            if (cluster.getKeyPlot() != null) {
+
+                clusterLandType =
+                        cluster.getKeyPlot()
+                                .getLandType();
+            }
+
+            if (cluster.getZone() != null) {
+
+                zoneName =
+                        cluster.getZone()
+                                .getZoneNameEn();
+
+                zoneId =
+                        cluster.getZone()
+                                .getZoneId()
+                                .longValue();
+                // ADD SEARCH FILTER HERE
+
+                if (
+                        search != null
+                                && !search.trim().isEmpty()
+                                && !zoneName.toLowerCase()
+                                .contains(search.toLowerCase())
+                ) {
+                    continue;
+                }
+
+                List<ZoneLocalbodyBlockMapping> mappings =
+                        zoneLocalbodyBlockMappingRepository
+                                .findByZone(
+                                        cluster.getZone().getZoneId()
+                                );
+
+                if (mappings != null && !mappings.isEmpty()) {
+
+                    ZoneLocalbodyBlockMapping mapping =
+                            mappings.get(0);
+
+                    if (mapping.getBlockDetails() != null) {
+
+                        MasterBlock block =
+                                masterBlockRepository
+                                        .findById(
+                                                mapping.getBlockDetails()
+                                        )
+                                        .orElse(null);
+
+                        if (block != null) {
+
+                            blockId = block.getBlockId();
+
+                            blockName = block.getBlockName();
+                        }
                     }
                 }
             }
+
+            zoneMap.putIfAbsent(
+                    zoneName,
+                    new BlockZoneWiseClusterStatusResponse(
+                            zoneId,
+                            blockId,
+                            blockName,
+                            0L,
+                            0L,
+                            0L,
+                            0L,
+                            0L,
+                            0L,
+                            0L,
+                            0L
+                    )
+            );
+
+            BlockZoneWiseClusterStatusResponse zoneStats =
+                    zoneMap.get(zoneName);
+
+            if (status == null || clusterLandType == null) {
+                continue;
+            }
+
+            switch (status.trim().toLowerCase()) {
+
+                case "completed":
+
+                    if (
+                            clusterLandType.equalsIgnoreCase("WET")
+                                    && includeWet
+                    ) {
+
+                        completed++;
+
+                        zoneStats.setWetCompleted(
+                                zoneStats.getWetCompleted() + 1
+                        );
+                    }
+
+                    if (
+                            clusterLandType.equalsIgnoreCase("DRY")
+                                    && includeDry
+                    ) {
+
+                        completed++;
+
+                        zoneStats.setDryCompleted(
+                                zoneStats.getDryCompleted() + 1
+                        );
+                    }
+
+                    break;
+
+                case "ongoing":
+
+                    if (
+                            clusterLandType.equalsIgnoreCase("WET")
+                                    && includeWet
+                    ) {
+
+                        ongoing++;
+
+                        zoneStats.setWetOngoing(
+                                zoneStats.getWetOngoing() + 1
+                        );
+                    }
+
+                    if (
+                            clusterLandType.equalsIgnoreCase("DRY")
+                                    && includeDry
+                    ) {
+
+                        ongoing++;
+
+                        zoneStats.setDryOngoing(
+                                zoneStats.getDryOngoing() + 1
+                        );
+                    }
+
+                    break;
+
+                case "not started":
+
+                    if (
+                            clusterLandType.equalsIgnoreCase("WET")
+                                    && includeWet
+                    ) {
+
+                        notStarted++;
+
+                        zoneStats.setWetNotStarted(
+                                zoneStats.getWetNotStarted() + 1
+                        );
+                    }
+
+                    if (
+                            clusterLandType.equalsIgnoreCase("DRY")
+                                    && includeDry
+                    ) {
+
+                        notStarted++;
+
+                        zoneStats.setDryNotStarted(
+                                zoneStats.getDryNotStarted() + 1
+                        );
+                    }
+
+                    break;
+
+                case "under view":
+
+                    if (
+                            clusterLandType.equalsIgnoreCase("WET")
+                                    && includeWet
+                    ) {
+
+                        underView++;
+
+                        zoneStats.setWetUnderView(
+                                zoneStats.getWetUnderView() + 1
+                        );
+                    }
+
+                    if (
+                            clusterLandType.equalsIgnoreCase("DRY")
+                                    && includeDry
+                    ) {
+
+                        underView++;
+
+                        zoneStats.setDryUnderView(
+                                zoneStats.getDryUnderView() + 1
+                        );
+                    }
+
+                    break;
+            }
         }
 
-        zoneMap.putIfAbsent(
-                zoneName,
-                new BlockZoneWiseClusterStatusResponse(
-                        zoneId,
-                        blockId,
-                        blockName,
-                        0L,
-                        0L,
-                        0L,
-                        0L,
-                        0L,
-                        0L,
-                        0L,
-                        0L
-                )
+        response.setTotalCluster(
+                completed + ongoing + notStarted + underView
         );
 
-        BlockZoneWiseClusterStatusResponse zoneStats =
-                zoneMap.get(zoneName);
+        response.setCompleted(completed);
 
-        if (status == null || clusterLandType == null) {
-            continue;
-        }
+        response.setOngoing(ongoing);
 
-        switch (status.trim().toLowerCase()) {
+        response.setNotStarted(notStarted);
 
-            case "completed":
+        response.setUnderView(underView);
 
-                if (
-                        clusterLandType.equalsIgnoreCase("WET")
-                                && includeWet
-                ) {
+        response.setAllSubDetails(zoneMap);
 
-                    completed++;
-
-                    zoneStats.setWetCompleted(
-                            zoneStats.getWetCompleted() + 1
-                    );
-                }
-
-                if (
-                        clusterLandType.equalsIgnoreCase("DRY")
-                                && includeDry
-                ) {
-
-                    completed++;
-
-                    zoneStats.setDryCompleted(
-                            zoneStats.getDryCompleted() + 1
-                    );
-                }
-
-                break;
-
-            case "ongoing":
-
-                if (
-                        clusterLandType.equalsIgnoreCase("WET")
-                                && includeWet
-                ) {
-
-                    ongoing++;
-
-                    zoneStats.setWetOngoing(
-                            zoneStats.getWetOngoing() + 1
-                    );
-                }
-
-                if (
-                        clusterLandType.equalsIgnoreCase("DRY")
-                                && includeDry
-                ) {
-
-                    ongoing++;
-
-                    zoneStats.setDryOngoing(
-                            zoneStats.getDryOngoing() + 1
-                    );
-                }
-
-                break;
-
-            case "not started":
-
-                if (
-                        clusterLandType.equalsIgnoreCase("WET")
-                                && includeWet
-                ) {
-
-                    notStarted++;
-
-                    zoneStats.setWetNotStarted(
-                            zoneStats.getWetNotStarted() + 1
-                    );
-                }
-
-                if (
-                        clusterLandType.equalsIgnoreCase("DRY")
-                                && includeDry
-                ) {
-
-                    notStarted++;
-
-                    zoneStats.setDryNotStarted(
-                            zoneStats.getDryNotStarted() + 1
-                    );
-                }
-
-                break;
-
-            case "under view":
-
-                if (
-                        clusterLandType.equalsIgnoreCase("WET")
-                                && includeWet
-                ) {
-
-                    underView++;
-
-                    zoneStats.setWetUnderView(
-                            zoneStats.getWetUnderView() + 1
-                    );
-                }
-
-                if (
-                        clusterLandType.equalsIgnoreCase("DRY")
-                                && includeDry
-                ) {
-
-                    underView++;
-
-                    zoneStats.setDryUnderView(
-                            zoneStats.getDryUnderView() + 1
-                    );
-                }
-
-                break;
-        }
+        return response;
     }
-
-    response.setTotalCluster(
-            completed + ongoing + notStarted + underView
-    );
-
-    response.setCompleted(completed);
-
-    response.setOngoing(ongoing);
-
-    response.setNotStarted(notStarted);
-
-    response.setUnderView(underView);
-
-    response.setAllSubDetails(zoneMap);
-
-    return response;
-}
 }

@@ -75,11 +75,12 @@ public class ClusterService {
 
     //        Optional<UserZoneAssignment> userOpt =
     // userZoneAssignmentRepositoty.findByUserId(userId);
-
+System.out.println("zone 1 "+zone_Id);
     Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zone_Id);
     if (zone.isEmpty()) {
       throw new NoSuchElementException("User not found");
     }
+      System.out.println("zone 2 "+zone_Id);
     //        UserZoneAssignment user = userOpt.get();
     Long zoneId = Long.valueOf(zone.get().getZoneId());
     Set<Long> assignedClusterIds = new HashSet<>();
@@ -89,6 +90,7 @@ public class ClusterService {
     if (cceResult.isFallbackUsed()) {
       cceMessage = "CCE data not available currently.";
     }
+      System.out.println("zone  3 "+zone_Id);
     List<AvailableCcePlotResponse> assignedCcePlots = cceResult.getPlots();
     assignedClusterIds =
         assignedCcePlots.stream()
@@ -97,6 +99,7 @@ public class ClusterService {
                     plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType()))
             .map(AvailableCcePlotResponse::getClusterId)
             .collect(Collectors.toSet());
+      System.out.println("zone  4 "+zone_Id);
     Map<Long, Set<String>> clusterCropMap = new HashMap<>();
     for (AvailableCcePlotResponse plot : assignedCcePlots) {
       if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
@@ -107,21 +110,30 @@ public class ClusterService {
     }
     List<ClusterMaster> clusters =
         clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(zone.get().getZoneId());
+      System.out.println("zone 6 "+zone_Id);
     int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
     List<ClusterStatusResponse> payload = new ArrayList<>();
     for (ClusterMaster cluster : clusters) {
+        System.out.println("cluster   "+payload);
       Long clusterId = cluster.getCluMasterId();
+        System.out.println("cluster   "+clusterId);
       UUID keyplotId = cluster.getKeyPlot().getId();
+        System.out.println("keyplotId   "+keyplotId);
       Set<String> cropNames = clusterCropMap.getOrDefault(clusterId, Collections.emptySet());
+        System.out.println("cropNames    "+cropNames );
       boolean isCce = !cropNames.isEmpty();
       String status = cluster.getStatus();
+        System.out.println("status   "+status);
       String landType = cluster.getKeyPlot().getLandType();
+        System.out.println("landType  "+landType);
       String keyplot_svno =
           cluster.getKeyPlot().getBtrData().getResvno()
               + "/"
               + cluster.getKeyPlot().getBtrData().getResbdno();
       String keyplot_lbcode = cluster.getKeyPlot().getBtrData().getBcode();
+        System.out.println("keyplot_lbcode   "+keyplot_lbcode);
       String local_body_code = cluster.getKeyPlot().getBtrData().getLbcode();
+        System.out.println("zone  cc "+zone_Id);
 //      Double keyplot_area = cluster.getKeyPlot().getBtrData().getTotCent();
       // code by k:
       //            String keyplot_svno = cluster.getKeyPlot().getBtrData().getResvno() + "/" +
@@ -137,13 +149,13 @@ public class ClusterService {
 
       // ⚠️ TblBtrData does not have "area". Use nsqm, nhect, or nare instead
       // Double keyplot_area = cluster.getKeyPlot().getBtrData().getNsqm();
-
+        System.out.println("zone A "+zone_Id);
       TblLocalBody localBody = localBodyRepository.findByCodeApi(local_body_code).orElse(null);
       String localBodyName = "Local body not found";
       if (localBody != null) {
         String baseName = localBody.getLocalbodyNameEn();
         String localBodyTypeName = "Unknown";
-
+          System.out.println("zone 7 "+zone_Id);
         if (localBody.getLocalbodyType() != null) {
           Optional<LocalBodyType> localBodyTypeOpt =
               localBodyTypeRepository.findById(localBody.getLocalbodyType().longValue());
@@ -151,10 +163,10 @@ public class ClusterService {
             localBodyTypeName = localBodyTypeOpt.get().getName();
           }
         }
-
+          System.out.println("zone 8  "+zone_Id);
         localBodyName = baseName + " " + localBodyTypeName;
       }
-
+        System.out.println("zone  9 "+zone_Id);
       String villageName =
           tblMasterVillageRepository
               .findFirstByLsgCode(cluster.getKeyPlot().getBtrData().getLsgcode())
@@ -171,6 +183,7 @@ public class ClusterService {
                 clusters.stream()
                         .map(ClusterMaster::getCluMasterId)
                         .toList();
+        System.out.println("zone  10 "+zone_Id);
         Map<Long, Double> clusterAreaMap =
                 clusterFormDataRepository
                         .findTotalAreaByClusterIds(clusterIds)

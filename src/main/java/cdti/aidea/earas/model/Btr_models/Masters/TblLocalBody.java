@@ -17,32 +17,37 @@ import java.util.UUID;
 public class TblLocalBody {
 
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Integer localbodyId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "localbody_id")
+    private Integer localbodyId;
 
-  private String localbodyCode;
+    @Column(name = "localbody_code")
+    private String localbodyCode;
 
-  private Short distId;
+    @Column(name = "dist_id")
+    private Short distId;
+    @Column(name = "localbody_name_en")
+    private String localbodyNameEn;
 
-  private String localbodyNameEn;
+    @Column(name = "localbody_name_mal")
+    private String localbodyNameMal;
 
-  private String localbodyNameMal;
-
-  private Short localbodyType;
-
-  private String codeApi;
-
-  private Boolean isActive;
-
-  private String lsgCode;
-
-  private UUID addedBy;
-
-  private UUID updatedBy;
-
-  private LocalDateTime createdAt;
-
-  private LocalDateTime updatedAt;
+    @Column(name = "localbody_type")
+    private Short localbodyType;
+    @Column(name = "code_api")
+    private String codeApi;
+    @Column(name = "is_active")
+    private Boolean isActive;
+    @Column(name = "lsg_code")
+    private String lsgCode;
+    @Column(name = "created_by")
+    private UUID addedBy;
+    @Column(name = "updated_by")
+    private UUID updatedBy;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
 }

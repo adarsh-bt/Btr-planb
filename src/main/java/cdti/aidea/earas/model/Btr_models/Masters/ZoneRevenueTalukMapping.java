@@ -37,7 +37,8 @@ public class ZoneRevenueTalukMapping {
 
   @Column(name = "rev_taluk_name_en")
   private String revTalukNameEn;
-  @Column(name = "added_by")
+
+  @Column(name = "created_by")
   private UUID addedBy;
 
   @Column(name = "updated_by")

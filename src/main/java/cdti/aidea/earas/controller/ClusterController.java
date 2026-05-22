@@ -39,6 +39,7 @@ public class ClusterController {
   @GetMapping("/user-cluster-summary/{zoneId}")
   public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummary(
       @PathVariable Integer zoneId) {
+      System.out.println("zone "+zoneId);
     try {
       UserClusterSummaryResponse response = clusterService.getUserClusterSummary(zoneId);
       return ResponseEntity.ok(response);

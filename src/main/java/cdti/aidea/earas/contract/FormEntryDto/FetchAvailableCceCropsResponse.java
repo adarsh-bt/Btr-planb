@@ -15,4 +15,5 @@ public class FetchAvailableCceCropsResponse {
   private Long cropId;
   private String cropName;
   private UUID cceAvailablePlotId;
+  private Boolean isActive;
 }

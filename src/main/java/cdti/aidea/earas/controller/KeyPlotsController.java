@@ -5,9 +5,7 @@ import cdti.aidea.earas.contract.RequestsDTOs.CropAssignmentTrailSaveDto;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.UpdateEnumeratedKeyAreaDTO;
-import cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse;
-import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
-import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
+import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.ClusterFormData;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
@@ -216,6 +214,16 @@ System.out.println("dto  "+dto);
         }
     }
 
+    @PostMapping("/validate-duplicate-keyplots")
+    public ResponseEntity<?> validateDuplicate(@RequestBody TblBtrDataDTO dto) {
+        ValidationResponse response = keyPlots_Service.validateDuplicateForCluster(dto);
+
+        if (response != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } else {
+            return ResponseEntity.ok(new PlotDuplicateResponse(false, "No duplicate found."));
+        }
+    }
 
 
 }

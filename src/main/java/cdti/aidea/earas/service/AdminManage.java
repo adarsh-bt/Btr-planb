@@ -139,7 +139,7 @@ public class AdminManage {
     }
   }
 
-  public List<ClusterApprovalTableDTO> zoneListForClusters(String type, Integer idValue) {
+  public List<ClusterApprovalTableDTO> zoneListForClusterss(String type, Integer idValue) {
     List<ClusterApprovalLog> approvalLogs;
     System.out.println("type " + type + " : " + idValue);
     if ("Taluk".equalsIgnoreCase(type)) {
@@ -166,6 +166,48 @@ public class AdminManage {
                     .comparing(ClusterApprovalTableDTO::getDistrictId).reversed()
                     .thenComparing(ClusterApprovalTableDTO::getTalukId).reversed())
             .collect(Collectors.toList());
+  }
+
+  public Page<ClusterApprovalTableDTO> zoneListForClusters(
+          String type,
+          Integer idValue,
+          int page,
+          int size
+  ) {
+
+    Pageable pageable = PageRequest.of(
+            page,
+            size,
+            Sort.by(Sort.Direction.DESC, "createdAt")
+    );
+
+    Page<ClusterApprovalLog> approvalLogs;
+
+    System.out.println("type " + type + " : " + idValue);
+
+    if ("Taluk".equalsIgnoreCase(type)) {
+
+      approvalLogs = clusterApprovalLogRepository
+              .findByZone_DesTalukId(idValue, pageable);
+
+    } else if ("District".equalsIgnoreCase(type)) {
+
+      approvalLogs = clusterApprovalLogRepository
+              .findByZone_DistId(idValue, pageable);
+
+    } else if ("Directorate".equalsIgnoreCase(type)) {
+
+      approvalLogs = clusterApprovalLogRepository
+              .findAll(pageable);
+
+    } else {
+
+      throw new IllegalArgumentException(
+              "Invalid type. Use 'Taluk', 'District', or 'Directorate'"
+      );
+    }
+
+    return approvalLogs.map(this::mapToDTO);
   }
 
   @Transactional

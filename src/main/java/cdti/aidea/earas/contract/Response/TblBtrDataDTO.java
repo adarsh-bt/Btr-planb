@@ -35,6 +35,6 @@ public class TblBtrDataDTO {
   private Integer tpno;
   private String tbsubdivisionno;
   private Long clusterId;
-
+  private String agriYear;
 
 }

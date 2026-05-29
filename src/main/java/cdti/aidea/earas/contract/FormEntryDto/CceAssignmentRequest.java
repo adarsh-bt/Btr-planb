@@ -17,6 +17,7 @@ public class CceAssignmentRequest {
   private Long cropId;
   private String cceSourceType;
   private UUID addedBy;
+  private String landType;
   private String agriStartYear;
   private String agriEndYear;
   private Boolean isActive;

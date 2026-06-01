@@ -2,6 +2,8 @@ package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.FormEntryDto.*;
+import cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection;
+import cdti.aidea.earas.contract.Projection.ClusterSummaryProjection;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterUpdateDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.PlotSaveMobileAppRequest;
 import cdti.aidea.earas.contract.Response.*;
@@ -70,155 +72,97 @@ public class ClusterService {
 
     return new ArrayList<>(uniqueByLabel.values());
   }
+//after including start and end year
+    public UserClusterSummaryResponse getUserClusterSummaryByYear(
+            Integer zoneId,
+           Integer startYear,
+           Integer endYear) {
 
-  public UserClusterSummaryResponse getUserClusterSummary(Integer zone_Id) {
+        // ✅ 1. Fetch all cluster data (SINGLE QUERY)
+        List<ClusterSummaryProjection> clusters =
+                clusterMasterRepository.findClusterSummaryByYear(
+                        zoneId,
+                        startYear,
+                        endYear);
 
-    //        Optional<UserZoneAssignment> userOpt =
-    // userZoneAssignmentRepositoty.findByUserId(userId);
-System.out.println("zone 1 "+zone_Id);
-    Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zone_Id);
-    if (zone.isEmpty()) {
-      throw new NoSuchElementException("User not found");
-    }
-      System.out.println("zone 2 "+zone_Id);
-    //        UserZoneAssignment user = userOpt.get();
-    Long zoneId = Long.valueOf(zone.get().getZoneId());
-    Set<Long> assignedClusterIds = new HashSet<>();
-    String cceMessage = null;
+        // ✅ 2. Get cluster IDs
+        List<Long> clusterIds = clusters.stream()
+                .map(ClusterSummaryProjection::getClusterId)
+                .toList();
 
-    CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(zoneId);
-    if (cceResult.isFallbackUsed()) {
-      cceMessage = "CCE data not available currently.";
-    }
-      System.out.println("zone  3 "+zone_Id);
-    List<AvailableCcePlotResponse> assignedCcePlots = cceResult.getPlots();
-    assignedClusterIds =
-        assignedCcePlots.stream()
-            .filter(
-                plot ->
-                    plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType()))
-            .map(AvailableCcePlotResponse::getClusterId)
-            .collect(Collectors.toSet());
-      System.out.println("zone  4 "+zone_Id);
-    Map<Long, Set<String>> clusterCropMap = new HashMap<>();
-    for (AvailableCcePlotResponse plot : assignedCcePlots) {
-      if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
-        clusterCropMap
-            .computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
-            .add(plot.getCropName());
-      }
-    }
-    List<ClusterMaster> clusters =
-        clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(zone.get().getZoneId());
-      System.out.println("zone 6 "+zone_Id);
-    int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
-    List<ClusterStatusResponse> payload = new ArrayList<>();
-    for (ClusterMaster cluster : clusters) {
-        System.out.println("cluster   "+payload);
-      Long clusterId = cluster.getCluMasterId();
-        System.out.println("cluster   "+clusterId);
-      UUID keyplotId = cluster.getKeyPlot().getId();
-        System.out.println("keyplotId   "+keyplotId);
-      Set<String> cropNames = clusterCropMap.getOrDefault(clusterId, Collections.emptySet());
-        System.out.println("cropNames    "+cropNames );
-      boolean isCce = !cropNames.isEmpty();
-      String status = cluster.getStatus();
-        System.out.println("status   "+status);
-      String landType = cluster.getKeyPlot().getLandType();
-        System.out.println("landType  "+landType);
-      String keyplot_svno =
-          cluster.getKeyPlot().getBtrData().getResvno()
-              + "/"
-              + cluster.getKeyPlot().getBtrData().getResbdno();
-      String keyplot_lbcode = cluster.getKeyPlot().getBtrData().getBcode();
-        System.out.println("keyplot_lbcode   "+keyplot_lbcode);
-      String local_body_code = cluster.getKeyPlot().getBtrData().getLbcode();
-        System.out.println("zone  cc "+zone_Id);
-//      Double keyplot_area = cluster.getKeyPlot().getBtrData().getTotCent();
-      // code by k:
-      //            String keyplot_svno = cluster.getKeyPlot().getBtrData().getResvno() + "/" +
-      // cluster.getKeyPlot().getBtrData().getResbdno();
-      //            Integer keyplot_bcode = cluster.getKeyPlot().getBtrData().getBcode();   // use
-      // Integer
-      //            String keyplot_lbcode = cluster.getKeyPlot().getBtrData().getLbcode();  // use
-      // String
-      //            Double keyplot_area = cluster.getKeyPlot().getBtrData().getNare();      // or
-      // nhect/nsqm depending on "area"
-
-      // code  by k:
-
-      // ⚠️ TblBtrData does not have "area". Use nsqm, nhect, or nare instead
-      // Double keyplot_area = cluster.getKeyPlot().getBtrData().getNsqm();
-        System.out.println("zone A "+zone_Id);
-      TblLocalBody localBody = localBodyRepository.findByCodeApi(local_body_code).orElse(null);
-      String localBodyName = "Local body not found";
-      if (localBody != null) {
-        String baseName = localBody.getLocalbodyNameEn();
-        String localBodyTypeName = "Unknown";
-          System.out.println("zone 7 "+zone_Id);
-        if (localBody.getLocalbodyType() != null) {
-          Optional<LocalBodyType> localBodyTypeOpt =
-              localBodyTypeRepository.findById(localBody.getLocalbodyType().longValue());
-          if (localBodyTypeOpt.isPresent()) {
-            localBodyTypeName = localBodyTypeOpt.get().getName();
-          }
-        }
-          System.out.println("zone 8  "+zone_Id);
-        localBodyName = baseName + " " + localBodyTypeName;
-      }
-        System.out.println("zone  9 "+zone_Id);
-      String villageName =
-          tblMasterVillageRepository
-              .findFirstByLsgCode(cluster.getKeyPlot().getBtrData().getLsgcode())
-              .map(TblMasterVillage::getVillageNameEn)
-              .orElse("Village not found");
-
-      switch (status) {
-        case "Not Started" -> notStarted++;
-        case "On Going" -> ongoing++;
-        case "Under Review" -> underreview++;
-        default -> completed++;
-      }
-        List<Long> clusterIds =
-                clusters.stream()
-                        .map(ClusterMaster::getCluMasterId)
-                        .toList();
-        System.out.println("zone  10 "+zone_Id);
-        Map<Long, Double> clusterAreaMap =
-                clusterFormDataRepository
-                        .findTotalAreaByClusterIds(clusterIds)
+        // ✅ 3. Fetch area (ONE QUERY)
+        Map<Long, Double> areaMap =
+                clusterFormDataRepository.findTotalAreaByClusterIds(clusterIds)
                         .stream()
                         .collect(Collectors.toMap(
                                 ClusterAreaProjection::getClusterId,
                                 ClusterAreaProjection::getTotalArea
                         ));
-        Double clusterTotalArea =
-                clusterAreaMap.getOrDefault(clusterId, 0.0);
-        payload.add(
-          new ClusterStatusResponse(
-              cluster.getClusterNumber(),
-              keyplotId,
-              isCce,
-              villageName,
-              cluster.getKeyPlot().getBtrData().getVcode(),
-              localBodyName,
-              local_body_code,
-              keyplot_lbcode,
-              keyplot_svno,
-                  clusterTotalArea,
-              clusterId,
-              landType != null ? landType.toLowerCase() : "unknown",
-              status,
-              null,
-              new ArrayList<>(cropNames) // Pass the crop names list here
-              ));
-    }
 
-    payload.sort(Comparator.comparingInt(ClusterStatusResponse::getClusterNo));
+        // ✅ 4. CCE API (keep as is)
+        Set<Long> assignedClusterIds = new HashSet<>();
+        Map<Long, Set<String>> clusterCropMap = new HashMap<>();
+        String cceMessage = null;
 
-    return new UserClusterSummaryResponse(
-        "Successfully fetched", completed, ongoing, notStarted, underreview, cceMessage, payload
-        // Will be null if CCE data is fetched successfully
+        CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(Long.valueOf(zoneId));
+
+        if (cceResult.isFallbackUsed()) {
+            cceMessage = "CCE data not available currently.";
+        }
+
+        for (AvailableCcePlotResponse plot : cceResult.getPlots()) {
+            if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
+                assignedClusterIds.add(plot.getClusterId());
+
+                clusterCropMap
+                        .computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
+                        .add(plot.getCropName());
+            }
+        }
+        // ✅ 5. Build response (NO DB CALLS)
+        int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
+        List<ClusterStatusResponse> payload = new ArrayList<>();
+
+        for (ClusterSummaryProjection c : clusters) {
+            boolean isCce = assignedClusterIds.contains(c.getClusterId());
+            Double area = areaMap.getOrDefault(c.getClusterId(), 0.0);
+            switch (c.getStatus()) {
+                case "Not Started" -> notStarted++;
+                case "On Going" -> ongoing++;
+                case "Under Review" -> underreview++;
+                default -> completed++;
+            }
+
+            payload.add(new ClusterStatusResponse(
+                    c.getClusterNumber(),
+                    c.getKeyplotId(),
+                    isCce,
+                    c.getVillageName(),
+                    c.getVcode(),
+                    c.getLocalBodyName() + " " + c.getLocalBodyType(),
+                    c.getLbcode(),
+                    c.getBcode(),
+//                    c.getSurveyNo(),
+                    "11/1",
+                    area,
+                    c.getClusterId(),
+                    c.getLandType() != null ? c.getLandType().toLowerCase() : "unknown",
+                    c.getStatus(),
+                    null,
+                    new ArrayList<>(clusterCropMap.getOrDefault(c.getClusterId(), Collections.emptySet()))
+            ));
+        }
+
+        payload.sort(Comparator.comparingInt(ClusterStatusResponse::getClusterNo));
+
+        return new UserClusterSummaryResponse(
+                "Successfully fetched",
+                completed,
+                ongoing,
+                notStarted,
+                underreview,
+                cceMessage,
+                payload
         );
   }
 
@@ -235,7 +179,8 @@ System.out.println("zone 1 "+zone_Id);
                         .stream()
                         .collect(Collectors.toMap(
                                 ExternalClusterStatusResponse::getSeasonId,
-                                ExternalClusterStatusResponse::getStatus
+                                ExternalClusterStatusResponse::getStatus,
+                                (existing, duplicate) -> existing // keep first
                         ));
 
         List<SeasonStatusDto> result = new ArrayList<>();
@@ -251,93 +196,73 @@ System.out.println("zone 1 "+zone_Id);
 
         return result;
     }
+//after including agri start and end year
+    public UserClusterSummaryResponse getClusterSummaryWithExternalStatusByYear(
+            Integer zoneId,
+            Integer startYear,
+            Integer endYear
+            ) {
 
-    public UserClusterSummaryResponse getClusterSummaryWithExternalStatus(Integer zoneId) {
+        // ✅ 1. SINGLE QUERY (NO ENTITY LOAD)
+        List<ClusterSummaryFastProjection> clusters =
+                clusterMasterRepository.getClusterSummaryFastByYear(
+                        zoneId,
+                        startYear,
+                        endYear);
 
-        // 1️⃣ Validate zone
-        TblMasterZone zone = tblMasterZoneRepository.findById(zoneId)
-                .orElseThrow(() -> new NoSuchElementException("Zone not found"));
-
-        Long zoneKey = Long.valueOf(zone.getZoneId());
-
-        // 2️⃣ Fetch clusters
-        List<ClusterMaster> clusters =
-                clusterMasterRepository.findAllByZoneIdAndIsRejectFalse(Math.toIntExact(zoneKey));
-
-        // 3️⃣ Call external API (SAFE)
+        // ✅ 2. External API (SAFE + FAST FAIL)
         List<ExternalClusterStatusResponse> externalStatus;
         try {
             externalStatus = formEntryClient.fetchClusterStatus(zoneId);
-        } catch (FeignException.InternalServerError ex) {
-            // Business meaning: no form entry exists
-            log.warn("No form entry found for zoneId {}. Treating all clusters as NOT STARTED", zoneId);
+        } catch (Exception e) {
             externalStatus = Collections.emptyList();
         }
 
-        // 4️⃣ Group by clusterId
+        // ✅ 3. GROUP (O(1) lookup)
         Map<Long, List<ExternalClusterStatusResponse>> clusterSeasonMap =
                 externalStatus.stream()
-                        .collect(Collectors.groupingBy(
-                                ExternalClusterStatusResponse::getClusterId
-                        ));
+                        .collect(Collectors.groupingBy(ExternalClusterStatusResponse::getClusterId));
 
-        // 5️⃣ CCE logic (unchanged)
-        CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(zoneKey);
-        String cceMessage = cceResult.isFallbackUsed()
-                ? "CCE data not available currently."
-                : null;
-System.out.println("ccee "+cceResult);
+        // ✅ 4. CCE (same)
+        CcePlotResult cceResult =
+                cceCropService.getAssignedCcePlotsByZoneId(Long.valueOf(zoneId));
+
         Map<Long, Set<String>> cropMap = new HashMap<>();
+
         for (AvailableCcePlotResponse plot : cceResult.getPlots()) {
             if (plot.getCropId() != null &&
                     "random".equalsIgnoreCase(plot.getCceSourceType())) {
+
                 cropMap.computeIfAbsent(plot.getClusterId(), k -> new HashSet<>())
                         .add(plot.getCropName());
             }
         }
 
+        // ✅ 5. LOOP (NO DB CALLS INSIDE)
         int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
+
         List<ClusterStatusResponse> payload = new ArrayList<>();
 
-        // 6️⃣ Build response per cluster
-        for (ClusterMaster cluster : clusters) {
+        for (ClusterSummaryFastProjection c : clusters) {
 
-            Long clusterId = cluster.getCluMasterId();
-            List<ExternalClusterStatusResponse> list = clusterSeasonMap.get(clusterId);
+            Long clusterId = c.getClusterId();
 
-            if (list != null) {
-                Map<Long, Long> counts = list.stream()
-                        .collect(Collectors.groupingBy(
-                                ExternalClusterStatusResponse::getSeasonId,
-                                Collectors.counting()
-                        ));
-
-                counts.forEach((k, v) -> {
-                    if (v > 1) {
-                        System.out.println("DUPLICATE seasonId: " + k + " count: " + v + " clusterId: " + clusterId);
-                    }
-                });
-            }
-            // 🔥 Season handling (ALL edge cases covered)
+            // 🔥 season status
             List<SeasonStatusDto> seasonStatusList =
                     buildSeasonStatus(clusterId, clusterSeasonMap);
 
             // 🔥 Derive cluster-level status
             String clusterStatus = "NOT STARTED";
 
-            if (seasonStatusList.stream()
-                    .anyMatch(s -> "ON GOING".equalsIgnoreCase(s.getStatus()))) {
+            if (seasonStatusList.stream().anyMatch(s -> "ON GOING".equalsIgnoreCase(s.getStatus()))) {
                 clusterStatus = "ON GOING";
-            } else if (seasonStatusList.stream()
-                    .anyMatch(s -> "UNDER REVIEW".equalsIgnoreCase(s.getStatus()))) {
+            } else if (seasonStatusList.stream().anyMatch(s -> "UNDER REVIEW".equalsIgnoreCase(s.getStatus()))) {
                 clusterStatus = "UNDER REVIEW";
             } else if (!seasonStatusList.isEmpty() &&
-                    seasonStatusList.stream()
-                            .allMatch(s -> "COMPLETED".equalsIgnoreCase(s.getStatus()))) {
+                    seasonStatusList.stream().allMatch(s -> "COMPLETED".equalsIgnoreCase(s.getStatus()))) {
                 clusterStatus = "COMPLETED";
             }
 
-            // 7️⃣ Count summary
             switch (clusterStatus) {
                 case "ON GOING" -> ongoing++;
                 case "UNDER REVIEW" -> underreview++;
@@ -345,48 +270,24 @@ System.out.println("ccee "+cceResult);
                 default -> completed++;
             }
 
-            // 8️⃣ Existing mapping
-            var keyPlot = cluster.getKeyPlot();
-            var btr = keyPlot.getBtrData();
-
-            String svNo = btr.getResvno() + "/" + btr.getResbdno();
-            String localbodyCode = btr.getLbcode();
-            Double area = btr.getTotCent();
-
-            String villageName = tblMasterVillageRepository
-                    .findFirstByLsgCode(btr.getLsgcode())
-                    .map(TblMasterVillage::getVillageNameEn)
-                    .orElse("Village not found");
-
-            String localBodyName = localBodyRepository.findByCodeApi(localbodyCode)
-                    .map(lb -> {
-                        String type = localBodyTypeRepository
-                                .findById(lb.getLocalbodyType().longValue())
-                                .map(LocalBodyType::getName)
-                                .orElse("");
-                        return lb.getLocalbodyNameEn() + " " + type;
-                    })
-                    .orElse("Local body not found");
-
             List<String> cropList =
                     new ArrayList<>(cropMap.getOrDefault(clusterId, Set.of()));
 
             payload.add(
                     new ClusterStatusResponse(
-                            cluster.getClusterNumber(),
-                            keyPlot.getId(),
+                            c.getClusterNumber(),
+                            c.getKeyplotId(),
                             !cropList.isEmpty(),
-                            villageName,
-                            btr.getVcode(),
-                            localBodyName,
-                            localbodyCode,
-                            btr.getBcode(),
-                            svNo,
-                            area,
+                            c.getVillageName(),
+                            c.getVcode(),
+                            c.getLocalBodyName() + " " + c.getLocalBodyType(),
+                            c.getLbcode(),
+                            c.getBcode(),
+//                            c.getSurveyNo(),
+                            "11/1",
+                            c.getTotCent(), // ✅ from projection
                             clusterId,
-                            keyPlot.getLandType() != null
-                                    ? keyPlot.getLandType().toLowerCase()
-                                    : "unknown",
+                            c.getLandType() != null ? c.getLandType().toLowerCase() : "unknown",
                             clusterStatus,
                             seasonStatusList,
                             cropList
@@ -403,7 +304,7 @@ System.out.println("ccee "+cceResult);
                 ongoing,
                 notStarted,
                 underreview,
-                cceMessage,
+                cceResult.isFallbackUsed() ? "CCE data not available currently." : null,
                 payload
         );
     }
@@ -445,6 +346,15 @@ System.out.println("ccee "+cceResult);
       plotInfo.put("svno", plot.getResvno() + "/" + plot.getResbdno());
       plotInfo.put("area", area);
       plotInfo.put("actual_area",data.getPlot().getTotCent());
+      plotInfo.put("btr_type",data.getPlot().getBtrtype().getBTypeId());
+      plotInfo.put("wardNo",data.getPlot().getWardnumber());
+      plotInfo.put("houseNo",data.getPlot().getHouseno());
+      plotInfo.put("ownerName",data.getPlot().getOwnername());
+      plotInfo.put("address",data.getPlot().getAddress());
+      plotInfo.put("tpNo",data.getPlot().getTpno());
+      plotInfo.put("tpSubNo",data.getPlot().getTbsubdivisionno());
+      plotInfo.put("oldSvNo",data.getPlot().getOldsvno());
+      plotInfo.put("oldSubNo",data.getPlot().getOldsubno());
 
       // Add plot to label group
       labelToPlotsMap.computeIfAbsent(label, k -> new ArrayList<>()).add(plotInfo);
@@ -1123,8 +1033,7 @@ System.out.println("ccee "+cceResult);
           List<SidePlotDTO> sidePlots
   ) {
 
-   System.out.println("status :::  "+requestedStatus);
-   System.out.println("reddd  "+sidePlots);
+
 //   System.out.println("zone id "+zoneId);
     KeyPlots keyPlot =
             keyPlotsRepository.findById(keyplotId)
@@ -1836,7 +1745,7 @@ System.out.println("ccee "+cceResult);
         if (newNumbers.size() != updates.size()) {
             throw new RuntimeException("Duplicate cluster numbers in request");
         }
-
+        
         // 🔹 Step 1: Load all clusters
         Map<Long, ClusterMaster> clusterMap = new HashMap<>();
 
@@ -1870,19 +1779,17 @@ System.out.println("ccee "+cceResult);
         return "Bulk cluster update successful";
     }
 
-//have to link with tour diary
-public ClusterTourResponse getClusterDetails(Long clusterId) {
+    public ClusterTourResponse getClusterDetails(Long clusterId) {
 
-    ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
-            .orElseThrow(() -> new RuntimeException("Cluster not found"));
+        ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
+                .orElseThrow(() -> new RuntimeException("Cluster not found"));
 
-    ClusterTourResponse response = new ClusterTourResponse();
+        ClusterTourResponse response = new ClusterTourResponse();
 
-    response.setClusterNo(cluster.getClusterNumber());
-    response.setZoneName(cluster.getZone().getZoneNameEn());
-    response.setLandType(cluster.getKeyPlot().getLandType());
+        response.setClusterNo(cluster.getClusterNumber());
+        response.setZoneName(cluster.getZone().getZoneNameEn());
+        response.setLandType(cluster.getKeyPlot().getLandType());
 
-    return response;
-}
-
+        return response;
+    }
 }

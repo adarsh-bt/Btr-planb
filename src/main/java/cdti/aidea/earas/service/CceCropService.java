@@ -108,18 +108,44 @@ public class CceCropService {
     }
   }
 
-  @CircuitBreaker(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
-  @Retry(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
-  public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
-    AvailableCcePlotFetchRequest request = new AvailableCcePlotFetchRequest(zoneId);
-    Map<String, Object> response = formEntryClient.getAvailableCcePlotsByZoneId(request);
+////  @CircuitBreaker(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
+////  @Retry(name = "companyBreaker", fallbackMethod = "fallbackAssignedCcePlots")
+//  public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
+//    AvailableCcePlotFetchRequest request = new AvailableCcePlotFetchRequest(zoneId);
+//    Map<String, Object> response = formEntryClient.getAvailableCcePlotsByZoneId(request);
+//    Object payload = response.get("payload");
+//    List<AvailableCcePlotResponse> plots =
+//        objectMapper.convertValue(payload, new TypeReference<List<AvailableCcePlotResponse>>() {});
+//    return new CcePlotResult(plots, false);
+//  }
+//  public CcePlotResult fallbackAssignedCcePlots(Long zoneId, Throwable t) {
+//    log.warn("Fallback triggered for zoneId: {}", zoneId, t);
+//    return new CcePlotResult(Collections.emptyList(), true);
+//  }
+public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
+
+  try {
+    AvailableCcePlotFetchRequest request =
+            new AvailableCcePlotFetchRequest(zoneId);
+
+    Map<String, Object> response =
+            formEntryClient.getAvailableCcePlotsByZoneId(request);
+
     Object payload = response.get("payload");
+
     List<AvailableCcePlotResponse> plots =
-        objectMapper.convertValue(payload, new TypeReference<List<AvailableCcePlotResponse>>() {});
+            objectMapper.convertValue(
+                    payload,
+                    new TypeReference<List<AvailableCcePlotResponse>>() {}
+            );
+
     return new CcePlotResult(plots, false);
-  }
-  public CcePlotResult fallbackAssignedCcePlots(Long zoneId, Throwable t) {
-    log.warn("Fallback triggered for zoneId: {}", zoneId, t);
+
+  } catch (Exception e) {
+    log.warn("CCE API failed for zoneId {}", zoneId, e);
+
+    // ✅ fallback manually
     return new CcePlotResult(Collections.emptyList(), true);
   }
+}
 }

@@ -43,10 +43,35 @@ public class KeyPlotsController {
 
     private final KeyPlots_Service keyPlots_Service;
 
-    @GetMapping("/get-all/{zoneId}")
-    public ResponseEntity<Response> getAllKeyPlotsWithDetails(@PathVariable("zoneId") Integer zoneId) {
+//    @GetMapping("/get-all/{zoneId}") //before including start and end year
+//    public ResponseEntity<Response> getAllKeyPlotsWithDetails(@PathVariable("zoneId") Integer zoneId) {
+//        try {
+//            List<KeyPlotDetailsListResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId);
+//
+//            return ResponseEntity.ok(
+//                    Response.builder()
+//                            .payload(keyPlots)
+//                            .message("All key plots fetched successfully.")
+//                            .build());
+//
+//        } catch (Exception e) {
+//            log.error("Error fetching all key plots: {}", e.getMessage());
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body(Response.builder().message("Error fetching key plots: " + e.getMessage()).build());
+//        }
+//    }
+
+    //after including agri start and end year
+    @GetMapping("/get-all/{zoneId}/{startYear}/{endYear}")
+    public ResponseEntity<Response> getAllKeyPlotsWithDetailsByYear(
+            @PathVariable("zoneId") Integer zoneId,
+            @PathVariable("startYear") Integer startYear,
+            @PathVariable("endYear") Integer endYear) {
+
         try {
-            List<KeyPlotDetailsListResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId);
+
+            List<KeyPlotDetailsListResponse> keyPlots =
+                    keyPlots_Service.getAllKeyPlotsWithDetails(zoneId, startYear, endYear);
 
             return ResponseEntity.ok(
                     Response.builder()
@@ -55,12 +80,15 @@ public class KeyPlotsController {
                             .build());
 
         } catch (Exception e) {
+
             log.error("Error fetching all key plots: {}", e.getMessage());
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Response.builder().message("Error fetching key plots: " + e.getMessage()).build());
+                    .body(Response.builder()
+                            .message("Error fetching key plots: " + e.getMessage())
+                            .build());
         }
     }
-
     @DeleteMapping("/remove-crop")
     public ResponseEntity<?> removeCrop(@RequestBody CropAssignmentTrailSaveDto dto) {
 

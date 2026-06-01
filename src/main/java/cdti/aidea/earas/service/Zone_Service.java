@@ -1,6 +1,7 @@
 package cdti.aidea.earas.service;
 
 // import cdti.aidea.earas.model.*;
+import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.*;
@@ -301,178 +302,118 @@ public class Zone_Service {
 
   public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(
           Integer zone_id, int page, int size, String filter) {
-    // Fetch user and zone data
 
-    Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zone_id);
-
-    //        var user = userZoneAssignmentRepositoty.findByUserId(userId);
-    //        System.out.println("zone id " + user.get().getTblMasterZone().getZoneId());
-    var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(zone.get().getZoneId());
-
-    // Extract village IDs and fetch village data
-    List<Integer> villageIds =
-            zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
-    List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
-    //        System.out.println("village List" + villageList);
-    List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
-    System.out.println(lsgcodes);
-
-    //        List<TblBtrData> allData = tblBtrRepository.findAllByLsgcodeIn(lsgcodes);
-//    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
-
-    List<TblBtrData> allData = tblBtrDataRepository.findByZone(Long.valueOf(zone_id));
-
-    List<String> landType =
-            allData.stream()
-                    .map(tblBtrData -> tblBtrData.getLtype())
-                    .distinct()
-                    .collect(Collectors.toList());
-
-
-    List<String> LbcodeList =
-            allData.stream().map(TblBtrData::getLbcode).distinct().collect(Collectors.toList());
-    System.out.println("Lbcode " + LbcodeList);
-    List<TblLocalBody> localBodies_full = localBodyRepository.findAllByCodeApiIn(LbcodeList);
-
-    localBodies_full.stream().map(TblLocalBody::getLocalbodyNameEn).forEach(System.out::println);
-    localBodies_full.stream().map(TblLocalBody::getCodeApi).forEach(System.out::println);
-
-    // Create Pageable object for pagination
-    //        Pageable pageable = PageRequest.of(page, size);
-    // Create Pageable object with full sorting criteria
-    Pageable pageable =
-            PageRequest.of(
-                    page,
-                    size,
-                    Sort.by("lbcode")
-                            .and( // 1. Localbody code
-                                    Sort.by("lsgcode")
-                                            .and( // 2. Village
-                                                    Sort.by("bcode")
-                                                            .and( // 3. Block
-                                                                    Sort.by("resvno")
-                                                                            .and( // 4. Survey No part 1
-                                                                                    Sort.by("resbdno")
-                                                                                            .and( // 4. Survey No part 2
-                                                                                                    Sort.by("ltype") // 5. Land Type
-                                                                                            ))))));
-
-    Page<TblBtrData> pageResult;
+    // ✅ Zone validation
+    var zoneOpt = tblMasterZoneRepository.findById(zone_id);
+    if (zoneOpt.isEmpty()) {
+      throw new RuntimeException("Zone not found");
+    }
 
     Long zoneValue = Long.valueOf(zone_id);
 
+    // ✅ Pagination + Sorting
+    Pageable pageable = PageRequest.of(
+            page,
+            size,
+            Sort.by("lbcode")
+                    .and(Sort.by("lsgcode"))
+                    .and(Sort.by("bcode"))
+                    .and(Sort.by("resvno"))
+                    .and(Sort.by("resbdno"))
+                    .and(Sort.by("ltype"))
+    );
+
+    // ✅ Fetch paginated data only
+    Page<TblBtrData> pageResult;
     if (filter == null || filter.isEmpty()) {
       pageResult = tblBtrDataRepository.findByZoneWithOrder(zoneValue, pageable);
     } else {
       pageResult = tblBtrDataRepository.findByZoneWithNamesFilter(zoneValue, filter, pageable);
     }
-    double totalArea =
-            pageResult.getContent().stream()
-                    .mapToDouble(TblBtrData::getTotCent) // Assuming nsqm is the field you want to sum up
-                    .sum();
 
-    // Prepare a map for village codes and names
-    Map<Integer, String> villageNameMap =
-            villageList.stream()
-                    .collect(
-                            Collectors.toMap(TblMasterVillage::getLsgCode, TblMasterVillage::getVillageNameEn));
+    // ✅ 🔥 FAST TOTAL CALCULATION (DB SIDE)
+    Object result = tblBtrDataRepository.getZoneTotals(zoneValue);
 
-    // Create a map to fetch LocalBody details based on lbcode
-    Map<String, String> localBodyNameMap = new HashMap<>();
-    List<String> lbCodes =
-            pageResult.getContent().stream()
-                    .map(TblBtrData::getLbcode)
-                    .distinct()
-                    .collect(Collectors.toList());
+    Object[] totals = (Object[]) result;
 
-    List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbCodes);
-    localBodies.forEach(
-            localBody -> localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn()));
-
-    // Get dynamic land type classification map
-    Map<String, String> landTypeClassificationMap =
-            landTypeClassificationService.getLandTypeClassificationMap();
-
-    // Total area components
-    double totalWetArea = 0;
-    double totalDryArea = 0;
-
-    for (TblBtrData data : allData) {
-      String ltype = data.getLtype();
-      if (ltype != null) {
-        ltype = ltype.trim(); // <-- Trim whitespace here
-      }
-      //            double nsqm = data.getNsqm() != null ? data.getNsqm() : 0;
-      //            double nare = data.getNare() != null ? data.getNare() : 0;
-      //            double nhect = data.getNhect() != null ? data.getNhect() : 0;
-      double areas = data.getTotCent() != null ? data.getTotCent() : 0;
-
-      if (landTypeClassificationMap.containsKey(ltype)) {
-        String classification = landTypeClassificationMap.get(ltype);
-        double area = areas;
-
-        switch (classification) {
-          case "wet":
-            totalWetArea += area;
-            break;
-          case "dry":
-          case "others": // Treat others as dry
-            totalDryArea += area;
-            break;
-        }
-      }
-    }
+    double totalWetArea = totals[0] != null ? ((Number) totals[0]).doubleValue() : 0;
+    double totalDryArea = totals[1] != null ? ((Number) totals[1]).doubleValue() : 0;
     double totalConvertedArea = totalWetArea + totalDryArea;
 
-    double totalWetAreas =
-            new BigDecimal(totalWetArea).setScale(2, RoundingMode.HALF_UP).doubleValue();
-    double totalDryAreas =
-            new BigDecimal(totalDryArea).setScale(2, RoundingMode.HALF_UP).doubleValue();
-    double totalConvertedAreas =
-            new BigDecimal(totalConvertedArea).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    // ✅ Fetch village mapping (light data)
+    var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(zone_id);
 
+    List<Integer> villageIds = zoneRevenueList.stream()
+            .map(TblZoneRevenueVillageMapping::getRevenueVillage)
+            .toList();
+
+    List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
+
+    Map<Integer, String> villageNameMap = villageList.stream()
+            .collect(Collectors.toMap(
+                    TblMasterVillage::getLsgCode,
+                    TblMasterVillage::getVillageNameEn
+            ));
+
+    // ✅ Fetch localbody names only for current page
+    List<String> lbCodes = pageResult.getContent().stream()
+            .map(TblBtrData::getLbcode)
+            .distinct()
+            .toList();
+
+    List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbCodes);
+
+    Map<String, String> localBodyNameMap = new HashMap<>();
+    localBodies.forEach(lb ->
+            localBodyNameMap.put(lb.getCodeApi(), lb.getLocalbodyNameEn())
+    );
+
+    // ✅ DTO mapping (ONLY PAGE DATA)
     List<BtrDataListResponse> responseDtos =
             pageResult.getContent().stream()
-                    .map(
-                            myTable -> {
+                    .map(data -> {
 
-                              BigDecimal bd =
-                                      new BigDecimal(myTable.getTotCent()).setScale(2, RoundingMode.HALF_UP);
+                      BigDecimal bd = new BigDecimal(
+                              data.getTotCent() != null ? data.getTotCent() : 0
+                      ).setScale(2, RoundingMode.HALF_UP);
 
-                              String formatted = bd.toPlainString(); // "10.00"
+                      return new BtrDataListResponse(
+                              data.getId(),
+                              villageNameMap.get(data.getLsgcode()),
+                              data.getBcode(),
+                              data.getResvno(),
+                              String.valueOf(data.getResbdno()),
+                              data.getLtype(),
+                              localBodyNameMap.get(data.getLbcode()),
+                              data.getLtype(),
+                              data.getOwnername(),
+                              data.getAddress(),
+                              data.getTpno(),
+                              data.getTbsubdivisionno(),
+                              data.getHouseno(),
+                              data.getOldsvno(),
+                              data.getOldsubno(),
+                              bd.toPlainString()
+                      );
+                    })
+                    .toList();
 
-                              return new BtrDataListResponse(
-                                      myTable.getId(),
-                                      villageNameMap.get(myTable.getLsgcode()),
-                                      myTable.getBcode(),
-                                      myTable.getResvno(),
-                                      String.valueOf(myTable.getResbdno()),
-                                      myTable.getLtype(),
-                                      localBodyNameMap.get(myTable.getLbcode()),
-                                      myTable.getLtype(),
-                                      myTable.getOwnername(),
-                                      myTable.getAddress(),
-                                      myTable.getTpno(),
-                                      myTable.getTbsubdivisionno(),
-                                      myTable.getHouseno(),
-                                      myTable.getOldsvno(),
-                                      myTable.getOldsubno()  ,
-                                      formatted);
-                            })
-                    .collect(Collectors.toList());
-
-    // Return paginated data along with total count and total area
-
+    // ✅ Final response
     return new BtrMainResponse<>(
             "success",
             "Data fetched successfully",
             responseDtos,
-            pageResult.getTotalElements(), // Total count of records
-            totalConvertedAreas, // This is the converted total area in hectares
-            totalWetAreas,
-            totalDryAreas);
+            pageResult.getTotalElements(),
+            round(totalConvertedArea),
+            round(totalWetArea),
+            round(totalDryArea)
+    );
   }
-
+  private double round(double value) {
+    return new BigDecimal(value)
+            .setScale(2, RoundingMode.HALF_UP)
+            .doubleValue();
+  }
   //    public BtrMainResponse<List<BtrDataListResponse>> UserAssignedLand(UUID userId, int page,
   // int size, String filter) {
   //        // Fetch user and zone data
@@ -629,203 +570,151 @@ public class Zone_Service {
 
   public Object ZoneDetails(Integer zone_id) {
 
-    //    var user = userZoneAssignmentRepositoty.findByTblMasterZone_ZoneId(zone_id);
-    if (tblMasterZoneRepository.findById(zone_id).isEmpty()) {
-      throw new RuntimeException("Zone are not avialble");
+    // ✅ Validate zone
+    var zoneOpt = tblMasterZoneRepository.findById(zone_id);
+    if (zoneOpt.isEmpty()) {
+      throw new RuntimeException("Zone not available");
     }
-    var zone = tblMasterZoneRepository.findById(zone_id);
-    var zoneRevenueList = tblZoneRevenueVillageMappingRepository.findByZone(zone.get().getZoneId());
+    var zone = zoneOpt.get();
 
-    List<Integer> villageIds =
-            zoneRevenueList.stream().map(TblZoneRevenueVillageMapping::getRevenueVillage).toList();
-System.out.println("villages  "+villageIds);
-    List<TblMasterVillage> villageList = tblMasterVillageRepository.findAllById(villageIds);
-    List<Integer> lsgcodes = villageList.stream().map(TblMasterVillage::getLsgCode).toList();
-    System.out.println("lsgcode   "+lsgcodes);
-    List<String> villages_names =
-            villageList.stream().map(TblMasterVillage::getVillageNameEn).toList();
-    System.out.println("villages " + villages_names);
+    // ✅ 🔥 FAST QUERY (optimized)
+    List<BtrStatsProjection> stats =
+            tblBtrDataRepository.getZoneStats(Long.valueOf(zone_id));
 
-//    List<TblBtrData> allData = tblBtrDataRepository.findAllByLsgcodeIn(lsgcodes);
-    List<TblBtrData> allData = tblBtrDataRepository.findByZone(Long.valueOf(zone_id));
+    // ✅ Get all lbcodes from stats (NOT from allData)
+    List<String> lbcodeList = stats.stream()
+            .map(BtrStatsProjection::getLbcode)
+            .toList();
 
-    Map<String, String> landTypeClassificationMap =
-            landTypeClassificationService.getLandTypeClassificationMap();
+    // ✅ Fetch local bodies
+    List<TblLocalBody> localBodies = localBodyRepository.findAllByCodeApiIn(lbcodeList);
 
-    List<String> LbcodeList =
-            allData.stream().map(TblBtrData::getLbcode).distinct().collect(Collectors.toList());
-    System.out.println("localbode  "+LbcodeList);
-    List<TblLocalBody> localBodies_full = localBodyRepository.findAllByCodeApiIn(LbcodeList);
-
-    // Map lbcode -> local body name
-    System.out.println("fulll >>  "+localBodies_full);
     Map<String, String> localBodyNameMap = new HashMap<>();
-    localBodies_full.forEach(
-            localBody -> localBodyNameMap.put(localBody.getCodeApi(), localBody.getLocalbodyNameEn()));
-System.out.println("localbody  >>>  "+localBodyNameMap);
-    // Fetch unique localbody type IDs and load LocalBodyType entities
-    List<Short> localbodyTypeIds =
-            localBodies_full.stream()
-                    .map(TblLocalBody::getLocalbodyType)
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .collect(Collectors.toList());
+    Map<String, Short> localBodyTypeIdMap = new HashMap<>();
 
-    List<Long> ids = localbodyTypeIds.stream().map(Short::longValue).collect(Collectors.toList());
-    List<LocalBodyType> localBodyType_full = localBodyTypeRepository.findByIdIn(ids);
+    for (TblLocalBody lb : localBodies) {
+      localBodyNameMap.put(lb.getCodeApi(), lb.getLocalbodyNameEn());
+      localBodyTypeIdMap.put(lb.getCodeApi(), lb.getLocalbodyType());
+    }
 
-    // Build Map<typeId, typeName>
-    Map<Integer, String> localBodyTypeMap = new HashMap<>();
-    localBodyType_full.forEach(
-            localBodyType ->
-                    localBodyTypeMap.put(localBodyType.getId().intValue(), localBodyType.getName()));
+    // ✅ Fetch local body types
+    List<Long> typeIds = localBodyTypeIdMap.values().stream()
+            .filter(Objects::nonNull)
+            .map(Short::longValue)
+            .distinct()
+            .toList();
 
+    List<LocalBodyType> types = localBodyTypeRepository.findByIdIn(typeIds);
 
-    Map<String, List<TblBtrData>> panchayathDataMap =
-            allData.stream().collect(Collectors.groupingBy(TblBtrData::getLbcode));
+    Map<Integer, String> typeMap = new HashMap<>();
+    for (LocalBodyType t : types) {
+      typeMap.put(t.getId().intValue(), t.getName());
+    }
 
+    // ✅ Build response (NO heavy loop now)
     List<Map<String, Object>> panchayathResponses = new ArrayList<>();
-    List<String> unclassifiedPanchayaths = new ArrayList<>();
 
     double totalWetAreaZone = 0;
     double totalDryAreaZone = 0;
-    double totalPlotCount=0;
+    double totalPlotCount = 0;
+    double overallTotalArea = 0;
+// ✅ Fetch villages + blocks in ONE query
+    List<Object[]> vbData = tblBtrDataRepository.getVillageBlockData(Long.valueOf(zone_id));
 
-//    Map<String, List<String>> lbcodeToVillageNamesMap = new HashMap<>();
-//    lbcodeToVillageNamesMap.put("01108", Arrays.asList("KILIMANOOR"));
-//    lbcodeToVillageNamesMap.put("01113", Arrays.asList("NAGAROOR", "VELLALLOOR"));
-//
-//    Map<String, List<String>> lbcodeToBlockCodesMap = new HashMap<>();
-//    lbcodeToBlockCodesMap.put("01108", Arrays.asList("029", "030"));
-//    lbcodeToBlockCodesMap.put("01113", Arrays.asList("037", "038"));
+    Map<String, Map<String, String>> villageBlockMap = new HashMap<>();
 
+    for (Object[] row : vbData) {
+      String lbcode = (String) row[0];
+      String villages = (String) row[1];
+      String blocks = (String) row[2];
 
-    // Loop through each panchayath data and calculate values
-    for (Map.Entry<String, List<TblBtrData>> entry : panchayathDataMap.entrySet()) {
-      String lbcode = entry.getKey();
-      List<TblBtrData> panchayathData = entry.getValue();
+      Map<String, String> map = new HashMap<>();
+      map.put("villages", villages);
+      map.put("blocks", blocks);
 
-      double wetArea = 0;
-      double dryArea = 0;
-      int wetCount = 0;
-      int dryCount = 0;
-      // int totalPlotCount = 0;
-
-
-      for (TblBtrData dataItem : panchayathData) {
-        String landTypeValue = dataItem.getLtype().trim();
-        if (landTypeClassificationMap.containsKey(landTypeValue)) {
-          String classification = landTypeClassificationMap.get(landTypeValue);
-          double area = dataItem.getTotCent();
-          switch (classification) {
-            case "wet" -> {
-              wetArea += area;
-              wetCount++;
-            }
-            case "dry", "others" -> {
-              dryArea += area;
-              dryCount++;
-            }
-          }
-        }
-      }
-
-      int total_keyplots = wetCount + dryCount;
-      double total_area = Math.round(dryArea * 100.0) / 100.0 + Math.round(wetArea * 100.0) / 100.0;
-
-      if (total_keyplots == 0) {
-        unclassifiedPanchayaths.add(localBodyNameMap.get(lbcode));
-      }
-
-      totalWetAreaZone += wetArea;
-      totalDryAreaZone += dryArea;
-      totalPlotCount += total_keyplots;
+      villageBlockMap.put(lbcode, map);
+    }
+    for (BtrStatsProjection s : stats) {
 
       Map<String, Object> data = new HashMap<>();
-      data.put("p_name", localBodyNameMap.get(lbcode));
-      data.put("Total_area", total_area);
-      data.put("Dry_area", Math.round(dryArea * 100.0) / 100.0);
-      data.put("Wet_area", Math.round(wetArea * 100.0) / 100.0);
 
-      data.put("Wet_plot", wetCount);
-      data.put("dry_plot", dryCount);
-      data.put("t_plot", total_keyplots);
-      Set<Integer> vcodeSet = panchayathData.stream()
-              .map(TblBtrData::getVcode)
-              .filter(Objects::nonNull)
-              .collect(Collectors.toSet());
+      data.put("p_name", localBodyNameMap.get(s.getLbcode()));
 
-      List<TblMasterVillage> villages = tblMasterVillageRepository.findAllById(vcodeSet);
+      data.put("Wet_area", s.getWet_area());
+      data.put("Dry_area", s.getDry_area());
+      data.put("Total_area", s.getTotal_area());
 
-      List<String> villageNames = villages.stream()
-              .map(TblMasterVillage::getVillageNameEn)
-              .distinct()
+      data.put("Wet_plot", s.getWet_plot());
+      data.put("dry_plot", s.getDry_plot());
+      data.put("t_plot", s.getTotal_plot());
+
+      // totals
+      totalWetAreaZone += s.getWet_area();
+      totalDryAreaZone += s.getDry_area();
+      totalPlotCount += s.getTotal_plot();
+      overallTotalArea += s.getTotal_area();
+
+      // localbody type
+      Short typeId = localBodyTypeIdMap.get(s.getLbcode());
+      String typeName = (typeId != null) ? typeMap.get(typeId.intValue()) : "";
+      data.put("localbodytype", typeName);
+
+      // ⚠️ TEMP (optional: keep empty or static)
+      Map<String, String> vb = villageBlockMap.get(s.getLbcode());
+
+      String villagesStr = vb != null ? vb.get("villages") : "";
+      String blocksStr = vb != null ? vb.get("blocks") : "";
+
+      List<String> villagesList = villagesStr.isEmpty()
+              ? new ArrayList<>()
+              : Arrays.stream(villagesStr.split(","))
+              .map(String::trim)
               .toList();
 
-      Set<String> bcodeSet = panchayathData.stream()
-              .map(TblBtrData::getBcode)
-              .filter(Objects::nonNull)
-              .collect(Collectors.toSet());
+      List<String> blocksList = blocksStr.isEmpty()
+              ? new ArrayList<>()
+              : Arrays.stream(blocksStr.split(","))
+              .map(String::trim)
+              .toList();
 
-      data.put("villages", villageNames); // ✅ Clean village names
-      data.put("blocks", new ArrayList<>(bcodeSet));
-
-      // 🔍 Add localbody type name
-      TblLocalBody matchingLocalBody =
-              localBodies_full.stream()
-                      .filter(lb -> lb.getCodeApi().equals(lbcode))
-                      .findFirst()
-                      .orElse(null);
-
-      String localbodyTypeName = "";
-      if (matchingLocalBody != null) {
-        Short typeId = matchingLocalBody.getLocalbodyType();
-        if (typeId != null && localBodyTypeMap.containsKey(typeId.intValue())) {
-          localbodyTypeName = localBodyTypeMap.get(typeId.intValue());
-        }
-      }
-      data.put("localbodytype", localbodyTypeName);
-
+      data.put("villages", villagesList);
+      data.put("blocks", blocksList);
       panchayathResponses.add(data);
     }
 
-    double overallTotalArea =
-            panchayathResponses.stream()
-                    .mapToDouble(response -> (double) response.get("Total_area"))
-                    .sum();
+    // ✅ District + Taluk
+    Optional<DistrictMaster> district =
+            districtMasterRepository.findById(Long.valueOf(zone.getDistId()));
 
-    //    var zone = zone_id;
-    Optional<DistrictMaster> district_name = districtMasterRepository.findById(Long.valueOf(zone.get().getDistId()));
-    Optional<DesTaluk> taluk = desTalukRepository.findById(zone.get().getDesTalukId());
+    Optional<DesTaluk> taluk =
+            desTalukRepository.findById(zone.getDesTalukId());
 
-    String districtName = district_name.map(DistrictMaster::getDistNameEn).orElse("");
+    String districtName = district.map(DistrictMaster::getDistNameEn).orElse("");
     String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("");
-    String zoneName = zone.get().getZoneNameEn();
+    String zoneName = zone.getZoneNameEn();
 
+    // ✅ Localbody label
     String localBodyLabel = "";
     String localbodyType = "";
 
+    Optional<ZoneLocalbodyBlockMapping> mapping =
+            zoneLocalbodyBlockMappingRepository.findByZoneAndIsValid(zone.getZoneId(), true);
 
-    Optional<ZoneLocalbodyBlockMapping> localbody_type =
-            zoneLocalbodyBlockMappingRepository.findByZoneAndIsValid(zone.get().getZoneId(), true);
-
-    System.out.println(" rr> >  "+localbody_type);
-    if (localbody_type.isPresent()) {
-      if (localbody_type.get().getBlockPanchayatMunicipalArea() == 1) {
-
-        System.out.println("----------");
-        Optional<MasterBlock> localbody =
-                masterBlockRepository.findById(localbody_type.get().getBlockDetails());
-        localBodyLabel = localbody.map(MasterBlock::getBlockName).orElse("");
+    if (mapping.isPresent()) {
+      if (mapping.get().getBlockPanchayatMunicipalArea() == 1) {
+        Optional<MasterBlock> block =
+                masterBlockRepository.findById(mapping.get().getBlockDetails());
+        localBodyLabel = block.map(MasterBlock::getBlockName).orElse("");
         localbodyType = "Block Panchayath";
       } else {
-        Optional<TblLocalBody> localBody =
-                localBodyRepository.findById(localbody_type.get().getBlockDetails());
-        localBodyLabel = localBody.map(TblLocalBody::getLocalbodyNameEn).orElse("");
-        if (localBody.isPresent()) {
-          Optional<LocalBodyType> localBodyTypeObj =
-                  localBodyTypeRepository.findById((long) localBody.get().getLocalbodyType());
-          localbodyType = localBodyTypeObj.map(LocalBodyType::getName).orElse("");
+        Optional<TblLocalBody> lb =
+                localBodyRepository.findById(mapping.get().getBlockDetails());
+        localBodyLabel = lb.map(TblLocalBody::getLocalbodyNameEn).orElse("");
+
+        if (lb.isPresent()) {
+          Optional<LocalBodyType> type =
+                  localBodyTypeRepository.findById((long) lb.get().getLocalbodyType());
+          localbodyType = type.map(LocalBodyType::getName).orElse("");
         }
       }
     }
@@ -837,15 +726,15 @@ System.out.println("localbody  >>>  "+localBodyNameMap);
             talukName,
             localbodyType,
             localBodyLabel,
-            zoneName,
+            zone.getZoneNameEn(),
             panchayathResponses,
-            new ArrayList<>(localBodyNameMap.keySet()),
-            //  505,
-            totalPlotCount ,
+            lbcodeList,
+            totalPlotCount,
             overallTotalArea,
             totalWetAreaZone,
             totalDryAreaZone,
-            unclassifiedPanchayaths);
+            new ArrayList<>()
+    );
   }
 
   public List<LbCodeResponse> getLocalBodiesByZone(Integer zoneId) {

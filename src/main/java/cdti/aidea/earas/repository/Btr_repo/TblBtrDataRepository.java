@@ -1,5 +1,6 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.model.Btr_models.TblBtrData;
 
 import java.time.LocalDateTime;
@@ -190,4 +191,41 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
           @Param("updationTime") LocalDateTime updationTime,
           @Param("updatedBy") UUID updatedBy
   );
+
+  @Query(value = """
+    SELECT 
+        lbcode,
+        COUNT(*) FILTER (WHERE TRIM(UPPER(ltype)) = 'WET') AS wet_plot,
+        COUNT(*) FILTER (WHERE TRIM(UPPER(ltype)) = 'DRY') AS dry_plot,
+        COALESCE(SUM(tot_cent) FILTER (WHERE TRIM(UPPER(ltype)) = 'WET'), 0) AS wet_area,
+        COALESCE(SUM(tot_cent) FILTER (WHERE TRIM(UPPER(ltype)) = 'DRY'), 0) AS dry_area,
+        COALESCE(SUM(tot_cent), 0) AS total_area,
+        COUNT(*) AS total_plot
+    FROM tbl_btr_data
+    WHERE zone = :zone
+    GROUP BY lbcode
+""", nativeQuery = true)
+  List<BtrStatsProjection> getZoneStats(@Param("zone") Long zone);
+
+  @Query(value = """
+    SELECT 
+        lbcode,
+        STRING_AGG(DISTINCT village_name_en, ', ') AS villages,
+        STRING_AGG(DISTINCT bcode, ', ') AS blocks
+    FROM tbl_btr_data b
+    JOIN tbl_master_village v ON b.vcode = v.village_id
+    WHERE b.zone = :zone
+    GROUP BY lbcode
+""", nativeQuery = true)
+  List<Object[]> getVillageBlockData(@Param("zone") Long zone);
+
+  @Query(value = """
+    SELECT 
+        COALESCE(SUM(tot_cent) FILTER (WHERE TRIM(UPPER(ltype)) = 'WET'), 0) AS wet_area,
+        COALESCE(SUM(tot_cent) FILTER (WHERE TRIM(UPPER(ltype)) = 'DRY'), 0) AS dry_area
+    FROM tbl_btr_data
+    WHERE zone = :zone
+""", nativeQuery = true)
+  Object getZoneTotals(Long zone);
+
 }

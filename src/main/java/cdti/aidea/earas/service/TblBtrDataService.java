@@ -592,32 +592,254 @@ public class TblBtrDataService {
 //        return errors;
 //    }
 
+//instead placed saveAll from adarsh-b
+//// ---------------- Save All ----------------
+//@Transactional
+//public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
+//    List<ValidationErrorResponse> allErrors = new ArrayList<>();
+//
+////Adding addition code to catch duplication
+//    Set<String> seen = new HashSet<>();
+//
+//    for (TblBtrDataDTO dto : dtoList) {
+//
+//        String key = dto.getDcode() + "-" + dto.getTcode() + "-" +
+//                dto.getVcode() + "-" + dto.getBcode() + "-" +
+//                dto.getLbcode() + "-" +
+//                (dto.getResvno() != null ? dto.getResvno() : "null") + "-" +
+//                (dto.getResbdno() != null ? dto.getResbdno() : "null");
+//
+//        if (!seen.add(key)) {
+//            allErrors.add(new ValidationErrorResponse(
+//                    dto.getResvno(), dto.getResbdno(),
+//                    dto.getWardno(), dto.getHouseno(),
+//                    dto.getTotCent(),
+//                    "Duplicate record in request payload"
+//            ));
+//        }
+//    }
+//
+//    // Validate all DTOs first
+//    for (TblBtrDataDTO dto : dtoList) {
+//        // Required validation
+//        List<String> requiredErrors = validateRequiredFields(dto);
+//
+//        if (!requiredErrors.isEmpty()) {
+//            allErrors.add(new ValidationErrorResponse(
+//                    dto.getResvno(), dto.getResbdno(), dto.getWardno(),
+//                    dto.getHouseno(), dto.getTotCent(),
+//                    String.join(", ", requiredErrors)
+//            ));
+//        }
+//
+//        // Duplicate validation
+//        ValidationErrorResponse duplicateError = validateDuplicate(dto);
+//        if (duplicateError != null) {
+//            allErrors.add(duplicateError);
+//        }
+//    }
+//
+//    if (!allErrors.isEmpty()) {
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("status", "Validation Failed");
+//        response.put("errors", allErrors);
+//        return response;
+//    }
+//
+//    // ===============================
+//    // ✅ Check zone limit for bulk save
+//    // ===============================
+//    if (!dtoList.isEmpty()) {
+//        TblBtrDataDTO firstDto = dtoList.get(0);
+//        TblMasterZone zone = tblMasterZoneRepository
+//                .findById(Math.toIntExact(firstDto.getZoneId()))
+//                .orElseThrow(() -> new RuntimeException("Zone not found"));
+//
+//        // Calculate agri year (same as in saveData)
+//        LocalDate today = LocalDate.now();
+//        LocalDate agriStart = (today.getMonthValue() >= 6)
+//                ? LocalDate.of(today.getYear(), 6, 1)
+//                : LocalDate.of(today.getYear() - 1, 6, 1);
+//        LocalDate agriEnd = (today.getMonthValue() >= 6)
+//                ? LocalDate.of(today.getYear() + 1, 7, 31)
+//                : LocalDate.of(today.getYear(), 7, 31);
+//
+//        // Check current count
+//        long currentCount = keyPlotsRepository.countKeyPlotsForUpdate(
+//                zone.getZoneId(), agriStart, agriEnd);
+//
+//        // Check if we can save all requested records
+//        if (currentCount + dtoList.size() > 100) {
+//            int availableSlots = (int) (100 - currentCount);
+//            throw new RuntimeException(
+//                    "Cannot save " + dtoList.size() + " records. " +
+//                            "Only " + availableSlots + " slots available for this zone in current agricultural year."
+//            );
+//        }
+//    }
+//
+//    // ✅ Save all records
+//    List<Long> savedIds = new ArrayList<>();
+//    for (TblBtrDataDTO dto : dtoList) {
+//        // Call saveData without the limit check (since we already checked)
+//        Long savedId = saveSingleRecordWithoutLimitCheck(dto);
+//        savedIds.add(savedId);
+//    }
+//
+//    Map<String, Object> successResponse = new HashMap<>();
+//    successResponse.put("status", "Success");
+//    successResponse.put("message", "All records saved successfully");
+//    successResponse.put("ids", savedIds);
+//    return successResponse;
+//}
+//
+//    private Long saveSingleRecordWithoutLimitCheck(TblBtrDataDTO dto) {
+//        // This is the same as saveData() but without the limit check
+//        // Fetch zone
+//        TblMasterZone zone = tblMasterZoneRepository
+//                .findById(Math.toIntExact(dto.getZoneId()))
+//                .orElseThrow(() -> new RuntimeException("Zone not found"));
+//
+//        // Calculate agri year
+//        LocalDate today = LocalDate.now();
+//        LocalDate agriStart = (today.getMonthValue() >= 6)
+//                ? LocalDate.of(today.getYear(), 6, 1)
+//                : LocalDate.of(today.getYear() - 1, 6, 1);
+//        LocalDate agriEnd = (today.getMonthValue() >= 6)
+//                ? LocalDate.of(today.getYear() + 1, 7, 31)
+//                : LocalDate.of(today.getYear(), 7, 31);
+//
+//        // Save TblBtrData
+//        TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
+//        Optional<Integer> maxClusterNumberOpt =
+//                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
+//                        zone.getZoneId(),
+//                        agriStart.atStartOfDay(),
+//                        agriEnd.atTime(23, 59, 59)
+//                );
+//        int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+////        System.out.println("next cluster ssss"+nextClusterNumber);
+////        if (nextClusterNumber >= 100){
+////            throw new RuntimeException("Current Year Keyplots limit 100 is Reach");
+////        }
+//        // Save KeyPlots
+//        KeyPlots keyPlot = new KeyPlots();
+//        keyPlot.setBtrData(btrData);
+//        keyPlot.setZone(zone);
+//        keyPlot.setIntervals(1);
+//        keyPlot.setAgriStartYear(agriStart);
+//        keyPlot.setAgriEndYear(agriEnd);
+//        keyPlot.setIsRejected(false);
+//        keyPlot.setStatus(true);
+//        keyPlot.setLandType(btrData.getLtype());
+//        keyPlot.setCreated_by(dto.getUser_id());
+//        keyPlotsRepository.save(keyPlot);
+//
+//        // Get next cluster number
+//
+//
+//        // Save ClusterMaster
+//        ClusterMaster clusterMaster = new ClusterMaster();
+//        clusterMaster.setKeyPlot(keyPlot);
+//        clusterMaster.setClusterNumber(nextClusterNumber);
+//        clusterMaster.setZone(zone);
+//        clusterMaster.setStatus("Not Started");
+//        clusterMaster.setIsReject(false);
+//        clusterMaster.setIs_active(true);
+//        clusterMaster.setIs_editable(true);
+//        clusterMasterRepository.save(clusterMaster);
+//
+//        // Save ClusterFormData
+//        ClusterFormData clusterFormData = new ClusterFormData();
+//        clusterFormData.setClusterMaster(clusterMaster);
+//        clusterFormData.setPlot(btrData);
+//        clusterFormData.setPlotLabel("K");
+//        clusterFormData.setEnumeratedArea(btrData.getTotCent());
+//        clusterFormData.setCreatedBy(dto.getUser_id());
+//        clusterFormData.setStatus(true);
+//        clusterFormDataRepository.save(clusterFormData);
+//
+//        return btrData.getId();
+//    }
+//
+//    // ---------------- DTO -> Entity Mapper ----------------
+//    private TblBtrData mapToEntity(TblBtrDataDTO dto) {
+//        TblBtrData entity = new TblBtrData();
+//        entity.setDcode(dto.getDcode());
+//        entity.setTcode(dto.getTcode());
+//        entity.setVcode(dto.getVcode());
+//        entity.setBcode(dto.getBcode());
+//        entity.setLbcode(dto.getLbcode());
+//        entity.setLtype(dto.getLtype());
+//        entity.setLsgcode(dto.getLsgcode());
+//        entity.setTotCent(dto.getTotCent());
+//        entity.setResvno(dto.getResvno());
+//        entity.setResbdno(dto.getResbdno());
+//        entity.setCreated_by(dto.getUser_id());
+//        entity.setUpdated_by(dto.getUser_id());
+//        entity.setInsertionTime(LocalDateTime.now());
+//        entity.setUpdationTime(LocalDateTime.now());
+//        entity.setZone(Long.valueOf(dto.getZoneId()));
+//// 🧩 Determine type-based mapping
+//        if (dto.getBtrtype() != null) {
+//            long typeId = dto.getBtrtype();
+//            Optional<TblNonBtr> nonBtr = tblNonBtrRepository.findById(dto.getBtrtype());
+//            // Type 1 → dcode to resbdno
+//            if (typeId == 1) {
+//                entity.setBtrtype(nonBtr.get());
+//            }
+//            // Type 2 → dcode to totcent + ownername, address, houseno
+//            else if (typeId == 2) {
+//                entity.setOwnername(dto.getOwnername());
+//                entity.setAddress(dto.getAddress());
+//                entity.setHouseno(dto.getHouseno());
+//                entity.setWardnumber(dto.getWardno());
+//                entity.setBtrtype(nonBtr.get());
+//            }
+//            // Type 3 → dcode to totcent + ownername, address
+//            // but not resvno/resbdno
+//            else if (typeId == 3) {
+//                entity.setOwnername(dto.getOwnername());
+//                entity.setAddress(dto.getAddress());
+//                entity.setBtrtype(nonBtr.get());
+//            }
+//            // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno
+//            // (mapped to mainno and subno)
+//            else if (typeId == 4) {
+//                entity.setOwnername(dto.getOwnername());
+//                entity.setAddress(dto.getAddress());
+//                entity.setTpno(dto.getTpno());
+//                entity.setTbsubdivisionno(dto.getTbsubdivisionno());
+//                entity.setBtrtype(nonBtr.get());
+//            }
+//            // Type 5 → dcode to totcent + ownername, address, mainno, subno
+//            // but not resvno/resbdno
+//            else if (typeId == 5) {
+//                entity.setOwnername(dto.getOwnername());
+//                entity.setOldsvno(dto.getOldsvno());
+//                entity.setOldsubno(dto.getOldsubno());
+//                entity.setBtrtype(nonBtr.get());
+//            }
+//        }
+//        // ✅ NEW BLOCK — add this
+//        LocalDate now = LocalDate.now();
+//        entity.setInsertionTime(LocalDateTime.now());
+//        entity.setUpdationTime(LocalDateTime.now());
+//
+//        // Agreement year logic
+//        LocalDate agreStart = LocalDate.of(now.getYear(), 7, 1); // July 1 of current year
+//        LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
+//        entity.setAgreStartYear(agreStart);
+//        entity.setAgreEndYear(agreEnd);
+//        return entity;
+//    }
+//    private boolean notEmpty(String s) {
+//        return s != null && !s.trim().isEmpty();
+//    }
 
-// ---------------- Save All ----------------
 @Transactional
 public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
     List<ValidationErrorResponse> allErrors = new ArrayList<>();
-
-//Adding addition code to catch duplication
-    Set<String> seen = new HashSet<>();
-
-    for (TblBtrDataDTO dto : dtoList) {
-
-        String key = dto.getDcode() + "-" + dto.getTcode() + "-" +
-                dto.getVcode() + "-" + dto.getBcode() + "-" +
-                dto.getLbcode() + "-" +
-                (dto.getResvno() != null ? dto.getResvno() : "null") + "-" +
-                (dto.getResbdno() != null ? dto.getResbdno() : "null");
-
-        if (!seen.add(key)) {
-            allErrors.add(new ValidationErrorResponse(
-                    dto.getResvno(), dto.getResbdno(),
-                    dto.getWardno(), dto.getHouseno(),
-                    dto.getTotCent(),
-                    "Duplicate record in request payload"
-            ));
-        }
-    }
 
     // Validate all DTOs first
     for (TblBtrDataDTO dto : dtoList) {
@@ -836,6 +1058,7 @@ public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
     private boolean notEmpty(String s) {
         return s != null && !s.trim().isEmpty();
     }
+
 
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
         boolean existsRes = false;

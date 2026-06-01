@@ -1,5 +1,6 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.model.Btr_models.TblBtrData;
 import java.util.List;
 
@@ -67,4 +68,6 @@ public interface TblBtrRepository extends JpaRepository<TblBtrData, Long> {
                   + "b.ltype DESC")
   Page<TblBtrDataOld> findByLsgcodeInWithNamesFilter(
           @Param("lsgcodes") List<Integer> lsgcodes, @Param("filter") String filter, Pageable pageable);
+
+
 }

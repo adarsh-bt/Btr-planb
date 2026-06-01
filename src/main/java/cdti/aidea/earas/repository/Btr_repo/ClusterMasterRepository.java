@@ -135,7 +135,54 @@ Optional<Integer> findMaxClusterNumberByAgriYear(
   List<ClusterMaster> findAllByZoneOrderByClusterNumber(@Param("zone") TblMasterZone zone);
 
 
-  @Query("""
+//  @Query("""
+//SELECT new cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse(
+//    kp.id,
+//    b.dcode,
+//    b.tcode,
+//    cm.cluMasterId,
+//    kp.zone.zoneId,
+//    cm.clusterNumber,
+//    b.id,
+//    bt.bTypeName,
+//    COALESCE(v.villageNameEn, 'Unknown'),
+//    v.villageId,
+//    b.bcode,
+//    COALESCE(lb.localbodyNameEn, b.lbcode),
+//    b.lbcode,
+//    cm.status,
+//    cm.is_editable,
+//    CONCAT(b.resvno, '/', b.resbdno),
+//    b.ownername,
+//    b.address,
+//    b.wardnumber,
+//    b.houseno,
+//    b.tpno,
+//    b.tbsubdivisionno,
+//    b.oldsvno,
+//    b.oldsubno,
+//    b.totCent,
+//    COALESCE(cfd.enumeratedArea, 0.0),
+//    kp.landType
+//)
+//FROM ClusterMaster cm
+//JOIN cm.keyPlot kp
+//JOIN kp.btrData b
+//JOIN b.btrtype bt
+//LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
+//LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
+//LEFT JOIN ClusterFormData cfd
+//    ON cfd.plot = b
+//    AND cfd.plotLabel = 'K'
+//    AND cfd.clusterMaster.cluMasterId = cm.cluMasterId
+//WHERE cm.zone.zoneId = :zoneId
+//ORDER BY cm.clusterNumber
+//""")
+//  Page<KeyPlotDetailsListResponse> findAllKeyPlotDetails(
+//          @Param("zoneId") Integer zoneId,
+//          Pageable pageable
+//  );
+@Query("""
 SELECT new cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse(
     kp.id,
     b.dcode,
@@ -175,13 +222,19 @@ LEFT JOIN ClusterFormData cfd
     ON cfd.plot = b 
     AND cfd.plotLabel = 'K' 
     AND cfd.clusterMaster.cluMasterId = cm.cluMasterId
+
 WHERE cm.zone.zoneId = :zoneId
+AND kp.agriStartYear = :agriStart
+AND kp.agriEndYear = :agriEnd
+
 ORDER BY cm.clusterNumber
 """)
-  Page<KeyPlotDetailsListResponse> findAllKeyPlotDetails(
-          @Param("zoneId") Integer zoneId,
-          Pageable pageable
-  );
+Page<KeyPlotDetailsListResponse> findAllKeyPlotDetails(
+        @Param("zoneId") Integer zoneId,
+        @Param("agriStart") LocalDate agriStart,
+        @Param("agriEnd") LocalDate agriEnd,
+        Pageable pageable
+);
 
   @Query("""
 SELECT cm FROM ClusterMaster cm

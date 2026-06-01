@@ -102,7 +102,27 @@ public interface KeyPlotsRepository extends JpaRepository<KeyPlots, UUID> {
           LocalDate start,
           LocalDate end
   );
+  @Query("""
+SELECT COUNT(k)
+FROM KeyPlots k
+WHERE k.btrData.id = :plotId
+AND (
+    (k.agriStartYear = :currentStart
+     AND k.agriEndYear = :currentEnd)
 
+ OR
+
+    (k.agriStartYear = :previousStart
+     AND k.agriEndYear = :previousEnd)
+)
+""")
+  long countUsedInCurrentOrPreviousYear(
+          Long plotId,
+          LocalDate currentStart,
+          LocalDate currentEnd,
+          LocalDate previousStart,
+          LocalDate previousEnd
+  );
 
 }
 

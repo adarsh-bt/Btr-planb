@@ -16,5 +16,6 @@ public class ValidationResponse {
   private Double totalcent;
   private String message;
   private Double remainingArea;
+  private String landType;
   private List<String> availableSubdivisions; // New field for subdivision options
 }

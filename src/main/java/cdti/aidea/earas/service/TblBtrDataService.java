@@ -235,24 +235,19 @@ public class TblBtrDataService {
                 .findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-        // Calculate agri year
-        LocalDate today = LocalDate.now();
-        LocalDate agriStart = (today.getMonthValue() >= 6)
-                ? LocalDate.of(today.getYear(), 6, 1)
-                : LocalDate.of(today.getYear() - 1, 6, 1);
-        LocalDate agriEnd = (today.getMonthValue() >= 6)
-                ? LocalDate.of(today.getYear() + 1, 7, 31)
-                : LocalDate.of(today.getYear(), 7, 31);
-
         LocalDate startDate =
                 AgriYearUtil.getAgriYearStart(dto.getAgriYear());
 
         LocalDate endDate =
                 AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
 
-
-        // Save TblBtrData
-        TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
+        TblBtrData btrData;
+        if (dto.getId() != null) {
+            btrData = tblBtrDataRepository.findById(dto.getId())
+                    .orElseThrow(() -> new RuntimeException("Existing BTR Plot not found for ID: " + dto.getId()));
+        } else {
+            btrData = tblBtrDataRepository.save(mapToEntity(dto));
+        }
 //        Optional<Integer> maxClusterNumberOpt =
 //                clusterMasterRepository.findMaxClusterNumberByAgriYear(
 //                        zone.getZoneId(),
@@ -383,6 +378,9 @@ public class TblBtrDataService {
     }
 
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
+        if (dto.getId() != null) {
+            return null;
+        }
         boolean existsRes = false;
         if (dto.getResvno() != null ){
         if (dto.getResbdno() != null && notEmpty(dto.getResbdno())) {
@@ -806,8 +804,6 @@ public class TblBtrDataService {
         return calculateRemainingAreaForPlot(plot, dto.getOldsvno(), dto.getOldsubno());
     }
 
-
-
     // Helper method to validate survey number if provided (common for all types)
     private ValidationResponse validateSurveyNumberIfProvided(TblBtrDataDTO dto, TblMasterZone zone) {
         if (dto.getResvno() == null) return null;
@@ -885,6 +881,7 @@ public class TblBtrDataService {
                 calculateTotalArea(plots),
                 "Survey number found with multiple subdivisions. Available: " + subdivisionsList + ". Please select one.",
                 -1.0, // Negative value indicates subdivision selection needed
+                null,
                 availableSubdivisions // New field to pass available options
         );
     }
@@ -935,6 +932,7 @@ public class TblBtrDataService {
                     totalArea,
                     "This " + getPlotType(plot) + " cannot be selected for this agricultural year (no remaining area)",
                     remainingArea,
+                    plot.getLtype(),
                     null
             );
         } else if (remainingArea > 0 && totalEnumerated > 0) {
@@ -945,6 +943,7 @@ public class TblBtrDataService {
                     totalArea,
                     "Remaining area available for reuse in this agricultural year",
                     remainingArea,
+                    plot.getLtype(),
                     null
             );
         } else {
@@ -955,12 +954,11 @@ public class TblBtrDataService {
                     totalArea,
                     "Duplicate entry already exists but has available area",
                     remainingArea,
+                    plot.getLtype(),
                     null
             );
         }
     }
-
-
 
 
     private String getPlotType(TblBtrData plot) {
@@ -999,8 +997,6 @@ public class TblBtrDataService {
                 2L
         );
     }
-
-
 
     @Transactional
     public String updateTotCentAndHandleClusterData(Long btrId, Double newTotCent, UUID userId) {

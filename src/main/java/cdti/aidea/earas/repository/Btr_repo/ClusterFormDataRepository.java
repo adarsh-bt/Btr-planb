@@ -3,6 +3,7 @@ package cdti.aidea.earas.repository.Btr_repo;
 import cdti.aidea.earas.contract.Response.BtrClusterUsageResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -108,4 +109,18 @@ AND c.plotLabel = :plotLabel
     List<ClusterMaster> clusters = findAllActiveByKeyPlot(keyPlot);
     return clusters.isEmpty() ? Optional.empty() : Optional.of(clusters.get(0));
   }
+
+
+  @Query("""
+SELECT COUNT(c)
+FROM ClusterFormData c
+WHERE c.plot.id = :plotId
+AND c.clusterMaster.keyPlot.agriStartYear = :agriStart
+AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
+""")
+  long countUsedInCurrentAgriYear(
+          Long plotId,
+          LocalDate agriStart,
+          LocalDate agriEnd
+  );
 }

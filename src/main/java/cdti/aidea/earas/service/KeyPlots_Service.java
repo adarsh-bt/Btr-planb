@@ -65,9 +65,23 @@ public class KeyPlots_Service {
 //
 //        return allKeyPlots.stream().map(this::mapToKeyPlotDetailsResponse).collect(Collectors.toList());
 //    }
-    public List<KeyPlotDetailsListResponse> getAllKeyPlotsWithDetails(Integer zoneId) {
+    public List<KeyPlotDetailsListResponse> getAllKeyPlotsWithDetails(
+            Integer zoneId,
+            String agriYear) {
+
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
         return clusterMasterRepository
-                .findAllKeyPlotDetails(zoneId, PageRequest.of(0, 150)) // 🔥 LIMIT
+                .findAllKeyPlotDetails(
+                        zoneId,
+                        agriStart,
+                        agriEnd,
+                        PageRequest.of(0, 150)
+                )
                 .getContent();
     }
 //    for speed
@@ -1841,8 +1855,93 @@ System.out.println(zone.getZoneId());
         }
 
         // Calculate remaining area for single plot case
-        return calculateRemainingAreaForPlot(plots.get(0), dto.getResvno(), cleanedResbdno);
+        return validatePlotReuse(
+                plots.get(0),
+                dto.getAgriYear()
+        );
     }
+
+    private ValidationResponse validatePlotReuse(
+            TblBtrData plot,
+            String agriYear
+    ) {
+
+        LocalDate currentStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate currentEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        String[] years = agriYear.split("-");
+
+        String previousAgriYear =
+                (Integer.parseInt(years[0]) - 1)
+                        + "-"
+                        + (Integer.parseInt(years[1]) - 1);
+
+        LocalDate previousStart =
+                AgriYearUtil.getAgriYearStart(previousAgriYear);
+
+        LocalDate previousEnd =
+                AgriYearUtil.getAgriYearEnd(previousAgriYear);
+
+        long keyplotCount =
+                keyPlotsRepository.countUsedInCurrentOrPreviousYear(
+                        plot.getId(),
+                        currentStart,
+                        currentEnd,
+                        previousStart,
+                        previousEnd
+                );
+
+        if (keyplotCount > 0) {
+
+            return new ValidationResponse(
+                    plot.getId(),
+                    plot.getResvno(),
+                    plot.getResbdno(),
+                    plot.getTotCent(),
+                    "Plot already selected in current or previous agricultural year",
+                    0.0,
+                    plot.getLtype(),
+                    null
+            );
+        }
+
+        long clusterCount =
+                clusterFormDataRepository.countUsedInCurrentAgriYear(
+                        plot.getId(),
+                        currentStart,
+                        LocalDate.from(currentEnd.atTime(23,59,59))
+                );
+
+        if (clusterCount > 0) {
+
+            return new ValidationResponse(
+                    plot.getId(),
+                    plot.getResvno(),
+                    plot.getResbdno(),
+                    plot.getTotCent(),
+                    "Plot already used in cluster during current agricultural year",
+                    0.0,
+                    plot.getLtype(),
+                    null
+            );
+        }
+
+        return new ValidationResponse(
+                plot.getId(),
+                plot.getResvno(),
+                plot.getResbdno(),
+                plot.getTotCent(),
+                "Plot available for reuse",
+                plot.getTotCent(),
+                plot.getLtype(),
+                null
+        );
+    }
+
+
 
     private ValidationResponse createSurveyWithSubdivisionsResponse(List<TblBtrData> plots, Integer resvno) {
         // Collect all available subdivisions for this survey number
@@ -1860,85 +1959,263 @@ System.out.println(zone.getZoneId());
                 calculateTotalArea(plots),
                 "Survey number found with multiple subdivisions. Available: " + subdivisionsList + ". Please select one.",
                 -1.0, // Negative value indicates subdivision selection needed
+                null,
                 availableSubdivisions // New field to pass available options
         );
     }
 
-    private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer identifier, String subdivision) {
-        int currentYear = java.time.LocalDate.now().getYear();
-        int nextYear = currentYear + 1;
-        System.out.println("plots >>>  "+plot);
-        double totalEnumerated = 0.0;
-        double totalArea = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
-        LocalDate today = LocalDate.now();
-        LocalDateTime startDate;
-        LocalDateTime endDate;
-
-        if (today.getMonthValue() >= 7) {
-            // July to December
-            startDate = LocalDate.of(today.getYear(), 7, 1).atStartOfDay();
-            endDate = LocalDate.of(today.getYear() + 1, 6, 30).atTime(23, 59, 59);
-        } else {
-            // January to June
-            startDate = LocalDate.of(today.getYear() - 1, 7, 1).atStartOfDay();
-            endDate = LocalDate.of(today.getYear(), 6, 30).atTime(23, 59, 59);
-        }
-
-        List<ClusterFormData> clusterDataList = clusterFormDataRepository.findByPlotAndCreatedAtBetween(
-                plot,
-                startDate,
-                endDate
-        );
-
-        totalEnumerated += clusterDataList.stream()
-                .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
-                .sum();
-        System.out.println("total >>>  "+totalArea);
-        System.out.println("Emureted  >>> "+totalEnumerated);
-        double remainingArea = totalArea - totalEnumerated;
-        System.out.println("ccccc >>  "+clusterDataList);
-        System.out.println("remain "+remainingArea);
-        // For non-survey cases, identifier might be null
-        Integer resvno = (identifier != null) ? identifier : null;
-        String resbdno = subdivision;
-
-        if (remainingArea <= 0) {
-            return new ValidationResponse(
-                    plot.getId(),
-                    resvno,
-                    resbdno,
-                    totalArea,
-                    "This " + getPlotType(plot) + " cannot be selected for this agricultural year (no remaining area)",
-                    remainingArea,
-                    null
-            );
-        } else if (remainingArea > 0 && totalEnumerated > 0) {
-            return new ValidationResponse(
-                    plot.getId(),
-                    resvno,
-                    resbdno,
-                    totalArea,
-                    "Remaining area available for reuse in this agricultural year",
-                    remainingArea,
-                    null
-            );
-        } else {
-            return new ValidationResponse(
-                    plot.getId(),
-                    resvno,
-                    resbdno,
-                    totalArea,
-                    "Duplicate entry already exists but has available area",
-                    remainingArea,
-                    null
-            );
-        }
-    }
     private Double calculateTotalArea(List<TblBtrData> plots) {
         return plots.stream()
                 .mapToDouble(plot -> plot.getTotCent() != null ? plot.getTotCent() : 0.0)
                 .sum();
     }
+
+//    non btr keyplots
+
+    public ValidationResponse validateDuplicateForNonBtrCluster(TblBtrDataDTO dto) {
+        TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
+                .orElseThrow(() -> new RuntimeException("Zone not found"));
+        System.out.println(">>>>   " + dto);
+        String lbcode = dto.getLbcode() != null ? dto.getLbcode() : getLbcodeFromZone(zone);
+
+        Integer type = Math.toIntExact(dto.getBtrtype());
+        System.out.println("Validating Non-BTR Duplicate for Type: " + type);
+
+        switch (type) {
+            case 2:
+                return validateHouseListDuplicate(dto, zone, lbcode);
+            case 3:
+                return validateCultivatorsListDuplicate(dto, zone, lbcode);
+            case 4:
+                return validateThandaperDuplicate(dto, zone, lbcode);
+            case 5:
+                return validateOldSurveyDuplicate(dto, zone, lbcode);
+            default:
+                throw new RuntimeException("Invalid Non-BTR Type: " + type);
+        }
+    }
+
+    private ValidationResponse validateHouseListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+        System.out.println(zone.getDistId() + " " + lbcode + " " + dto.getWardno() + " " + dto.getHouseno() + " " + zone);
+        if (dto.getWardno() == null || dto.getHouseno() == null) {
+            throw new RuntimeException("Ward number and House number are required for House List validation");
+        }
+        Optional<TblMasterVillage> village = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+
+        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
+                zone.getDistId(), village.get().getRevTalukId(), lbcode, dto.getWardno(), dto.getHouseno());
+
+        if (!plots.isEmpty()) {
+            TblBtrData plot = plots.get(0);
+            return validateNonBtrPlotReuse(plot, dto.getAgriYear(), null, "House: Ward " + dto.getWardno() + ", House " + dto.getHouseno());
+        }
+
+        return validateSurveyNumberIfProvided(dto, zone);
+    }
+
+    private ValidationResponse validateCultivatorsListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+        if (dto.getOwnername() == null || dto.getAddress() == null || dto.getTotCent() <= 0) {
+            throw new RuntimeException("Owner name, address, and total area are required for Cultivators List validation");
+        }
+        Optional<TblMasterVillage> village = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+
+        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
+                zone.getDistId(), village.get().getRevTalukId(), lbcode, dto.getVcode(),
+                dto.getBcode(), dto.getOwnername(), dto.getAddress(), dto.getTotCent());
+
+        if (!plots.isEmpty()) {
+            TblBtrData plot = plots.get(0);
+            return validateNonBtrPlotReuse(plot, dto.getAgriYear(), null, "Cultivator: " + dto.getOwnername());
+        }
+
+        return validateSurveyNumberIfProvided(dto, zone);
+    }
+
+    private ValidationResponse validateThandaperDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+        if (dto.getTpno() == null) {
+            throw new RuntimeException("Thandaper number is required for Thandaper validation");
+        }
+
+        List<TblBtrData> plots;
+        Optional<TblMasterVillage> village = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+        if (dto.getTbsubdivisionno() != null) {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getTpno(), dto.getTbsubdivisionno());
+        } else {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getTpno(), null);
+        }
+
+        if (plots.isEmpty()) return null;
+
+        if (plots.size() > 1 && dto.getTbsubdivisionno() == null) {
+            return createThandaperSubdivisionsResponse(plots, dto.getTpno());
+        }
+
+        TblBtrData plot = plots.get(0);
+        return validateNonBtrPlotReuse(plot, dto.getAgriYear(), dto.getTpno(),
+                dto.getTbsubdivisionno() != null ? dto.getTbsubdivisionno().toString() : null);
+    }
+
+    private ValidationResponse validateOldSurveyDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+        if (dto.getOldsvno() == null) {
+            throw new RuntimeException("Old survey number is required for Old Survey validation");
+        }
+
+        List<TblBtrData> plots;
+        Optional<TblMasterVillage> village = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+        if (dto.getOldsubno() != null && !dto.getOldsubno().isEmpty()) {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getOldsvno(), dto.getOldsubno());
+        } else {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getOldsvno());
+        }
+
+        if (plots.isEmpty()) return null;
+
+        if (plots.size() > 1 && (dto.getOldsubno() == null || dto.getOldsubno().isEmpty())) {
+            return createOldSurveySubdivisionsResponse(plots, dto.getOldsvno());
+        }
+
+        TblBtrData plot = plots.get(0);
+        return validateNonBtrPlotReuse(plot, dto.getAgriYear(), dto.getOldsvno(), dto.getOldsubno());
+    }
+    private ValidationResponse createThandaperSubdivisionsResponse(List<TblBtrData> plots, Integer tpno) {
+        List<String> subdivisions = plots.stream()
+                .map(plot -> plot.getTbsubdivisionno() != null ? plot.getTbsubdivisionno().toString() : "No Subdivision")
+                .distinct()
+                .collect(Collectors.toList());
+
+        ValidationResponse response = new ValidationResponse();
+        response.setMessage("Multiple subdivisions found for Thandaper number: " + tpno + ". Please select one.");
+        response.setAvailableSubdivisions(subdivisions);
+        response.setTotalcent(plots.get(0).getTotCent());
+        return response;
+    }
+    private ValidationResponse validateSurveyNumberIfProvided(TblBtrDataDTO dto, TblMasterZone zone) {
+        if (dto.getResvno() == null) return null;
+
+        String cleanedResbdno = dto.getResbdno() != null ?
+                dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
+
+        List<TblBtrData> surveyPlots;
+        Optional<TblMasterVillage> village = tblMasterVillageRepository.findByVillageId(dto.getVcode());
+        if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
+            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
+                    dto.getResvno(), cleanedResbdno);
+        } else {
+            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
+                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
+        }
+
+        if (!surveyPlots.isEmpty()) {
+            if (surveyPlots.size() > 1 && (cleanedResbdno == null || cleanedResbdno.isEmpty())) {
+                return createSurveyWithSubdivisionsResponse(surveyPlots, dto.getResvno());
+            }
+            return validateNonBtrPlotReuse(surveyPlots.get(0), dto.getAgriYear(), Integer.valueOf(dto.getResvno().toString()), cleanedResbdno);
+        }
+
+        return null;
+    }
+
+    // --- NEW VALIDATION REUSE LOGIC ---
+    private ValidationResponse validateNonBtrPlotReuse(TblBtrData plot, String agriYear, Integer identifier, String subdivision) {
+        if (agriYear == null || agriYear.isEmpty()) {
+            throw new RuntimeException("Agricultural year is required for validation");
+        }
+
+        LocalDate currentStart = AgriYearUtil.getAgriYearStart(agriYear);
+        LocalDate currentEnd = AgriYearUtil.getAgriYearEnd(agriYear);
+
+        String[] years = agriYear.split("-");
+        String previousAgriYear = (Integer.parseInt(years[0]) - 1) + "-" + (Integer.parseInt(years[1]) - 1);
+
+        LocalDate previousStart = AgriYearUtil.getAgriYearStart(previousAgriYear);
+        LocalDate previousEnd = AgriYearUtil.getAgriYearEnd(previousAgriYear);
+
+        // 1. Check if used as Keyplot in current or previous year
+        long keyplotCount = keyPlotsRepository.countUsedInCurrentOrPreviousYear(
+                plot.getId(),
+                currentStart,
+                currentEnd,
+                previousStart,
+                previousEnd
+        );
+
+        if (keyplotCount > 0) {
+            return new ValidationResponse(
+                    plot.getId(),
+                    identifier,
+                    subdivision,
+                    plot.getTotCent(),
+                    "This " + getPlotType(plot) + " is already selected as a keyplot in current or previous agricultural year",
+                    0.0,
+                    plot.getLtype(),
+                    null
+            );
+        }
+
+        // 2. Check if used in any Cluster this year
+        long clusterCount = clusterFormDataRepository.countUsedInCurrentAgriYear(
+                plot.getId(),
+                currentStart,
+                LocalDate.from(currentEnd.atTime(23, 59, 59))
+        );
+
+        if (clusterCount > 0) {
+            return new ValidationResponse(
+                    plot.getId(),
+                    identifier,
+                    subdivision,
+                    plot.getTotCent(),
+                    "This " + getPlotType(plot) + " is already used in a cluster during current agricultural year",
+                    0.0,
+                    plot.getLtype(),
+                    null
+            );
+        }
+
+        // 3. Available for use!
+        return new ValidationResponse(
+                plot.getId(),
+                identifier,
+                subdivision,
+                plot.getTotCent(),
+                "Plot available for reuse",
+                plot.getTotCent(), // Lock the total available area
+                plot.getLtype(),
+                null
+        );
+    }
+
+    private ValidationResponse createOldSurveySubdivisionsResponse(List<TblBtrData> plots, Integer oldsvno) {
+        List<String> subdivisions = plots.stream()
+                .map(plot -> plot.getOldsubno() != null ? plot.getOldsubno() : "No Subdivision")
+                .distinct()
+                .collect(Collectors.toList());
+
+        ValidationResponse response = new ValidationResponse();
+        response.setMessage("Multiple subdivisions found for Old Survey number: " + oldsvno + ". Please select one.");
+        response.setAvailableSubdivisions(subdivisions);
+        response.setTotalcent(plots.get(0).getTotCent());
+        return response;
+    }
+
+    private String getLbcodeFromZone(TblMasterZone zone) {
+        // Implement logic to get lbcode from zone
+        // This might involve another repository call or mapping
+        return "default_lbcode"; // Replace with actual implementation
+    }
+
+
+
+
     private String getPlotType(TblBtrData plot) {
         if (plot.getResvno() != null) return "survey plot";
         if (plot.getTpno() != null) return "thandaper";
@@ -1947,4 +2224,8 @@ System.out.println(zone.getZoneId());
         if (plot.getOwnername() != null) return "cultivator plot";
         return "plot";
     }
+
+
+
+
 }

@@ -41,10 +41,11 @@ public class KeyPlotsController {
 
     private final KeyPlots_Service keyPlots_Service;
 
-    @GetMapping("/get-all/{zoneId}")
-    public ResponseEntity<Response> getAllKeyPlotsWithDetails(@PathVariable("zoneId") Integer zoneId) {
+    @GetMapping("/get-all/{zoneId}/{agriYear}")
+    public ResponseEntity<Response> getAllKeyPlotsWithDetails(@PathVariable("zoneId") Integer zoneId,
+                                                              @PathVariable("agriYear") String agriYear) {
         try {
-            List<KeyPlotDetailsListResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId);
+            List<KeyPlotDetailsListResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId,agriYear);
 
             return ResponseEntity.ok(
                     Response.builder()
@@ -224,6 +225,15 @@ System.out.println("dto  "+dto);
             return ResponseEntity.ok(new PlotDuplicateResponse(false, "No duplicate found."));
         }
     }
+    @PostMapping("/validate-nonbtr-keyplots")
+    public ResponseEntity<?> validateDuplicateNonBtr(@RequestBody TblBtrDataDTO dto) {
+        ValidationResponse response = keyPlots_Service.validateDuplicateForNonBtrCluster(dto);
 
+        if (response != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } else {
+            return ResponseEntity.ok(new PlotDuplicateResponse(false, "No duplicate found."));
+        }
+    }
 
 }

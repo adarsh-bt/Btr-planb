@@ -994,7 +994,7 @@ public class TblBtrDataService {
                 entity.getTpno(),
                 entity.getTbsubdivisionno(),
                 entity.getBtrtype().getBTypeId(),
-                2L
+                null
         );
     }
 

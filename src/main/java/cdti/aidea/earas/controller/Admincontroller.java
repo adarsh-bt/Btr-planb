@@ -325,4 +325,20 @@ System.out.println("id  "+idValue+"  : "+type);
 
     return ResponseEntity.ok("Mapping deleted successfully");
   }
+
+  @GetMapping("/fetch-zones/{type}/{id}")
+  public ResponseEntity<List<Form1ZoneListResponse>> getZones(
+          @PathVariable("type") String type, @PathVariable("id") String id) {
+    try {
+      Integer idValue = Integer.parseInt(id);
+      List<Form1ZoneListResponse> zoneList = adminManage.getZonesByUserType(type, idValue);
+      return new ResponseEntity<>(zoneList, HttpStatus.OK);
+    } catch (NumberFormatException e) {
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    } catch (IllegalArgumentException e) {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    } catch (Exception e) {
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
 }

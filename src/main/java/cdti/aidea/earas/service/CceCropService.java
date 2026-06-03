@@ -148,4 +148,7 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
     return new CcePlotResult(Collections.emptyList(), true);
   }
 }
+
+  public FetchDistrictResponse getDistrictByClusterId(Long clusterId) {
+  }
 }

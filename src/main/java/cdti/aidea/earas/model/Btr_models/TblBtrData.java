@@ -23,10 +23,8 @@ public class TblBtrData {
     private Integer tcode;
     private Integer vcode;
     private String bcode;
-
   private Integer resvno;
   private String resbdno;
-
   private String lbtype;
   private String lbcode;
   private String govpriv;

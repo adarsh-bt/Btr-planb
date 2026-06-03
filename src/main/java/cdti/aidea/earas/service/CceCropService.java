@@ -93,6 +93,7 @@ public class CceCropService {
                 userId,
                 crop.getAgriStartYear(),
                 crop.getAgriEndYear(),
+                plot.getLandType(),
                 //                        "2025-07-01",
                 //                        "2026-06-30",
                 true,
@@ -150,5 +151,6 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
 }
 
   public FetchDistrictResponse getDistrictByClusterId(Long clusterId) {
+  return null;
   }
 }

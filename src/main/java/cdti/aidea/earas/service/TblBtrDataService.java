@@ -33,114 +33,114 @@ public class TblBtrDataService {
     private final TblMasterZoneRepository tblMasterZoneRepository;
     private final TblNonBtrRepository tblNonBtrRepository;
     private final TblMasterVillageRepository tblMasterVillageRepository;
-
+    private final AgriYearUtil agriYearUtil;
 
     // ---------------- Single Save ----------------
-
-    @Transactional
-    public Map<String, Object> saveData(TblBtrDataDTO dto) {
-
-        // 1️⃣ Validate required fields
-        List<String> requiredErrors = validateRequiredFields(dto);
-        if (!requiredErrors.isEmpty()) {
-            throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
-        }
-
-        // 2️⃣ Validate duplicates
-        ValidationErrorResponse duplicateError = validateDuplicate(dto);
-        if (duplicateError != null) {
-            throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
-        }
-
-        // 3️⃣ Fetch zone FIRST
-        TblMasterZone zone = tblMasterZoneRepository
-                .findById(Math.toIntExact(dto.getZoneId()))
-                .orElseThrow(() -> new RuntimeException("Zone not found"));
-
-        // 4️⃣ Calculate agri year
-        LocalDate today = LocalDate.now();
-
-        LocalDate agriStart =
-                (today.getMonthValue() >= 6)
-                        ? LocalDate.of(today.getYear(), 6, 1)
-                        : LocalDate.of(today.getYear() - 1, 6, 1);
-
-        LocalDate agriEnd =
-                (today.getMonthValue() >= 6)
-                        ? LocalDate.of(today.getYear() + 1, 7, 31)
-                        : LocalDate.of(today.getYear(), 7, 31);
-
-
-        // 5️⃣ COUNT FIRST — NOTHING SAVED YET
-        long count = keyPlotsRepository.countKeyPlotsForUpdate(
-                zone.getZoneId(),
-                agriStart,
-                agriEnd
-        );
-
-        if (count >= 100) {
-            throw new RuntimeException(
-                    "KeyPlot limit (100) reached for this zone in current agricultural year"
-            );
-        }
-
-
-        // ===============================
-        // ✅ ONLY NOW START SAVING TABLES
-        // ===============================
-
-        // 7️⃣ Save TblBtrData
-        TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
-
-        // 8️⃣ Save KeyPlots
-        KeyPlots keyPlot = new KeyPlots();
-        keyPlot.setBtrData(btrData);
-        keyPlot.setZone(zone);
-        keyPlot.setIntervals(1);
-        keyPlot.setAgriStartYear(agriStart);
-        keyPlot.setAgriEndYear(agriEnd);
-        keyPlot.setIsRejected(false);
-        keyPlot.setStatus(true);
-        keyPlot.setLandType(btrData.getLtype());
-        keyPlot.setCreated_by(UUID.randomUUID());
-        keyPlotsRepository.save(keyPlot);
-
-        // 9️⃣ Cluster number
-        Optional<Integer> maxClusterNumberOpt =
-                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
-                        zone.getZoneId(),
-                        agriStart.atStartOfDay(),
-                        agriEnd.atTime(23, 59, 59)
-                );
-
-        int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
-
-        // 🔟 Save ClusterMaster
-        ClusterMaster clusterMaster = new ClusterMaster();
-        clusterMaster.setKeyPlot(keyPlot);
-        clusterMaster.setClusterNumber(nextClusterNumber);
-        clusterMaster.setZone(zone);
-        clusterMaster.setStatus("Not Started");
-        clusterMaster.setIsReject(false);
-        clusterMaster.setIs_active(true);
-        clusterMaster.setIs_editable(true);
-        clusterMasterRepository.save(clusterMaster);
-
-        // 1️⃣1️⃣ Save ClusterFormData
-        ClusterFormData clusterFormData = new ClusterFormData();
-        clusterFormData.setClusterMaster(clusterMaster);
-        clusterFormData.setPlot(btrData);
-        clusterFormData.setPlotLabel("K");
-        clusterFormData.setEnumeratedArea(btrData.getTotCent());
-        clusterFormData.setCreatedBy(UUID.randomUUID());
-        clusterFormData.setStatus(true);
-        clusterFormDataRepository.save(clusterFormData);
-
-        // 1️⃣2️⃣ Response
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", btrData.getId());
-        return response;
-    }
+//
+//    @Transactional
+//    public Map<String, Object> saveData(TblBtrDataDTO dto) {
+//
+//        // 1️⃣ Validate required fields
+//        List<String> requiredErrors = validateRequiredFields(dto);
+//        if (!requiredErrors.isEmpty()) {
+//            throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
+//        }
+//
+//        // 2️⃣ Validate duplicates
+//        ValidationErrorResponse duplicateError = validateDuplicate(dto);
+//        if (duplicateError != null) {
+//            throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
+//        }
+//
+//        // 3️⃣ Fetch zone FIRST
+//        TblMasterZone zone = tblMasterZoneRepository
+//                .findById(Math.toIntExact(dto.getZoneId()))
+//                .orElseThrow(() -> new RuntimeException("Zone not found"));
+//
+//        // 4️⃣ Calculate agri year
+//        LocalDate today = LocalDate.now();
+//
+//        LocalDate agriStart =
+//                (today.getMonthValue() >= 6)
+//                        ? LocalDate.of(today.getYear(), 6, 1)
+//                        : LocalDate.of(today.getYear() - 1, 6, 1);
+//
+//        LocalDate agriEnd =
+//                (today.getMonthValue() >= 6)
+//                        ? LocalDate.of(today.getYear() + 1, 7, 31)
+//                        : LocalDate.of(today.getYear(), 7, 31);
+//
+//
+//        // 5️⃣ COUNT FIRST — NOTHING SAVED YET
+//        long count = keyPlotsRepository.countKeyPlotsForUpdate(
+//                zone.getZoneId(),
+//                agriStart,
+//                agriEnd
+//        );
+//
+//        if (count >= 100) {
+//            throw new RuntimeException(
+//                    "KeyPlot limit (100) reached for this zone in current agricultural year"
+//            );
+//        }
+//
+//
+//        // ===============================
+//        // ✅ ONLY NOW START SAVING TABLES
+//        // ===============================
+//
+//        // 7️⃣ Save TblBtrData
+//        TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
+//
+//        // 8️⃣ Save KeyPlots
+//        KeyPlots keyPlot = new KeyPlots();
+//        keyPlot.setBtrData(btrData);
+//        keyPlot.setZone(zone);
+//        keyPlot.setIntervals(1);
+//        keyPlot.setAgriStartYear(agriStart);
+//        keyPlot.setAgriEndYear(agriEnd);
+//        keyPlot.setIsRejected(false);
+//        keyPlot.setStatus(true);
+//        keyPlot.setLandType(btrData.getLtype());
+//        keyPlot.setCreated_by(UUID.randomUUID());
+//        keyPlotsRepository.save(keyPlot);
+//
+//        // 9️⃣ Cluster number
+//        Optional<Integer> maxClusterNumberOpt =
+//                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
+//                        zone.getZoneId(),
+//                        agriStart.atStartOfDay(),
+//                        agriEnd.atTime(23, 59, 59)
+//                );
+//
+//        int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+//
+//        // 🔟 Save ClusterMaster
+//        ClusterMaster clusterMaster = new ClusterMaster();
+//        clusterMaster.setKeyPlot(keyPlot);
+//        clusterMaster.setClusterNumber(nextClusterNumber);
+//        clusterMaster.setZone(zone);
+//        clusterMaster.setStatus("Not Started");
+//        clusterMaster.setIsReject(false);
+//        clusterMaster.setIs_active(true);
+//        clusterMaster.setIs_editable(true);
+//        clusterMasterRepository.save(clusterMaster);
+//
+//        // 1️⃣1️⃣ Save ClusterFormData
+//        ClusterFormData clusterFormData = new ClusterFormData();
+//        clusterFormData.setClusterMaster(clusterMaster);
+//        clusterFormData.setPlot(btrData);
+//        clusterFormData.setPlotLabel("K");
+//        clusterFormData.setEnumeratedArea(btrData.getTotCent());
+//        clusterFormData.setCreatedBy(UUID.randomUUID());
+//        clusterFormData.setStatus(true);
+//        clusterFormDataRepository.save(clusterFormData);
+//
+//        // 1️⃣2️⃣ Response
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("id", btrData.getId());
+//        return response;
+//    }
 
     // ---------------- Save All ----------------
     @Transactional
@@ -184,17 +184,24 @@ public class TblBtrDataService {
                     .orElseThrow(() -> new RuntimeException("Zone not found"));
 
             // Calculate agri year (same as in saveData)
-            LocalDate today = LocalDate.now();
-            LocalDate agriStart = (today.getMonthValue() >= 6)
-                    ? LocalDate.of(today.getYear(), 6, 1)
-                    : LocalDate.of(today.getYear() - 1, 6, 1);
-            LocalDate agriEnd = (today.getMonthValue() >= 6)
-                    ? LocalDate.of(today.getYear() + 1, 7, 31)
-                    : LocalDate.of(today.getYear(), 7, 31);
+//            LocalDate today = LocalDate.now();
+//            LocalDate agriStart = (today.getMonthValue() >= 6)
+//                    ? LocalDate.of(today.getYear(), 6, 1)
+//                    : LocalDate.of(today.getYear() - 1, 6, 1);
+//            LocalDate agriEnd = (today.getMonthValue() >= 6)
+//                    ? LocalDate.of(today.getYear() + 1, 7, 31)
+//                    : LocalDate.of(today.getYear(), 7, 31);
+
+
+            LocalDate startDate =
+                    AgriYearUtil.getAgriYearStart(dtoList.get(0).getAgriYear());
+
+            LocalDate endDate =
+                    AgriYearUtil.getAgriYearEnd(dtoList.get(0).getAgriYear());
 
             // Check current count
             long currentCount = keyPlotsRepository.countKeyPlotsForUpdate(
-                    zone.getZoneId(), agriStart, agriEnd);
+                    zone.getZoneId(), startDate, endDate);
 
             // Check if we can save all requested records
             if (currentCount + dtoList.size() > 100) {
@@ -228,22 +235,30 @@ public class TblBtrDataService {
                 .findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-        // Calculate agri year
-        LocalDate today = LocalDate.now();
-        LocalDate agriStart = (today.getMonthValue() >= 6)
-                ? LocalDate.of(today.getYear(), 6, 1)
-                : LocalDate.of(today.getYear() - 1, 6, 1);
-        LocalDate agriEnd = (today.getMonthValue() >= 6)
-                ? LocalDate.of(today.getYear() + 1, 7, 31)
-                : LocalDate.of(today.getYear(), 7, 31);
+        LocalDate startDate =
+                AgriYearUtil.getAgriYearStart(dto.getAgriYear());
 
-        // Save TblBtrData
-        TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
+        LocalDate endDate =
+                AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
+
+        TblBtrData btrData;
+        if (dto.getId() != null) {
+            btrData = tblBtrDataRepository.findById(dto.getId())
+                    .orElseThrow(() -> new RuntimeException("Existing BTR Plot not found for ID: " + dto.getId()));
+        } else {
+            btrData = tblBtrDataRepository.save(mapToEntity(dto));
+        }
+//        Optional<Integer> maxClusterNumberOpt =
+//                clusterMasterRepository.findMaxClusterNumberByAgriYear(
+//                        zone.getZoneId(),
+//                        startDate.atStartOfDay(),
+//                        endDate.atTime(23, 59, 59)
+//                );
         Optional<Integer> maxClusterNumberOpt =
-                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
+                clusterMasterRepository.findMaxClusterNumberByAgriYear(
                         zone.getZoneId(),
-                        agriStart.atStartOfDay(),
-                        agriEnd.atTime(23, 59, 59)
+                        startDate,
+                        endDate
                 );
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
 //        System.out.println("next cluster ssss"+nextClusterNumber);
@@ -255,17 +270,14 @@ public class TblBtrDataService {
         keyPlot.setBtrData(btrData);
         keyPlot.setZone(zone);
         keyPlot.setIntervals(1);
-        keyPlot.setAgriStartYear(agriStart);
-        keyPlot.setAgriEndYear(agriEnd);
+        keyPlot.setAgriStartYear(startDate);
+        keyPlot.setAgriEndYear(endDate);
         keyPlot.setIsRejected(false);
         keyPlot.setStatus(true);
         keyPlot.setLandType(btrData.getLtype());
         keyPlot.setCreated_by(dto.getUser_id());
         keyPlotsRepository.save(keyPlot);
-
         // Get next cluster number
-
-
         // Save ClusterMaster
         ClusterMaster clusterMaster = new ClusterMaster();
         clusterMaster.setKeyPlot(keyPlot);
@@ -366,6 +378,9 @@ public class TblBtrDataService {
     }
 
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
+        if (dto.getId() != null) {
+            return null;
+        }
         boolean existsRes = false;
         if (dto.getResvno() != null ){
         if (dto.getResbdno() != null && notEmpty(dto.getResbdno())) {
@@ -399,14 +414,26 @@ public class TblBtrDataService {
                 (today.getMonthValue() >= 6)
                         ? LocalDate.of(today.getYear() + 1, 7, 31)
                         : LocalDate.of(today.getYear(), 7, 31);
+        LocalDate startDate =
+                AgriYearUtil.getAgriYearStart(dto.getAgriYear());
+
+        LocalDate endDate =
+                AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
+
+//        Optional<Integer> maxClusterNumberOpt =
+//                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
+//                        Math.toIntExact(dto.getZoneId()),
+//                        startDate.atStartOfDay(),
+//                        endDate.atTime(23, 59, 59)
+//                );
         Optional<Integer> maxClusterNumberOpt =
-                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
+                clusterMasterRepository.findMaxClusterNumberByAgriYear(
                         Math.toIntExact(dto.getZoneId()),
-                        agriStart.atStartOfDay(),
-                        agriEnd.atTime(23, 59, 59)
+                        startDate,
+                        endDate
                 );
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
-        System.out.println("next cluster>    "+nextClusterNumber);
+
         if (nextClusterNumber > 100) {
             return new ValidationErrorResponse(
                     0,
@@ -592,7 +619,6 @@ public class TblBtrDataService {
         return errors;
     }
 
-
     public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
         String cleanedResbdno = dto.getResbdno() != null ?
                 dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
@@ -662,7 +688,6 @@ public class TblBtrDataService {
         return calculateRemainingAreaForPlot(plots.get(0), dto.getResvno(), cleanedResbdno);
     }
 
-
     public ValidationResponse validateDuplicateForNonBtrCluster(TblBtrDataDTO dto) {
         TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
@@ -685,7 +710,6 @@ public class TblBtrDataService {
                 throw new RuntimeException("Invalid Non-BTR Type: " + type);
         }
     }
-
 
     private ValidationResponse validateHouseListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
         System.out.println(zone.getDistId()+" " +lbcode +" " +dto.getWardno()+" " +dto.getHouseno()+" "+zone);
@@ -724,7 +748,6 @@ public class TblBtrDataService {
         // Optional: also validate survey number if provided
         return validateSurveyNumberIfProvided(dto, zone);
     }
-
 
     private ValidationResponse validateThandaperDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
         if (dto.getTpno() == null) {
@@ -780,8 +803,6 @@ public class TblBtrDataService {
         TblBtrData plot = plots.get(0);
         return calculateRemainingAreaForPlot(plot, dto.getOldsvno(), dto.getOldsubno());
     }
-
-
 
     // Helper method to validate survey number if provided (common for all types)
     private ValidationResponse validateSurveyNumberIfProvided(TblBtrDataDTO dto, TblMasterZone zone) {
@@ -860,6 +881,7 @@ public class TblBtrDataService {
                 calculateTotalArea(plots),
                 "Survey number found with multiple subdivisions. Available: " + subdivisionsList + ". Please select one.",
                 -1.0, // Negative value indicates subdivision selection needed
+                null,
                 availableSubdivisions // New field to pass available options
         );
     }
@@ -910,6 +932,7 @@ public class TblBtrDataService {
                     totalArea,
                     "This " + getPlotType(plot) + " cannot be selected for this agricultural year (no remaining area)",
                     remainingArea,
+                    plot.getLtype(),
                     null
             );
         } else if (remainingArea > 0 && totalEnumerated > 0) {
@@ -920,6 +943,7 @@ public class TblBtrDataService {
                     totalArea,
                     "Remaining area available for reuse in this agricultural year",
                     remainingArea,
+                    plot.getLtype(),
                     null
             );
         } else {
@@ -930,12 +954,11 @@ public class TblBtrDataService {
                     totalArea,
                     "Duplicate entry already exists but has available area",
                     remainingArea,
+                    plot.getLtype(),
                     null
             );
         }
     }
-
-
 
 
     private String getPlotType(TblBtrData plot) {
@@ -975,8 +998,6 @@ public class TblBtrDataService {
         );
     }
 
-
-
     @Transactional
     public String updateTotCentAndHandleClusterData(Long btrId, Double newTotCent, UUID userId) {
 
@@ -1001,4 +1022,5 @@ public class TblBtrDataService {
 
         return "totCent updated successfully. No cluster entries deleted.";
     }
+    
 }

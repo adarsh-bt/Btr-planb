@@ -11,7 +11,9 @@ import cdti.aidea.earas.repository.Btr_repo.CropAssignmentTrailRepository;
 import cdti.aidea.earas.repository.Btr_repo.KeyPlotsRepository;
 import feign.FeignException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,133 +33,234 @@ public class CropAssignmentTrailService {
 
 
   @Transactional
-  public List<Long> saveCropAssignmentTrail(List<CropAssignmentTrailSaveDto> saveDtoList) {
+  public List<Long> saveCropAssignmentTrail(
+          List<CropAssignmentTrailSaveDto> saveDtoList) {
+
     int currentYear = LocalDateTime.now().getYear();
     int nextYear = currentYear + 1;
-    String agriYear = currentYear + "-" + String.valueOf(nextYear).substring(2);
+
+    String agriYear =
+            currentYear + "-" + String.valueOf(nextYear).substring(2);
+
+    List<Long> savedIds = new ArrayList<>();
+
     for (CropAssignmentTrailSaveDto saveDto : saveDtoList) {
+
       try {
-        log.info("Processing crop assignment trail for crop ID: {}", saveDto.getCropId());
-        // Validate cluster exists if clusterId is provided
-        ClusterMaster cluster = null;
-        if (saveDto.getClusterId() != null) {
-          cluster =
-              clusterMasterRepository
-                  .findById(saveDto.getClusterId())
-                  .orElseThrow(
-                      () ->
-                          new RuntimeException(
-                              "Cluster not found with ID: " + saveDto.getClusterId()));
-        }
 
-        // Validate keyplot exists if keyplotId is provided
-        KeyPlots keyPlot = null;
-        if (saveDto.getKeyplotId() != null) {
-          keyPlot =
-              keyPlotsRepository
-                  .findById(saveDto.getKeyplotId())
-                  .orElseThrow(
-                      () ->
-                          new RuntimeException(
-                              "Keyplot not found with ID: " + saveDto.getKeyplotId()));
-        }
-
-        // Check for existing rejection
-        if (saveDto.getRejectedBy() != null
-            && saveDto.getClusterId() != null
-            && Boolean.TRUE.equals(saveDto.getIsRejected())) {
-          boolean alreadyRejected =
-              cropAssignmentTrailRepository
-                  .existsByCropIdAndCluster_CluMasterIdAndIsRejectedTrueAndRejectedBy(
-                      saveDto.getCropId(), saveDto.getClusterId(), saveDto.getRejectedBy());
-          if (alreadyRejected) {
-            log.warn(
-                "Crop already rejected by user {} for cluster {}",
-                saveDto.getRejectedBy(),
+        log.info(
+                "Processing crop assignment for cropId={}, clusterId={}",
+                saveDto.getCropId(),
                 saveDto.getClusterId());
-            continue; // skip this record
-          }
+
+        // =========================
+        // VALIDATION
+        // =========================
+
+        if (saveDto.getCropId() == null) {
+          throw new RuntimeException("CropId is required");
         }
 
-        // Build and save entity
-        CropAssignmentTrail trail =
-            CropAssignmentTrail.builder()
-                .cropId(saveDto.getCropId())
-                .cluster(cluster)
-                .keyPlot(keyPlot)
-                .zoneId(saveDto.getZoneId())
-                .landType(keyPlot.getLandType())
-                .isRejected(saveDto.getIsRejected() != null ? saveDto.getIsRejected() : false)
-                .rejectionReason(saveDto.getRejectionReason())
-                .isLimitExceeded(
-                    saveDto.getIsLimitExceeded() != null ? saveDto.getIsLimitExceeded() : false)
-                .isCurrentAssignment(
-                    saveDto.getIsCurrentAssignment() != null
+        if (saveDto.getClusterId() == null) {
+          throw new RuntimeException("ClusterId is required");
+        }
+
+        if (saveDto.getZoneId() == null) {
+          throw new RuntimeException("ZoneId is required");
+        }
+
+        // =========================
+        // FETCH CLUSTER
+        // =========================
+
+        ClusterMaster cluster =
+                clusterMasterRepository
+                        .findById(saveDto.getClusterId())
+                        .orElseThrow(
+                                () ->
+                                        new RuntimeException(
+                                                "Cluster not found: "
+                                                        + saveDto.getClusterId()));
+
+        // =========================
+        // FETCH KEYPLOT
+        // =========================
+
+        KeyPlots keyPlot = null;
+
+        if (saveDto.getKeyplotId() != null) {
+
+          keyPlot =
+                  keyPlotsRepository
+                          .findById(saveDto.getKeyplotId())
+                          .orElseThrow(
+                                  () ->
+                                          new RuntimeException(
+                                                  "KeyPlot not found: "
+                                                          + saveDto.getKeyplotId()));
+        }
+
+        // =========================
+        // CHECK EXISTING RECORD
+        // =========================
+
+        Optional<CropAssignmentTrail> existingOpt =
+                cropAssignmentTrailRepository
+                        .findByCropIdAndCluster_CluMasterId(
+                                saveDto.getCropId(),
+                                saveDto.getClusterId());
+
+        CropAssignmentTrail trail;
+
+        if (existingOpt.isPresent()) {
+
+          // =========================
+          // UPDATE EXISTING
+          // =========================
+
+          trail = existingOpt.get();
+
+          log.info(
+                  "Existing crop assignment found. Updating record id={}",
+                  trail.getId());
+
+        } else {
+
+          // =========================
+          // CREATE NEW
+          // =========================
+
+          trail = new CropAssignmentTrail();
+
+          trail.setCreatedAt(LocalDateTime.now());
+
+          log.info("Creating new crop assignment");
+        }
+
+        // =========================
+        // SET DATA
+        // =========================
+
+        trail.setCropId(saveDto.getCropId());
+
+        trail.setCluster(cluster);
+
+        trail.setKeyPlot(keyPlot);
+
+        trail.setZoneId(saveDto.getZoneId());
+
+        if (keyPlot != null) {
+          trail.setLandType(keyPlot.getLandType());
+        }
+
+        trail.setIsRejected(
+                saveDto.getIsRejected() != null
+                        ? saveDto.getIsRejected()
+                        : false);
+
+        trail.setRejectionReason(saveDto.getRejectionReason());
+
+        trail.setIsLimitExceeded(
+                saveDto.getIsLimitExceeded() != null
+                        ? saveDto.getIsLimitExceeded()
+                        : false);
+
+        trail.setIsCurrentAssignment(
+                saveDto.getIsCurrentAssignment() != null
                         ? saveDto.getIsCurrentAssignment()
-                        : true)
-                .rejectedBy(saveDto.getRejectedBy())
-                .rejectedAt(saveDto.getRejectedAt())
-                .assignedOn(saveDto.getAssignedOn())
-                .createdAt(LocalDateTime.now())
-                .build();
+                        : true);
 
-        CropAssignmentTrail savedTrail = cropAssignmentTrailRepository.save(trail);
-        log.info("Saved crop assignment trail locally with ID: {}", savedTrail.getId());
+        trail.setRejectedBy(saveDto.getRejectedBy());
 
-        // Map and send to external service
-        CceAssignmentRequest cceRequest = new CceAssignmentRequest();
+        trail.setRejectedAt(saveDto.getRejectedAt());
+
+        trail.setAssignedOn(LocalDateTime.now());
+
+        CropAssignmentTrail savedTrail =
+                cropAssignmentTrailRepository.save(trail);
+
+        savedIds.add(savedTrail.getId());
+
+        log.info(
+                "Crop assignment saved successfully. id={}",
+                savedTrail.getId());
+
+        CceAssignmentRequest cceRequest =
+                new CceAssignmentRequest();
 
         if (keyPlot != null && keyPlot.getId() != null) {
+
           cceRequest.setPlotId(keyPlot.getId());
+
+          if (keyPlot.getBtrData() != null) {
+
+            cceRequest.setBtrId(
+                    keyPlot.getBtrData().getId());
+
+            cceRequest.setLbCode(
+                    keyPlot.getBtrData().getLbcode());
+          }
         } else {
-          cceRequest.setPlotId(UUID.randomUUID());
+
+          cceRequest.setPlotId(saveDto.getKeyplotId());
         }
-
-        if (saveDto.getClusterId() == null)
-          throw new IllegalArgumentException("ClusterId cannot be null");
-        if (saveDto.getZoneId() == null)
-          throw new IllegalArgumentException("ZoneId cannot be null");
-        if (saveDto.getCropId() == null)
-          throw new IllegalArgumentException("CropId cannot be null");
-
         cceRequest.setClusterId(saveDto.getClusterId());
-        cceRequest.setZoneId(Math.toIntExact(saveDto.getZoneId()));
+
+        cceRequest.setZoneId(
+                Math.toIntExact(saveDto.getZoneId()));
+
         cceRequest.setCropId(saveDto.getCropId());
+
         cceRequest.setCceSourceType("RANDOM");
-        cceRequest.setBtrId(keyPlot.getBtrData().getId());
-        cceRequest.setLbCode(keyPlot.getBtrData().getLbcode());
-        cceRequest.setAddedBy(
-            saveDto.getRejectedBy() != null ? saveDto.getRejectedBy() : UUID.randomUUID());
-        cceRequest.setAgriStartYear(agriYear);
-        cceRequest.setAgriEndYear(agriYear);
+
         cceRequest.setAddedBy(saveDto.getAddedBy());
-//        cceRequest.setIsActive(!Boolean.TRUE.equals(saveDto.getIsRejected()));
-        cceRequest.setIsActive(true);
-//        cceRequest.setIsSelected(Boolean.TRUE.equals(saveDto.getIsCurrentAssignment()));
-        cceRequest.setIsSelected(true);
+
+        cceRequest.setLandType(saveDto.getLandType());
+System.out.println(">>>    "+saveDto.getLandType());
+        cceRequest.setAgriStartYear(agriYear);
+
+        cceRequest.setAgriEndYear(agriYear);
+
+        cceRequest.setIsActive(
+                !Boolean.TRUE.equals(saveDto.getIsRejected()));
+
+        cceRequest.setIsSelected(
+                Boolean.TRUE.equals(
+                        trail.getIsCurrentAssignment()));
 
         try {
+
           formEntryClient.saveCceAssignment(cceRequest);
+
           log.info(
-              "Successfully synced with external service for crop ID: {}", saveDto.getCropId());
+                  "External sync success for cropId={}",
+                  saveDto.getCropId());
+
         } catch (FeignException e) {
+
           log.error(
-              "Feign error for crop ID {}: Status {}, Body: {}",
-              saveDto.getCropId(),
-              e.status(),
-              e.contentUTF8());
+                  "Feign error while syncing cropId={} status={} body={}",
+                  saveDto.getCropId(),
+                  e.status(),
+                  e.contentUTF8());
+
         } catch (Exception e) {
+
           log.error(
-              "Unexpected error during external sync for crop ID {}: {}",
-              saveDto.getCropId(),
-              e.getMessage());
+                  "External sync failed for cropId={} error={}",
+                  saveDto.getCropId(),
+                  e.getMessage());
         }
 
       } catch (Exception e) {
-        log.error("Failed to process crop ID {}: {}", saveDto.getCropId(), e.getMessage());
-        // continue with next DTO
+
+        log.error(
+                "Failed processing cropId={} error={}",
+                saveDto.getCropId(),
+                e.getMessage());
       }
     }
-    return null;
+
+    return savedIds;
   }
 }

@@ -12,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class TblBtrDataDTO {
 
+  private Long id;
   private Integer dcode;
   private Integer tcode;
   private Integer vcode;
@@ -35,6 +36,6 @@ public class TblBtrDataDTO {
   private Integer tpno;
   private String tbsubdivisionno;
   private Long clusterId;
-
+  private String agriYear;
 
 }

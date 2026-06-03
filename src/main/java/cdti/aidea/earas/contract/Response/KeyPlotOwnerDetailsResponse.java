@@ -19,7 +19,18 @@ public class KeyPlotOwnerDetailsResponse {
   private String address;
   private String phone_number;
   private Long cluster_id;
+  private Long btrId;
+  private Long btrTypeId;
+  private String btrTypeName;
   private String plotno;
+  private Integer wardNo;
+  private String houseNo;
+  private String CultivateName;
+  private Double CultivateArea;
+  private Integer TpNo;
+  private String TpSubNo;
+  private Integer OldSurvey;
+  private String OldSubDivNo;
   private String geocoordinate;
   private Double area;
   private LocalDate selectedDate;
@@ -27,3 +38,4 @@ public class KeyPlotOwnerDetailsResponse {
   private Integer zoneId;
   private String zoneName;
 }
+

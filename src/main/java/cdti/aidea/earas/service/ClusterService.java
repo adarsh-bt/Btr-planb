@@ -105,6 +105,7 @@ public class ClusterService {
         }
 
         for (AvailableCcePlotResponse plot : cceResult.getPlots()) {
+
             if (plot.getCropId() != null && "random".equalsIgnoreCase(plot.getCceSourceType())) {
                 assignedClusterIds.add(plot.getClusterId());
 
@@ -137,7 +138,7 @@ public class ClusterService {
                     c.getLbcode(),
                     c.getBcode(),
 //                    c.getSurveyNo(),
-                    "11/1",
+                    null,
                     area,
                     c.getClusterId(),
                     c.getLandType() != null ? c.getLandType().toLowerCase() : "unknown",
@@ -361,6 +362,7 @@ public class ClusterService {
           FetchAvailableCceCropsResponse crop = new FetchAvailableCceCropsResponse();
           crop.setCropId(Long.parseLong(map.get("cropId").toString()));
           crop.setCropName(map.get("cropName").toString());
+          crop.setIsActive((Boolean) map.get("isActive"));
           if (map.get("cceAvailablePlotId") != null) {
             crop.setCceAvailablePlotId(UUID.fromString(map.get("cceAvailablePlotId").toString()));
           }
@@ -1767,13 +1769,14 @@ public class ClusterService {
 
         ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
                 .orElseThrow(() -> new RuntimeException("Cluster not found"));
-
         ClusterTourResponse response = new ClusterTourResponse();
-
+        Optional<TblLocalBody> tblLocalBody = localBodyRepository.findByCodeApi(cluster.getKeyPlot().getBtrData().getLbcode());
+        System.out.println(cluster.getKeyPlot().getBtrData().getLbcode());
+        System.out.println(cluster.getKeyPlot().getBtrData());
         response.setClusterNo(cluster.getClusterNumber());
         response.setZoneName(cluster.getZone().getZoneNameEn());
         response.setLandType(cluster.getKeyPlot().getLandType());
-
+        response.setLocalbody(tblLocalBody.get().getLocalbodyNameMal());
         return response;
     }
 }

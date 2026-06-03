@@ -25,9 +25,7 @@ public class TblBtrDataController {
 
   @PostMapping("/saveAll")
   public ResponseEntity<Map<String, Object>> saveAllData(@RequestBody List<TblBtrDataDTO> dtoList) {
-    System.out.println("API called: /saveAll");
     Map<String, Object> response = service.saveAllData(dtoList);
-System.out.println(">> ok >> ");
     if ("Validation Failed".equals(response.get("status"))) {
       return ResponseEntity.badRequest().body(response);
     }

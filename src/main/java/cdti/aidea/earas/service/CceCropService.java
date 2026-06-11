@@ -4,11 +4,15 @@ import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.FormEntryDto.*;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
-import cdti.aidea.earas.repository.Btr_repo.ClusterMasterRepository;
+import cdti.aidea.earas.model.Btr_models.Masters.*;
+import cdti.aidea.earas.repository.Btr_repo.*;
+import cdti.aidea.earas.utils.AgriYearUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +27,10 @@ public class CceCropService {
   private final FormEntryClient formEntryClient;
   private final ObjectMapper objectMapper;
   private final ClusterMasterRepository clusterMasterRepository;
+  private final TblMasterZoneRepository masterZoneRepository;
+  private final ZoneLocalbodyBlockMappingRepository zoneLocalbodyBlockMappingRepository;
+  private final MasterBlockRepository masterBlockRepository;
+  private final LocalBodyRepository localBodyRepository;
 
   int attempt = 0;
 
@@ -150,7 +158,169 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
   }
 }
 
-  public FetchDistrictResponse getDistrictByClusterId(Long clusterId) {
-  return null;
+  public List<FetchDistrictResponse> getDistrictsByClusterIds(List<Long> clusterIds) {
+    List<ClusterMaster> clusters =
+            clusterMasterRepository.findAllById(clusterIds);
+
+    return clusters.stream()
+            .filter(cluster ->
+                    cluster.getZone() != null
+                            && cluster.getZone().getDistrictMaster() != null)
+            .map(cluster -> {
+
+              DistrictMaster district =
+                      cluster.getZone().getDistrictMaster();
+
+              return FetchDistrictResponse.builder()
+                      .clusterId(cluster.getCluMasterId())
+                      .districtId(district.getDist_id())
+                      .districtName(district.getDist_name_en())
+                      .build();
+            })
+            .toList();
+  }
+
+  public List<FetchTalukResponse> getTalukByDistrictId(
+          Long distId,
+          String agriYear) {
+
+    LocalDate agriStartYear =
+            AgriYearUtil.getAgriYearStart(agriYear);
+
+    LocalDate agriEndYear =
+            AgriYearUtil.getAgriYearEnd(agriYear);
+
+    System.out.println(agriStartYear);
+    System.out.println(agriEndYear);
+
+    List<TblMasterZone> zones =
+            masterZoneRepository.findByDistId(
+                    distId.intValue());
+
+    System.out.println("Zones Count : " + zones.size());
+
+    List<FetchTalukResponse> responseList =
+            new ArrayList<>();
+
+    for (TblMasterZone zone : zones) {
+
+      Integer zoneId = zone.getZoneId();
+      Integer talukId = zone.getDesTalukId();
+
+      String talukName = null;
+
+      if (zone.getDesTalukMaster() != null) {
+        talukName =
+                zone.getDesTalukMaster()
+                        .getDesTalukNameEn();
+      }
+
+      List<ClusterMaster> clusters =
+              clusterMasterRepository.findClustersByDistrictAndAgriYear(
+                      zoneId,
+                      agriStartYear,
+                      agriEndYear);
+
+      System.out.println(
+              "Zone : " + zoneId +
+                      " Clusters : " + clusters.size());
+
+      for (ClusterMaster cluster : clusters) {
+
+        responseList.add(
+                FetchTalukResponse.builder()
+                        .clusterId(cluster.getCluMasterId())
+                        .talukId(Long.valueOf(talukId))
+                        .talukName(talukName)
+                        .createdAt(cluster.getCreatedAt())
+                        .landType(cluster.getKeyPlot().getLandType())
+                        .build());
+      }
+    }
+    return responseList;
+  }
+
+  public List<FetchBlocksResponse> getBlocksByTalukId(Long talukId, String agriYear) {
+
+    LocalDate agriStartYear =
+            AgriYearUtil.getAgriYearStart(agriYear);
+
+    LocalDate agriEndYear =
+            AgriYearUtil.getAgriYearEnd(agriYear);
+
+    List<TblMasterZone> zones =
+            masterZoneRepository.findByDesTalukId(
+                    talukId.intValue());
+
+    List<FetchBlocksResponse> responseList =
+            new ArrayList<>();
+
+    for (TblMasterZone zone : zones) {
+
+      Integer zoneId = zone.getZoneId();
+
+      List<ZoneLocalbodyBlockMapping> mappings =
+              zoneLocalbodyBlockMappingRepository
+                      .findByZoneAndIsValidTrue(zoneId);
+
+
+      for (ZoneLocalbodyBlockMapping mapping : mappings) {
+
+        Integer blockId = null;
+        String blockName = null;
+
+        Integer localBodyId = null;
+        String localBodyName = null;
+
+        if (mapping.getBlockPanchayatMunicipalArea() == 1) {
+
+          blockId = mapping.getBlockDetails();
+
+          Optional<MasterBlock> block =
+                  masterBlockRepository.findById(blockId);
+
+          blockName =
+                  block.map(MasterBlock::getBlockName)
+                          .orElse(null);
+        }
+
+        else {
+
+          localBodyId = mapping.getBlockDetails();
+
+          Optional<TblLocalBody> localBody =
+                  localBodyRepository.findById(localBodyId);
+
+          localBodyName =
+                  localBody.map(TblLocalBody::getLocalbodyNameEn)
+                          .orElse(null);
+        }
+
+        List<ClusterMaster> clusters =
+                clusterMasterRepository.findCompletedClustersByZoneAndAgriYear(
+                        zone.getZoneId(),
+                        agriStartYear,
+                        agriEndYear);
+
+        for (ClusterMaster cluster : clusters) {
+
+          responseList.add(
+                  FetchBlocksResponse.builder()
+                          .blockId(blockId)
+                          .blockName(blockName)
+                          .localBodyId(localBodyId)
+                          .localBodyName(localBodyName)
+                          .zoneId(zone.getZoneId().longValue())
+                          .zoneName(zone.getZoneNameEn())
+                          .clusterId(cluster.getCluMasterId())
+                          .createdAt(cluster.getCreatedAt())
+                          .landType(cluster.getKeyPlot().getLandType())
+                          .build()
+          );
+        }
+      }
+    }
+
+    return responseList;
   }
 }

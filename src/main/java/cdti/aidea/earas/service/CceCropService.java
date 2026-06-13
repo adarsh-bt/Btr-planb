@@ -173,6 +173,7 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
 
               return FetchDistrictResponse.builder()
                       .clusterId(cluster.getCluMasterId())
+                      .landType(cluster.getKeyPlot().getLandType())
                       .districtId(district.getDist_id())
                       .districtName(district.getDist_name_en())
                       .build();

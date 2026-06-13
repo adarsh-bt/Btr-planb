@@ -11,6 +11,7 @@ import lombok.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FetchDistrictResponse {
     private Long clusterId;
+    private String landType;
     private Integer districtId;
     private String districtName;
 }

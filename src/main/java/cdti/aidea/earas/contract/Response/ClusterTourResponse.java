@@ -11,4 +11,7 @@ public class ClusterTourResponse {
     private Integer clusterNo;
     private String zoneName;
     private String landType;
+    private String localbody;
+    private String block;
+
 }

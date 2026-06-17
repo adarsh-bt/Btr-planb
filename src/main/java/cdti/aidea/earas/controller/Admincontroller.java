@@ -28,6 +28,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -89,22 +90,59 @@ public class Admincontroller {
     }
   }
 
+//  @GetMapping("/zones_cluster/{type}/{id}")
+//  public ResponseEntity<List<ClusterApprovalTableDTO>> ZonelistClusters(
+//          @PathVariable("type") String type, @PathVariable("id") String id) {
+//    try {
+//      Integer idValue = Integer.parseInt(id); // Parse the ID
+//System.out.println("id  "+idValue+"  : "+type);
+//      // Call the unified service method
+//      List<ClusterApprovalTableDTO> zoneList = adminManage.zoneListForClusters(type, idValue);
+//      return new ResponseEntity<>(zoneList, HttpStatus.OK);
+//    } catch (NumberFormatException e) {
+//      // You can still return an error response if the ID is invalid
+//      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+//    } catch (IllegalArgumentException e) {
+//      // Optional: log or return a specific error message
+//      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+//    } catch (Exception e) {
+//      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+//    }
+//  }
+
   @GetMapping("/zones_cluster/{type}/{id}")
-  public ResponseEntity<List<ClusterApprovalTableDTO>> ZonelistClusters(
-          @PathVariable("type") String type, @PathVariable("id") String id) {
+  public ResponseEntity<Page<ClusterApprovalTableDTO>> ZonelistClusters(
+          @PathVariable("type") String type,
+          @PathVariable("id") String id,
+
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size
+  ) {
+
     try {
-      Integer idValue = Integer.parseInt(id); // Parse the ID
-System.out.println("id  "+idValue+"  : "+type);
-      // Call the unified service method
-      List<ClusterApprovalTableDTO> zoneList = adminManage.zoneListForClusters(type, idValue);
+
+      Integer idValue = Integer.parseInt(id);
+
+      Page<ClusterApprovalTableDTO> zoneList =
+              adminManage.zoneListForClusters(
+                      type,
+                      idValue,
+                      page,
+                      size
+              );
+
       return new ResponseEntity<>(zoneList, HttpStatus.OK);
+
     } catch (NumberFormatException e) {
-      // You can still return an error response if the ID is invalid
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
     } catch (IllegalArgumentException e) {
-      // Optional: log or return a specific error message
+
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
     } catch (Exception e) {
+
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

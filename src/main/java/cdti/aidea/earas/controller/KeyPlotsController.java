@@ -5,9 +5,8 @@ import cdti.aidea.earas.contract.RequestsDTOs.CropAssignmentTrailSaveDto;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotDetailsRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyPlotRejectRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.UpdateEnumeratedKeyAreaDTO;
-import cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse;
-import cdti.aidea.earas.contract.Response.KeyPlotDetailsResponse;
-import cdti.aidea.earas.contract.Response.KeyPlotOwnerDetailsResponse;
+//import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.ClusterFormData;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
@@ -32,7 +31,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
-
 @Validated
 @RestController
 @RequestMapping("/key-plots")
@@ -43,35 +41,11 @@ public class KeyPlotsController {
 
     private final KeyPlots_Service keyPlots_Service;
 
-//    @GetMapping("/get-all/{zoneId}") //before including start and end year
-//    public ResponseEntity<Response> getAllKeyPlotsWithDetails(@PathVariable("zoneId") Integer zoneId) {
-//        try {
-//            List<KeyPlotDetailsListResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId);
-//
-//            return ResponseEntity.ok(
-//                    Response.builder()
-//                            .payload(keyPlots)
-//                            .message("All key plots fetched successfully.")
-//                            .build());
-//
-//        } catch (Exception e) {
-//            log.error("Error fetching all key plots: {}", e.getMessage());
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body(Response.builder().message("Error fetching key plots: " + e.getMessage()).build());
-//        }
-//    }
-
-    //after including agri start and end year
-    @GetMapping("/get-all/{zoneId}/{startYear}/{endYear}")
-    public ResponseEntity<Response> getAllKeyPlotsWithDetailsByYear(
-            @PathVariable("zoneId") Integer zoneId,
-            @PathVariable("startYear") Integer startYear,
-            @PathVariable("endYear") Integer endYear) {
-
+    @GetMapping("/get-all/{zoneId}/{agriYear}")
+    public ResponseEntity<Response> getAllKeyPlotsWithDetails(@PathVariable("zoneId") Integer zoneId,
+                                                              @PathVariable("agriYear") String agriYear) {
         try {
-
-            List<KeyPlotDetailsListResponse> keyPlots =
-                    keyPlots_Service.getAllKeyPlotsWithDetails(zoneId, startYear, endYear);
+            List<KeyPlotDetailsListResponse> keyPlots = keyPlots_Service.getAllKeyPlotsWithDetails(zoneId,agriYear);
 
             return ResponseEntity.ok(
                     Response.builder()
@@ -80,15 +54,12 @@ public class KeyPlotsController {
                             .build());
 
         } catch (Exception e) {
-
             log.error("Error fetching all key plots: {}", e.getMessage());
-
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Response.builder()
-                            .message("Error fetching key plots: " + e.getMessage())
-                            .build());
+                    .body(Response.builder().message("Error fetching key plots: " + e.getMessage()).build());
         }
     }
+
     @DeleteMapping("/remove-crop")
     public ResponseEntity<?> removeCrop(@RequestBody CropAssignmentTrailSaveDto dto) {
 
@@ -120,15 +91,15 @@ public class KeyPlotsController {
 //                HttpStatus.OK);
 //    }
 
-  @GetMapping("/fetch-by-id/{kpId}")
-  public ResponseEntity<Response> getById(@PathVariable("kpId") UUID kpId) {
-    return new ResponseEntity<>(
-        Response.builder()
-            .payload(keyPlots_Service.getByKpId(kpId))
-            .message("Key plot details fetched successfully.")
-            .build(),
-        HttpStatus.OK);
-  }
+    @GetMapping("/fetch-by-id/{kpId}")
+    public ResponseEntity<Response> getById(@PathVariable("kpId") UUID kpId) {
+        return new ResponseEntity<>(
+                Response.builder()
+                        .payload(keyPlots_Service.getByKpId(kpId))
+                        .message("Key plot details fetched successfully.")
+                        .build(),
+                HttpStatus.OK);
+    }
     // @PostMapping("/fetch-existing-keyplots")
     // public ResponseEntity<Response> getExistingKeyPlots(@Valid @RequestBody KeyplotsFetchUserIdReq
     // request) {
@@ -213,7 +184,7 @@ public class KeyPlotsController {
                         .build(),
                 HttpStatus.OK);
     }
-//    @PostMapping("/reject-keyplot/{keyPlotId}")
+    //    @PostMapping("/reject-keyplot/{keyPlotId}")
 //    public ResponseEntity<Map<String, Object>> rejectAndReplaceKeyplot(
 //            @PathVariable UUID keyPlotId,
 //            @RequestBody KeyPlotRejectRequest request) {
@@ -221,18 +192,18 @@ public class KeyPlotsController {
 //        Map<String, Object> response = keyPlots_Service.rejectAndReplaceKeyplot(keyPlotId, request);
 //        return ResponseEntity.ok(response);
 //    }
-@PostMapping("/update-enumerated-area")
-public ResponseEntity<?> updateEnumeratedArea(
-        @RequestBody UpdateEnumeratedKeyAreaDTO dto) {
-System.out.println("dto  "+dto);
-    ClusterFormData updatedData =
-            (ClusterFormData) keyPlots_Service.updateEnumeratedArea(dto);
+    @PostMapping("/update-enumerated-area")
+    public ResponseEntity<?> updateEnumeratedArea(
+            @RequestBody UpdateEnumeratedKeyAreaDTO dto) {
+        System.out.println("dto  "+dto);
+        ClusterFormData updatedData =
+                (ClusterFormData) keyPlots_Service.updateEnumeratedArea(dto);
 
-    return ResponseEntity.ok(Map.of(
-            "message", "Enumerated area updated successfully",
-            "data", dto
-    ));
-}
+        return ResponseEntity.ok(Map.of(
+                "message", "Enumerated area updated successfully",
+                "data", dto
+        ));
+    }
 
     @DeleteMapping("/remove-keyPlots/{id}")
     public ResponseEntity<?> deleteKeyPlot(@PathVariable UUID id) {
@@ -241,6 +212,27 @@ System.out.println("dto  "+dto);
             return ResponseEntity.ok(message);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/validate-duplicate-keyplots")
+    public ResponseEntity<?> validateDuplicate(@RequestBody TblBtrDataDTO dto) {
+        ValidationResponse response = keyPlots_Service.validateDuplicateForCluster(dto);
+
+        if (response != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } else {
+            return ResponseEntity.ok(new PlotDuplicateResponse(false, "No duplicate found."));
+        }
+    }
+    @PostMapping("/validate-nonbtr-keyplots")
+    public ResponseEntity<?> validateDuplicateNonBtr(@RequestBody TblBtrDataDTO dto) {
+        ValidationResponse response = keyPlots_Service.validateDuplicateForNonBtrCluster(dto);
+
+        if (response != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } else {
+            return ResponseEntity.ok(new PlotDuplicateResponse(false, "No duplicate found."));
         }
     }
 

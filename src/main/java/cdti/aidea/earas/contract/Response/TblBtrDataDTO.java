@@ -12,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class TblBtrDataDTO {
 
+  private Long id;
   private Integer dcode;
   private Integer tcode;
   private Integer vcode;

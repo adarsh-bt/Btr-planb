@@ -62,55 +62,55 @@ public class ClusterController {
 //    }
 //  }
 
-    //after including agri start and end year
-    @GetMapping("/user-cluster-summary/{zoneId}/{startYear}/{endYear}")
-    public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummaryByYear(
-            @PathVariable Integer zoneId,
-            @PathVariable Integer startYear,
-            @PathVariable Integer endYear) {
-
-        try {
-
-            UserClusterSummaryResponse response =
-                    clusterService.getUserClusterSummaryByYear(
-                            zoneId,
-                            startYear,
-                            endYear
-                    );
-
-            return ResponseEntity.ok(response);
-
-        } catch (NoSuchElementException e) {
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(
-                            new UserClusterSummaryResponse(
-                                    e.getMessage(),
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    "CCE Not Available",
-                                    Collections.emptyList()
-                            )
-                    );
-
-        } catch (Exception e) {
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(
-                            new UserClusterSummaryResponse(
-                                    "An internal error occurred",
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    "CCE Not Available",
-                                    Collections.emptyList()
-                            )
-                    );
-        }
-    }
+    //after including agri start and end year and is commented
+//    @GetMapping("/user-cluster-summary/{zoneId}/{startYear}/{endYear}")
+//    public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummaryByYear(
+//            @PathVariable Integer zoneId,
+//            @PathVariable Integer startYear,
+//            @PathVariable Integer endYear) {
+//
+//        try {
+//
+//            UserClusterSummaryResponse response =
+//                    clusterService.getUserClusterSummaryByYear(
+//                            zoneId,
+//                            startYear,
+//                            endYear
+//                    );
+//
+//            return ResponseEntity.ok(response);
+//
+//        } catch (NoSuchElementException e) {
+//
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                    .body(
+//                            new UserClusterSummaryResponse(
+//                                    e.getMessage(),
+//                                    0,
+//                                    0,
+//                                    0,
+//                                    0,
+//                                    "CCE Not Available",
+//                                    Collections.emptyList()
+//                            )
+//                    );
+//
+//        } catch (Exception e) {
+//
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body(
+//                            new UserClusterSummaryResponse(
+//                                    "An internal error occurred",
+//                                    0,
+//                                    0,
+//                                    0,
+//                                    0,
+//                                    "CCE Not Available",
+//                                    Collections.emptyList()
+//                            )
+//                    );
+//        }
+//    }
 //before including start and end year
 //  @GetMapping("/cluster-form-status/{zoneId}")
 //  public ResponseEntity<UserClusterSummaryResponse> getClusterSummary(
@@ -122,22 +122,22 @@ public class ClusterController {
 //    return ResponseEntity.ok(response);
 //  }
 
-    //after including start and end year
-    @GetMapping("/cluster-form-status/{zoneId}/{startYear}/{endYear}")
-    public ResponseEntity<UserClusterSummaryResponse> getClusterSummaryByYear(
-            @PathVariable Integer zoneId,
-            @PathVariable Integer startYear,
-            @PathVariable Integer endYear) {
-
-        UserClusterSummaryResponse response =
-                clusterService.getClusterSummaryWithExternalStatusByYear(
-                        zoneId,
-                        startYear,
-                        endYear
-                );
-
-        return ResponseEntity.ok(response);
-    }
+    //after including start and end year commented due to need
+//    @GetMapping("/cluster-form-status/{zoneId}/{startYear}/{endYear}")
+//    public ResponseEntity<UserClusterSummaryResponse> getClusterSummaryByYear(
+//            @PathVariable Integer zoneId,
+//            @PathVariable Integer startYear,
+//            @PathVariable Integer endYear) {
+//
+//        UserClusterSummaryResponse response =
+//                clusterService.getClusterSummaryWithExternalStatusByYear(
+//                        zoneId,
+//                        startYear,
+//                        endYear
+//                );
+//
+//        return ResponseEntity.ok(response);
+//    }
 
 
 

@@ -368,11 +368,9 @@ public ClusterReportResponse getTalukWiseDashboardData(
                             .getDesTalukMaster()
                             .getDesTalukNameEn();
 
-            talukId =
-                    cluster.getZone()
-                            .getDesTalukMaster()
-                            .getDesTalukId()
-                            .longValue();
+            talukId = (long) cluster.getZone()
+                    .getDesTalukMaster()
+                    .getDesTalukId();
         }
 
         talukMap.putIfAbsent(

@@ -1606,9 +1606,9 @@ System.out.println(">>>  "+cluster.getCluMasterId());
         keyPlotsRepository.delete(keyPlot);
 
         // 🔹 7. Delete BTR
-        if (btrData != null) {
-            tblBtrDataRepository.delete(btrData);
-        }
+//        if (btrData != null) {
+//            tblBtrDataRepository.delete(btrData);
+//        }
 
         return "KeyPlot deleted successfully";
     }

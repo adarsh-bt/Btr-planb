@@ -123,4 +123,5 @@ AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
           LocalDate agriStart,
           LocalDate agriEnd
   );
+
 }

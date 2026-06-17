@@ -1002,7 +1002,7 @@ public class TblBtrDataService {
                 entity.getTpno(),
                 entity.getTbsubdivisionno(),
                 entity.getBtrtype().getBTypeId(),
-                2L
+                null
         );
     }
 
@@ -1032,4 +1032,5 @@ public class TblBtrDataService {
 
         return "totCent updated successfully. No cluster entries deleted.";
     }
+    
 }

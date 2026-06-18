@@ -280,7 +280,9 @@ AND cm.isReject = false
 
 ORDER BY cm.clusterNumber
 """)
-    List<ClusterSummaryProjection> findClusterSummary(@Param("zoneId") Integer zoneId);
+    List<ClusterSummaryProjection> findClusterSummary(@Param("zoneId") Integer zoneId,Integer startYear,
+                                                      Integer endYear);
+
     @Query("""
 SELECT cfd.clusterMaster.cluMasterId as clusterId,
        SUM(cfd.enumeratedArea) as totalArea

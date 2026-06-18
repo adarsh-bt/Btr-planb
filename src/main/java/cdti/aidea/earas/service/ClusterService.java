@@ -11,6 +11,7 @@ import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
 import cdti.aidea.earas.repository.Btr_repo.projection.ClusterAreaProjection;
+import cdti.aidea.earas.utils.AgriYearUtil;
 import feign.FeignException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -72,11 +73,13 @@ public class ClusterService {
         return new ArrayList<>(uniqueByLabel.values());
     }
 
-    public UserClusterSummaryResponse getUserClusterSummary(Integer zoneId) {
+    public UserClusterSummaryResponse getUserClusterSummaryByYear(Integer zoneId,Integer startYear,
+                                                            Integer endYear) {
 
         // ✅ 1. Fetch all cluster data (SINGLE QUERY)
         List<ClusterSummaryProjection> clusters =
-                clusterMasterRepository.findClusterSummary(zoneId);
+                clusterMasterRepository.findClusterSummary(zoneId,startYear,
+                         endYear);
 
         // ✅ 2. Get cluster IDs
         List<Long> clusterIds = clusters.stream()
@@ -1230,5 +1233,46 @@ public class ClusterService {
         response.setLandType(cluster.getKeyPlot().getLandType());
         response.setLocalbody(tblLocalBody.get().getLocalbodyNameMal());
         return response;
+    }
+
+    //Cluster OverView Status have to link with Form1
+    public ClusterStatusOverviewResponse getClusterStatusOverview(
+            Integer zoneId,
+            String agriYear) {
+
+        LocalDate agriStartDate =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEndDate =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        Integer startYear = agriStartDate.getYear();
+        Integer endYear = agriEndDate.getYear();
+
+        UserClusterSummaryResponse response =
+                getUserClusterSummaryByYear(
+                        zoneId,
+                        startYear,
+                        endYear
+                );
+
+        Integer completed = response.getCompleted();
+        Integer ongoing = response.getOngoing();
+        Integer notStarted = response.getNotStarted();
+        Integer underReview = response.getUnderreview();
+
+        Integer totalClusterStatus =
+                completed +
+                        ongoing +
+                        notStarted +
+                        underReview;
+
+        return new ClusterStatusOverviewResponse(
+                totalClusterStatus,
+                completed,
+                ongoing,
+                notStarted,
+                underReview
+        );
     }
 }

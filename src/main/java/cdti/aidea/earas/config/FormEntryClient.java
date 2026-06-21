@@ -5,6 +5,7 @@ import cdti.aidea.earas.contract.FormEntryDto.*;
 import java.util.List;
 import java.util.Map;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,4 +39,10 @@ public interface FormEntryClient {
   ResponseEntity<String> deleteRandomCrop(
           @RequestBody AvailableCcePlotRemoveRequest request
   );
+
+  @GetMapping("/earas-form1-entry/form1//fetch-zones/{type}/{id}")
+  ResponseEntity<Page<Form1EditLogResponse>> getEditStatusByZoneIds(@RequestParam List<Long> zoneIds,
+                                                                    @RequestParam(defaultValue = "0") int page,
+                                                                    @RequestParam(defaultValue = "10") int size);
+
 }

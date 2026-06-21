@@ -22,6 +22,7 @@ import cdti.aidea.earas.service.AdminManage;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
@@ -33,6 +34,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import static com.microsoft.schemas.vml.CTShape.type;
 
 @Validated
 @RestController
@@ -170,13 +173,10 @@ public class Admincontroller {
     return ResponseEntity.ok(result);
   }
 
-
   @GetMapping("/taluks")
   public List<TalukDTO> getTaluks(@RequestParam Integer zoneId) {
-
     return adminManage.getTaluksByZone(zoneId);
   }
-
 
   @GetMapping("/villages")
   public List<VillageDTO> getVillages(@RequestParam Integer talukId) {
@@ -390,6 +390,22 @@ public class Admincontroller {
 public ResponseEntity<List<DistrictResponse>> getAllDistricts() {
     return ResponseEntity.ok(adminManage.getAllDistricts());
 }
+    @GetMapping("/fetch-zones/{type}/{id}")
+    public ResponseEntity<List<Form1ZoneListResponse>> getZones (
+            @PathVariable("type") String type, @PathVariable("id") String id){
+        try {
+            Integer idValue = Integer.parseInt(id);
+            List<Form1ZoneListResponse> zoneList = adminManage.getZonesByUserType(type, idValue);
+            return new ResponseEntity<>(zoneList, HttpStatus.OK);
+        } catch (NumberFormatException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     //saveOrUpdate in DesTaluk
     @PostMapping("/saveOrUpdate")
     public String saveOrUpdate(@RequestBody DesTalukDTO dto) {

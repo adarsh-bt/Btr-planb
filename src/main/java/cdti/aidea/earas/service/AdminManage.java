@@ -1,6 +1,9 @@
 package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.contract.*;
+import cdti.aidea.earas.config.Form1EditLogResponse;
+import cdti.aidea.earas.config.FormEntryClient;
+import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.RequestsDTOs.ClusterLimitRequest;
 import cdti.aidea.earas.contract.Response.*;
@@ -61,6 +64,7 @@ public class AdminManage {
   private final MasterBlockRepository masterBlockRepository;
   private final LocalBodyRepository localBodyRepository;
   private final LocalBodyTypeRepository localBodyTypeRepository;
+  private final FormEntryClient formEntryClient;
 
   public List<KeyplotsLimitLogResponse> getAllKeyplots() {
     List<KeyplotsLimitLog> entities = repository.findAll();
@@ -365,13 +369,13 @@ public class AdminManage {
       log.setAgriStartYear(agriStart);
       log.setAgriEndYear(agriEnd);
       log.setIsActive(true);
-
       log.setCreatedAt(LocalDateTime.now());
       log.setUpdatedAt(LocalDateTime.now());
     }
 
     return repository.save(log);
   }
+
 
 
   @Transactional
@@ -2029,4 +2033,130 @@ System.out.println("request "+ request);
                         .build())
                 .toList();
     }
+  public List<Form1ZoneListResponse> getZonesByUserType(String type, Integer idValue) {
+
+    List<TblMasterZone> zones;
+    if ("Taluk".equalsIgnoreCase(type)) {
+
+      zones = tblMasterZoneRepository.findByDesTalukId(idValue);
+
+    } else if ("District".equalsIgnoreCase(type)) {
+
+      zones = tblMasterZoneRepository.findByDistId(idValue);
+
+    } else if ("Directorate".equalsIgnoreCase(type)) {
+
+      zones = tblMasterZoneRepository.findAll();
+
+    } else {
+
+      throw new IllegalArgumentException(
+              "Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
+    }
+
+    if (zones == null || zones.isEmpty()) {
+      throw new IllegalArgumentException("No zones found for the given ID.");
+    }
+
+    return zones.stream()
+            .map(zone -> {
+
+              Optional<DesTaluk> taluk =
+                      desTalukRepository.findById(zone.getDesTalukId());
+
+              String talukName =
+                      taluk.map(DesTaluk::getDesTalukNameEn)
+                              .orElse("Unknown Taluk");
+
+              Optional<DistrictMaster> district =
+                      districtMasterRepository.findById(
+                              Long.valueOf(zone.getDistId()));
+
+              String districtName =
+                      district.map(DistrictMaster::getDistNameEn)
+                              .orElse("Unknown District");
+
+              return new Form1ZoneListResponse(
+                      zone.getZoneId(),
+                      zone.getZoneCode(),
+                      zone.getZoneNameEn(),
+                      zone.getZoneNameMal(),
+                      zone.getBtrType().getBtrType(),
+                      zone.getDesTalukId(),
+                      zone.getDistrictMaster().getDistId(),
+                      talukName,
+                      districtName
+              );
+            })
+            .sorted(
+                    Comparator.comparing(Form1ZoneListResponse::getDesDistId)
+                            .thenComparing(Form1ZoneListResponse::getDesTalukId)
+            )
+            .collect(Collectors.toList());
+  }
+//    List<Long> zoneIds =
+//            zones.stream()
+//                    .map(zone -> Long.valueOf(zone.getZoneId()))
+//                    .collect(Collectors.toList());
+//
+//    ResponseEntity<Page<Form1EditLogResponse>> response =
+//            formEntryClient.getEditStatusByZoneIds(
+//                    zoneIds,
+//                    0,
+//                    100);
+//
+//    Page<Form1EditLogResponse> formResponse =
+//            (Page<Form1EditLogResponse>) response.getBody();
+//
+//    Map<Long, Form1EditLogResponse> statusMap =
+//            formResponse.getContent()
+//                    .stream()
+//                    .collect(
+//                            Collectors.toMap(
+//                                    Form1EditLogResponse::getZoneId,
+//                                    data -> data,
+//                                    (a, b) -> a));
+//
+//    return zones.stream()
+//            .map(
+//                    zone -> {
+//
+//                      Optional<DesTaluk> taluk =
+//                              desTalukRepository.findById(
+//                                      zone.getDesTalukId());
+//
+//                      String talukName =
+//                              taluk.map(DesTaluk::getDesTalukNameEn)
+//                                      .orElse("Unknown Taluk");
+//
+//                      Optional<DistrictMaster> district =
+//                              districtMasterRepository.findById(
+//                                      Long.valueOf(zone.getDistId()));
+//
+//                      String districtName =
+//                              district.map(DistrictMaster::getDist_name_en)
+//                                      .orElse("Unknown District");
+//
+//                      Form1EditLogResponse formStatus =
+//                              statusMap.get(
+//                                      Long.valueOf(zone.getZoneId()));
+//
+//                      return new Form1ZoneListResponse(
+//                              zone.getZoneId(),
+//                              zone.getZoneCode(),
+//                              zone.getZoneNameEn(),
+//                              zone.getZoneNameMal(),
+//                              zone.getBtrType().getBtrType(),
+//                              zone.getDesTalukId(),
+//                              zone.getDistrictMaster().getDist_id(),
+//                              talukName,
+//                              districtName);
+//                    })
+//            .sorted(
+//                    Comparator.comparing(
+//                                    Form1ZoneListResponse::getDesDistId)
+//                            .thenComparing(
+//                                    Form1ZoneListResponse::getDesTalukId))
+//            .collect(Collectors.toList());
+//  }
 }

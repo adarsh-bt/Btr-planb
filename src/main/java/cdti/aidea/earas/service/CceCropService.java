@@ -262,7 +262,7 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
 
       List<ZoneLocalbodyBlockMapping> mappings =
               zoneLocalbodyBlockMappingRepository
-                      .findByZoneAndIsValidTrue(zoneId);
+                      .findByZone(zoneId);
 
 
       for (ZoneLocalbodyBlockMapping mapping : mappings) {
@@ -273,28 +273,29 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
         Integer localBodyId = null;
         String localBodyName = null;
 
-        if (mapping.getBlockPanchayatMunicipalArea() == 1) {
+        Integer id = mapping.getBlockDetails();
 
-          blockId = mapping.getBlockDetails();
+        Optional<MasterBlock> block =
+                masterBlockRepository.findById(id);
 
-          Optional<MasterBlock> block =
-                  masterBlockRepository.findById(blockId);
+        if (block.isPresent()) {
 
-          blockName =
-                  block.map(MasterBlock::getBlockName)
-                          .orElse(null);
-        }
+          blockId = id;
+          blockName = block.get().getBlockName();
 
-        else {
-
-          localBodyId = mapping.getBlockDetails();
+        } else {
 
           Optional<TblLocalBody> localBody =
-                  localBodyRepository.findById(localBodyId);
+                  localBodyRepository.findById(id);
 
-          localBodyName =
-                  localBody.map(TblLocalBody::getLocalbodyNameEn)
-                          .orElse(null);
+          if (localBody.isPresent()) {
+
+            localBodyId = id;
+            localBodyName = localBody.get().getLocalbodyNameEn();
+
+            System.out.println("Localbody found : " + localBodyName);
+
+          }
         }
 
         List<ClusterMaster> clusters =

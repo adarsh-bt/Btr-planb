@@ -92,7 +92,6 @@ public class CceCropService {
                 "random",
                 userId,
                 crop.getAgriStartYear(),
-                crop.getAgriEndYear(),
                 plot.getLandType(),
                 //                        "2025-07-01",
                 //                        "2026-06-30",
@@ -123,11 +122,11 @@ public class CceCropService {
 //    log.warn("Fallback triggered for zoneId: {}", zoneId, t);
 //    return new CcePlotResult(Collections.emptyList(), true);
 //  }
-public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
+public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId,String agriYear) {
 
   try {
     AvailableCcePlotFetchRequest request =
-            new AvailableCcePlotFetchRequest(zoneId);
+            new AvailableCcePlotFetchRequest(zoneId,agriYear);
 
     Map<String, Object> response =
             formEntryClient.getAvailableCcePlotsByZoneId(request);

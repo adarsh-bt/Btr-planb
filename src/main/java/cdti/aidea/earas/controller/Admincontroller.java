@@ -2,7 +2,6 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
-import cdti.aidea.earas.model.Btr_models.ClusterEditAllowed;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
@@ -13,7 +12,6 @@ import cdti.aidea.earas.service.AdminManage;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
@@ -106,9 +104,9 @@ public class Admincontroller {
   public ResponseEntity<Page<ClusterApprovalTableDTO>> ZonelistClusters(
           @PathVariable("type") String type,
           @PathVariable("id") String id,
-
           @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "10") int size
+          @RequestParam(defaultValue = "10") int size,
+          @RequestParam String agriYear
   ) {
 
     try {
@@ -120,7 +118,8 @@ public class Admincontroller {
                       type,
                       idValue,
                       page,
-                      size
+                      size,
+                      agriYear
               );
 
       return new ResponseEntity<>(zoneList, HttpStatus.OK);
@@ -139,6 +138,45 @@ public class Admincontroller {
     }
   }
 
+  @GetMapping("/zones_work-allocation_approvals/{type}/{id}/{agriYear}")
+  public ResponseEntity<Page<WorkAllocationApprovalTableDTO>> ZoneListWorkAllocation(
+          @PathVariable("type") String type,
+          @PathVariable("id") String id,
+          @PathVariable("agriYear") String agriYear,
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size
+  ) {
+    try {
+      Integer idValue = Integer.parseInt(id);
+
+      Page<WorkAllocationApprovalTableDTO> zoneList =
+              adminManage.zoneListForWorkAllocation(
+                      type,
+                      idValue,
+                      page,
+                      size,
+                      agriYear
+              );
+
+      return new ResponseEntity<>(zoneList, HttpStatus.OK);
+
+    } catch (NumberFormatException e) {
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    } catch (IllegalArgumentException e) {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    } catch (Exception e) {
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @PostMapping("/approve-reject-workAllocation")
+  public ResponseEntity<?>  approveOrRejectWorkAllocation(
+          @Valid @RequestBody WorkAllocationApproveDTO request) {
+
+    return ResponseEntity.ok(
+            adminManage.approveOrRejectWorkAllocation(request)
+    );
+  }
   @PostMapping("/approve-reject")
   public ResponseEntity<?> approveOrReject(
           @Valid @RequestBody ClusterApprovalActionDTO request) {

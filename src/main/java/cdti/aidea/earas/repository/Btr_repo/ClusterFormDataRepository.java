@@ -124,4 +124,16 @@ AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
           LocalDate agriEnd
   );
 
+  @Query("""
+SELECT COALESCE(SUM(c.enumeratedArea),0)
+FROM ClusterFormData c
+WHERE c.plot.id = :plotId
+AND c.clusterMaster.keyPlot.agriStartYear = :agriStart
+AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
+""")
+  Double getUsedAreaByAgriYear(
+          Long plotId,
+          LocalDate agriStart,
+          LocalDate agriEnd
+  );
 }

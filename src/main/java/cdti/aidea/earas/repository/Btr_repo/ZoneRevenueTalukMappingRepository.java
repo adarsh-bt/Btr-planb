@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ZoneRevenueTalukMappingRepository
     extends JpaRepository<ZoneRevenueTalukMapping, Long> {
-  List<ZoneRevenueTalukMapping> findByZone(Integer zone);
+  List<ZoneRevenueTalukMapping> findByZoneAndIsValidTrue(Integer zone);
 
   //    List<ZoneRevenueTalukMapping> findByZone(Integer zone);
   // Custom queries can be added here if needed

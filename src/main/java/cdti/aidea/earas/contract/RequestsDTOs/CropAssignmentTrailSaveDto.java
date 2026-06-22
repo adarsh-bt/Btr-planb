@@ -30,6 +30,8 @@ public class CropAssignmentTrailSaveDto {
   private Boolean isLimitExceeded = false;
 
   private Boolean isCurrentAssignment = true;
+  @NotNull(message = "Agricultural year cannot be null")
+  private String agriYear;
 
   private UUID addedBy;
 

@@ -13,5 +13,9 @@ public class ClusterTourResponse {
     private String landType;
     private String localbody;
     private String block;
-
+    private String ownername;
+    private String address;
+    private String number;
+    private String districtName;
+    private String talukName;
 }

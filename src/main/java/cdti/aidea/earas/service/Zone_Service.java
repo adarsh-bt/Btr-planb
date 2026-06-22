@@ -573,7 +573,7 @@ public class Zone_Service {
       Map<String, Object> data = new HashMap<>();
 
       data.put("p_name", localBodyNameMap.get(s.getLbcode()));
-
+      data.put("lbcode",s.getLbcode());
       data.put("Wet_area", s.getWet_area());
       data.put("Dry_area", s.getDry_area());
       data.put("Total_area", s.getTotal_area());

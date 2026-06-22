@@ -17,5 +17,6 @@ public class SaveClusterRequestDTO {
   private Integer clusterNo;
   private String status;
   private String remarks;
+  private String agriYear;
   private List<SidePlotDTO> sidePlots;
 }

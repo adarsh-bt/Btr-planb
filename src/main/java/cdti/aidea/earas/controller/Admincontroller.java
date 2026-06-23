@@ -462,7 +462,6 @@ public ResponseEntity<List<DistrictResponse>> getAllDistricts() {
     @PostMapping("/saveOrUpdateVillageBlock")
     public ResponseEntity<String> saveOrUpdateVillageBlock(
             @RequestBody TblMasterVillageBlockRequest dto) {
-
         return ResponseEntity.ok(
                 adminManage.saveOrUpdateVillageBlock(dto)
         );

@@ -1,4 +1,5 @@
 package cdti.aidea.earas.service;
+
 import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.contract.FormEntryDto.*;
 import cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection;
@@ -30,56 +31,63 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ClusterService {
 
-    private final ClusterMasterRepository clusterMasterRepository;
-    private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
-    private final TblBtrDataRepository tblBtrDataRepository;
-    private final KeyPlotsRepository keyPlotsRepository;
-    private final ClusterFormDataRepository clusterFormDataRepository;
-    private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
-    private final TblMasterVillageRepository tblMasterVillageRepository;
-    private final TblMasterVillageBlockRepository tblMasterVillageBlockRepository;
-    //  private final KeyPlotsRepository keyPlotsRepository;
-    private final LocalBodyRepository localBodyRepository;
-    private final CceCropService cceCropService;
-    private final FormEntryClient formEntryClient;
-    private final LocalBodyTypeRepository localBodyTypeRepository;
-    private final CropAssignmentTrailRepository cropAssignmentTrailRepository;
-    private final ClusterLimitLogRepository clusterLimitLogRepository;
-    private final ClusterApprovalRepository clusterApprovalRepository;
-    private final TblMasterZoneRepository tblMasterZoneRepository;
+  private final ClusterMasterRepository clusterMasterRepository;
+  private final UserZoneAssignmentRepositoty userZoneAssignmentRepositoty;
+  private final TblBtrDataRepository tblBtrDataRepository;
+  private final KeyPlotsRepository keyPlotsRepository;
+  private final ClusterFormDataRepository clusterFormDataRepository;
+  private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
+  private final TblMasterVillageRepository tblMasterVillageRepository;
+  private final TblMasterVillageBlockRepository tblMasterVillageBlockRepository;
+  //  private final KeyPlotsRepository keyPlotsRepository;
+  private final LocalBodyRepository localBodyRepository;
+  private final CceCropService cceCropService;
+  private final FormEntryClient formEntryClient;
+  private final LocalBodyTypeRepository localBodyTypeRepository;
+  private final CropAssignmentTrailRepository cropAssignmentTrailRepository;
+  private final ClusterLimitLogRepository clusterLimitLogRepository;
+  private final ClusterApprovalRepository clusterApprovalRepository;
+  private final TblMasterZoneRepository tblMasterZoneRepository;
+  private final AgriYearUtil agriYearUtil;
 
-    public List<ClusterFormResponseDTO> getFormDataByClusterId(Long clusterId) {
-        ClusterMaster clusterMaster =
-                clusterMasterRepository
-                        .findById(clusterId)
-                        .orElseThrow(() -> new RuntimeException("Cluster not found with ID: " + clusterId));
+  public List<ClusterFormResponseDTO> getFormDataByClusterId(Long clusterId) {
+    ClusterMaster clusterMaster =
+        clusterMasterRepository
+            .findById(clusterId)
+            .orElseThrow(() -> new RuntimeException("Cluster not found with ID: " + clusterId));
 
-        List<ClusterFormData> formDataList =
-                clusterFormDataRepository.findByClusterMaster(clusterMaster);
+    List<ClusterFormData> formDataList =
+        clusterFormDataRepository.findByClusterMaster(clusterMaster);
 
-        // Use a Set to filter by unique plotLabel
-        Map<String, ClusterFormResponseDTO> uniqueByLabel = new LinkedHashMap<>();
+    // Use a Set to filter by unique plotLabel
+    Map<String, ClusterFormResponseDTO> uniqueByLabel = new LinkedHashMap<>();
 
-        for (ClusterFormData data : formDataList) {
-            String label = data.getPlotLabel();
-            if (!uniqueByLabel.containsKey(label)) {
-                uniqueByLabel.put(
-                        label,
-                        new ClusterFormResponseDTO(
-                                data.getClusterMaster().getCluMasterId(), data.getPlot().getId(), label));
-            }
-        }
+    for (ClusterFormData data : formDataList) {
+      String label = data.getPlotLabel();
+      if (!uniqueByLabel.containsKey(label)) {
+        uniqueByLabel.put(
+            label,
+            new ClusterFormResponseDTO(
+                data.getClusterMaster().getCluMasterId(), data.getPlot().getId(), label));
+      }
+    }
 
         return new ArrayList<>(uniqueByLabel.values());
     }
 
-    public UserClusterSummaryResponse getUserClusterSummaryByYear(Integer zoneId,Integer startYear,
-                                                            Integer endYear) {
+    public UserClusterSummaryResponse getUserClusterSummary(
+            Integer zoneId,
+            String agriYear) {
 
-        // ✅ 1. Fetch all cluster data (SINGLE QUERY)
+        LocalDate agriStart = AgriYearUtil.getAgriYearStart(agriYear);
+        LocalDate agriEnd = AgriYearUtil.getAgriYearEnd(agriYear);
+
         List<ClusterSummaryProjection> clusters =
-                clusterMasterRepository.findClusterSummary(zoneId,startYear,
-                         endYear);
+                clusterMasterRepository.findClusterSummary(
+                        zoneId,
+                        agriStart,
+                        agriEnd
+                );
 
         // ✅ 2. Get cluster IDs
         List<Long> clusterIds = clusters.stream()
@@ -100,7 +108,7 @@ public class ClusterService {
         Map<Long, Set<String>> clusterCropMap = new HashMap<>();
         String cceMessage = null;
 
-        CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(Long.valueOf(zoneId));
+        CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(Long.valueOf(zoneId),agriYear);
 
         if (cceResult.isFallbackUsed()) {
             cceMessage = "CCE data not available currently.";
@@ -194,11 +202,22 @@ public class ClusterService {
         return result;
     }
 
-    public UserClusterSummaryResponse getClusterSummaryWithExternalStatus(Integer zoneId) {
+    public UserClusterSummaryResponse getClusterSummaryWithExternalStatus(
+            Integer zoneId,
+            String agriYear) {
 
-        // ✅ 1. SINGLE QUERY (NO ENTITY LOAD)
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
         List<ClusterSummaryFastProjection> clusters =
-                clusterMasterRepository.getClusterSummaryFast(zoneId);
+                clusterMasterRepository.getClusterSummaryFast(
+                        zoneId,
+                        agriStart,
+                        agriEnd
+                );
 
         // ✅ 2. External API (SAFE + FAST FAIL)
         List<ExternalClusterStatusResponse> externalStatus;
@@ -215,7 +234,7 @@ public class ClusterService {
 
         // ✅ 4. CCE (same)
         CcePlotResult cceResult =
-                cceCropService.getAssignedCcePlotsByZoneId(Long.valueOf(zoneId));
+                cceCropService.getAssignedCcePlotsByZoneId(Long.valueOf(zoneId),agriYear);
 
         Map<Long, Set<String>> cropMap = new HashMap<>();
 
@@ -273,7 +292,8 @@ public class ClusterService {
                             c.getLbcode(),
                             c.getBcode(),
 //                            c.getSurveyNo(),
-                            "11/1",
+//
+                            c.getSurveyNo(),
                             c.getTotCent(), // ✅ from projection
                             clusterId,
                             c.getLandType() != null ? c.getLandType().toLowerCase() : "unknown",
@@ -296,6 +316,7 @@ public class ClusterService {
                 payload
         );
     }
+
 
     //    cluster data for App
     public Map<String, Object> getGroupedFormDataByClusterId(Long clusterId) {
@@ -393,6 +414,7 @@ public class ClusterService {
                         .orElseThrow(() -> new RuntimeException("ClusterFormData not found with ID: " + id));
         clusterFormDataRepository.delete(formData);
     }
+
     public List<VillagesListResponse> getVillagesListByLbCode(String lbcode) {
         // Step 1: Get all BTR data entries matching the lbcode
         List<TblBtrData> btrDataList = tblBtrDataRepository.findByLbcode(lbcode);
@@ -668,6 +690,207 @@ public class ClusterService {
         return new ClusterPlotAreaRes(
                 kpId, lbcode, resvno, resbdno, plot.getTotCent(), plot.getBcode(), plot.getId());
     }
+
+
+
+//  @Transactional
+//  public void saveClusterData(
+//      UUID userid, UUID keyplotId, Integer clusterNo, String status, String remarks,List<SidePlotDTO> sidePlots) {
+//
+//
+//    KeyPlots keyPlot =
+//        keyPlotsRepository
+//            .findById(keyplotId)
+//            .orElseThrow(() -> new RuntimeException("KeyPlot not found with ID: " + keyplotId));
+//
+//    Optional<ClusterLimitLog> currentActiveOpt = clusterLimitLogRepository.findByInActiveTrue();
+//    BigDecimal clustermin = currentActiveOpt.map(ClusterLimitLog::getClusterMin).orElse(null);
+//    BigDecimal clustermax = currentActiveOpt.map(ClusterLimitLog::getClusterMax).orElse(null);
+//    BigDecimal tsoclusterlimit =
+//        currentActiveOpt.map(ClusterLimitLog::getTsoApprovalLimit).orElse(null);
+//    ClusterMaster clusterMaster =
+//        clusterMasterRepository
+//            .findByKeyPlotId(keyPlot.getId())
+//            .orElseGet(
+//                () -> {
+//                  // If not found, create new ClusterMaster
+//                  ClusterMaster newCluster = new ClusterMaster();
+//                  newCluster.setKeyPlot(keyPlot);
+//                  //                    newCluster.setClusterNo(clusterNo); // Set the clusterNo
+//                  // here for new master
+//                  newCluster.setStatus("On Going");
+//                  newCluster.setIsReject(false);
+//                  newCluster.setIs_active(true);
+//                  newCluster.setCreatedAt(LocalDateTime.now());
+//                  newCluster.setUpdatedAt(LocalDateTime.now());
+//                  return newCluster;
+//                });
+//
+//    // Update existing ClusterMaster properties
+//    //        clusterMaster.setClusterNo(clusterNo); // Always update clusterNo
+//    double totalEnumeratedArea =
+//        sidePlots.stream()
+//            .flatMap(sp -> sp.getRows().stream())
+//            .mapToDouble(row -> row.getActual() != null ? row.getActual() : 0.0)
+//            .sum();
+//
+//    // 🔹 Decide status based on limits
+//
+//    String status;
+//    System.out.println("total " + totalEnumeratedArea);
+//    if (clustermax != null && BigDecimal.valueOf(totalEnumeratedArea).compareTo(clustermax) > 0) {
+//      throw new RuntimeException("Maximum limit exceeded, please reduce the size.");
+//    } else if (clustermin != null
+//        && BigDecimal.valueOf(totalEnumeratedArea).compareTo(clustermin) < 0) {
+//      status = "On Going";
+//
+//    } else if (tsoclusterlimit != null
+//        && BigDecimal.valueOf(totalEnumeratedArea).compareTo(tsoclusterlimit) < 0) {
+//      status = "Under Review";
+//      ClusterApprovalLog clusterApprovalLog = new ClusterApprovalLog();
+//      clusterApprovalLog.setClusterMaster(clusterMaster);
+//      clusterApprovalLog.setAddedBy(userid);
+//      clusterApprovalLog.setZone(clusterMaster.getZone());
+//      clusterApprovalLog.setRemarks("Cluster is Not meet the approval limit");
+//      clusterApprovalLog.setTotalArea(BigDecimal.valueOf(totalEnumeratedArea));
+//      clusterApprovalRepository.save(clusterApprovalLog);
+//
+//    } else {
+//      status = "Completed";
+//    }
+//
+//    // 🔹 Apply status & save ClusterMaster
+//    clusterMaster.setStatus(status);
+//    clusterMaster.setUpdatedAt(LocalDateTime.now());
+//    ClusterMaster savedCluster = clusterMasterRepository.save(clusterMaster);
+//
+//    // --- Data Management Logic ---
+//
+//    // 1. Get existing ClusterFormData for this ClusterMaster
+//    List<ClusterFormData> existingFormData =
+//        clusterFormDataRepository.findByClusterMaster(savedCluster);
+//    Map<String, ClusterFormData> existingFormDataMap =
+//        existingFormData.stream()
+//            .collect(
+//                    Collectors.toMap(
+//                            data -> data.getPlot().getId().toString() + "_" + data.getPlotLabel(),
+//                            data -> data,
+//                            (existing, duplicate) -> {
+//                              // Keep the latest one OR whichever you want
+//                              return existing;  // ignore duplicate
+//                            }
+//                    ));
+//
+//    // Create a set of submitted unique keys for efficient lookup
+//    Set<String> submittedKeys = new HashSet<>();
+//
+//    // 2. Process submitted side plots: Add new or Update existing
+//    for (SidePlotDTO sidePlot : sidePlots) {
+//      for (ClusterFormRowDTO row : sidePlot.getRows()) {
+//        Long currentPlotId = row.getPlot_id();
+//        System.out.println("village   "+row.getVillage());
+//        String currentPlotLabel = sidePlot.getLabel();
+//        String uniqueKey = currentPlotId.toString() + "_" + currentPlotLabel;
+//        submittedKeys.add(uniqueKey); // Add to submitted keys set
+//
+//        TblBtrData plot =
+//            tblBtrDataRepository
+//                .findById(currentPlotId)
+//                //                        .orElseThrow(() -> new RuntimeException("Plot not found
+//                // for ID: " + currentPlotId));
+//                .orElseGet(
+//                    () -> {
+//                      // Create new TblBtrData if not found
+//                      TblBtrData newPlot = new TblBtrData();
+//                      System.out.println("villages" + row.getVillage());
+//                      // Set basic properties from the row data
+//                      newPlot.setResvno(row.getSvNo());
+//                      newPlot.setResbdno(row.getSubNo());
+//                      newPlot.setBcode(row.getBcode());
+//                      newPlot.setTotCent(row.getArea());
+//                      newPlot.setLtype(keyPlot.getLandType());
+//                      // Get additional properties from keyPlot for consistency
+//                      TblBtrData keyPlotBtrData = keyPlot.getBtrData();
+//                      newPlot.setDcode(keyPlotBtrData.getDcode());
+//                      newPlot.setTcode(keyPlotBtrData.getTcode());
+//                      newPlot.setVcode(Integer.valueOf(row.getVillage())); // m
+//                      newPlot.setBtrtype(keyPlotBtrData.getBtrtype());
+//                      newPlot.setAddress(row.getAddress());
+//                      newPlot.setOwnername(row.getOwnername());
+//                      newPlot.setHouseno(row.getHouseno());
+//                      newPlot.setOldsvno(row.getOldsvno());
+//                      newPlot.setOldsubno(row.getOldsubno());
+//                      newPlot.setTpno(row.getTpno());
+//                      newPlot.setTbsubdivisionno(row.getTbsubdivisionno());
+//                      newPlot.setWardnumber(row.getWard_number());
+//                      //
+//                      // newPlot.setLbtype(keyPlotBtrData.getLbtype());//venda
+//                      newPlot.setLbcode(keyPlotBtrData.getLbcode());
+//                      //
+//                      // newPlot.setGovpriv(keyPlotBtrData.getGovpriv());//venda
+//                      newPlot.setLtype(keyPlotBtrData.getLtype()); // done
+//                      //                            newPlot.setLanduse(keyPlotBtrData.getLanduse());
+//                      // //venda
+//                      Optional<TblMasterVillage> lsg =
+//                          tblMasterVillageRepository.findById(Integer.valueOf(row.getVillage()));
+//                      newPlot.setLsgcode(lsg.get().getLsgCode()); // m
+//
+//                      // Set default values for optional fields
+//                      //                            newPlot.setNhect(0.0);
+//                      //                            newPlot.setNare(0.0);
+//                      //                            newPlot.setNsqm(0.0);
+//                      //                            newPlot.setEast(0.0);
+//                      //                            newPlot.setWest(0.0);
+//                      //                            newPlot.setNorth(0.0);
+//                      //                            newPlot.setSouth(0.0);
+//
+//                      log.info(
+//                          "Creating new TblBtrData for plot_id: {} with svNo: {} and subNo: {}",
+//                          currentPlotId,
+//                          row.getSvNo(),
+//                          row.getSubNo());
+//
+//                      return tblBtrDataRepository.save(newPlot);
+//                    });
+//
+//        Double enumeratedArea = row.getActual();
+//        if (enumeratedArea == null) {
+//          // Handle cases where 'actual' might be null or not a valid number
+//          // Based on your frontend, it looks like 'enumeratedArea' is what's editable.
+//          // Let's assume 'actual' in DTO maps to 'enumeratedArea' in entity.
+//          throw new RuntimeException(
+//              "Enumerated area cannot be null for plot ID: " + currentPlotId);
+//        }
+//
+//        ClusterFormData formData;
+//        if (existingFormDataMap.containsKey(uniqueKey)) {
+//          // Update existing entry
+//          formData = existingFormDataMap.get(uniqueKey);
+//          formData.setEnumeratedArea(enumeratedArea);
+//          formData.setUpdatedAt(LocalDateTime.now());
+//          // Remove from map to mark it as processed
+//          existingFormDataMap.remove(uniqueKey);
+//        } else {
+//          // Add new entry
+//          formData = new ClusterFormData();
+//          formData.setClusterMaster(savedCluster);
+//          formData.setPlot(plot);
+//          formData.setPlotLabel(currentPlotLabel);
+//          formData.setEnumeratedArea(enumeratedArea);
+//          formData.setStatus(true); // Assuming true for new entries
+//          formData.setCreatedAt(LocalDateTime.now());
+//          formData.setUpdatedAt(LocalDateTime.now());
+//          formData.setCreatedBy(userid);
+//        }
+//        clusterFormDataRepository.save(formData); // Save or update
+//      }
+//    }
+//
+//    // 3. Delete old ClusterFormData entries that are no longer submitted
+//    // Any remaining entries in existingFormDataMap were not in the current submission
+//    clusterFormDataRepository.deleteAll(existingFormDataMap.values());
+//  }
+
     @Transactional
     public void saveClusterData(
             UUID userid,
@@ -676,10 +899,15 @@ public class ClusterService {
             Integer clusterNo,
             String requestedStatus,   // On Going | Under Review | COMPLETED
             String remarks,
+            String agriYear,
             List<SidePlotDTO> sidePlots
     ) {
+        System.out.println("year  >>   "+agriYear);
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
 
-
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
 //   System.out.println("zone id "+zoneId);
         KeyPlots keyPlot =
                 keyPlotsRepository.findById(keyplotId)
@@ -849,11 +1077,8 @@ public class ClusterService {
                                     newPlot.setWardnumber(row.getWard_number());
                                     newPlot.setLbcode(kp.getLbcode());
                                     newPlot.setLtype(kp.getLtype());
-                                    LocalDate now = LocalDate.now();
-                                    LocalDate agreStart = LocalDate.of(now.getYear(), 7, 1); // July 1 of current year
-                                    LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
-                                    newPlot.setAgreStartYear(agreStart);
-                                    newPlot.setAgreEndYear(agreEnd);
+                                    newPlot.setAgreStartYear(agriStart);
+                                    newPlot.setAgreEndYear(agriEnd);
                                     newPlot.setUpdated_by(userid);
                                     newPlot.setCreated_by(userid);
                                     newPlot.setInsertionTime(LocalDateTime.now());
@@ -1187,7 +1412,7 @@ public class ClusterService {
         if (newNumbers.size() != updates.size()) {
             throw new RuntimeException("Duplicate cluster numbers in request");
         }
-
+        
         // 🔹 Step 1: Load all clusters
         Map<Long, ClusterMaster> clusterMap = new HashMap<>();
 
@@ -1220,6 +1445,7 @@ public class ClusterService {
 
         return "Bulk cluster update successful";
     }
+
     public ClusterTourResponse getClusterDetails(Long clusterId) {
 
         ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
@@ -1232,8 +1458,15 @@ public class ClusterService {
         response.setZoneName(cluster.getZone().getZoneNameEn());
         response.setLandType(cluster.getKeyPlot().getLandType());
         response.setLocalbody(tblLocalBody.get().getLocalbodyNameMal());
+        response.setOwnername(cluster.getKeyPlot().getOwner_name());
+        response.setAddress(cluster.getKeyPlot().getAddress());
+        response.setNumber(cluster.getKeyPlot().getPhone_number());
+        response.setTalukName(cluster.getKeyPlot().getZone().getDesTalukMaster().getDesTalukNameEn());
+        response.setDistrictName(cluster.getKeyPlot().getZone().getDistrictMaster().getDistNameEn());
         return response;
     }
+
+
 
     //Cluster OverView Status have to link with Form1
     public ClusterStatusOverviewResponse getClusterStatusOverview(
@@ -1274,5 +1507,9 @@ public class ClusterService {
                 notStarted,
                 underReview
         );
+    }
+
+    private UserClusterSummaryResponse getUserClusterSummaryByYear(Integer zoneId, Integer startYear, Integer endYear) {
+        return null;
     }
 }

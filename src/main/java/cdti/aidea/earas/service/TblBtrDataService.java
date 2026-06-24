@@ -686,14 +686,14 @@ public class TblBtrDataService {
         }
 
         // Calculate remaining area for single plot case
-        return calculateRemainingAreaForPlot(plots.get(0), dto.getResvno(), cleanedResbdno);
+        return calculateRemainingAreaForPlot(plots.get(0), dto.getResvno(), cleanedResbdno,dto.getAgriYear());
     }
 
 
     public ValidationResponse validateDuplicateForNonBtrCluster(TblBtrDataDTO dto) {
         TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
-        System.out.println(">>>>   "+dto);
+
         String lbcode = dto.getLbcode() != null ? dto.getLbcode() : getLbcodeFromZone(zone);
 
         Integer type = Math.toIntExact(dto.getBtrtype());
@@ -726,7 +726,7 @@ public class TblBtrDataService {
 
         if (!plots.isEmpty()) {
             TblBtrData plot = plots.get(0);
-            return calculateRemainingAreaForPlot(plot, null, "House: Ward " + dto.getWardno() + ", House " + dto.getHouseno());
+            return calculateRemainingAreaForPlot(plot, null, "House: Ward " + dto.getWardno() + ", House " + dto.getHouseno(),dto.getAgriYear());
         }
 
         // Optional: check survey number/subdivision (like in BTR)
@@ -745,7 +745,7 @@ public class TblBtrDataService {
 
         if (!plots.isEmpty()) {
             TblBtrData plot = plots.get(0);
-            return calculateRemainingAreaForPlot(plot, null, "Cultivator: " + dto.getOwnername());
+            return calculateRemainingAreaForPlot(plot, null, "Cultivator: " + dto.getOwnername(),dto.getAgriYear());
         }
 
         // Optional: also validate survey number if provided
@@ -757,7 +757,6 @@ public class TblBtrDataService {
         if (dto.getTpno() == null) {
             throw new RuntimeException("Thandaper number is required for Thandaper validation");
         }
-
         List<TblBtrData> plots;
         Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
         if (dto.getTbsubdivisionno() != null) {
@@ -769,7 +768,6 @@ public class TblBtrDataService {
                     zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
                     dto.getTpno(),null);
         }
-
         if (plots.isEmpty()) return null;
 
         if (plots.size() > 1 && dto.getTbsubdivisionno() == null) {
@@ -778,7 +776,7 @@ public class TblBtrDataService {
 
         TblBtrData plot = plots.get(0);
         return calculateRemainingAreaForPlot(plot, null,
-                dto.getTbsubdivisionno() != null ? dto.getTbsubdivisionno().toString() : null);
+                dto.getTbsubdivisionno() != null ? dto.getTbsubdivisionno().toString() : null,dto.getAgriYear());
     }
 
     private ValidationResponse validateOldSurveyDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
@@ -805,7 +803,7 @@ public class TblBtrDataService {
         }
 
         TblBtrData plot = plots.get(0);
-        return calculateRemainingAreaForPlot(plot, dto.getOldsvno(), dto.getOldsubno());
+        return calculateRemainingAreaForPlot(plot, dto.getOldsvno(), dto.getOldsubno(),dto.getAgriYear());
     }
 
 
@@ -832,7 +830,7 @@ public class TblBtrDataService {
             if (surveyPlots.size() > 1 && (cleanedResbdno == null || cleanedResbdno.isEmpty())) {
                 return createSurveyWithSubdivisionsResponse(surveyPlots, dto.getResvno());
             }
-            return calculateRemainingAreaForPlot(surveyPlots.get(0), Integer.valueOf(dto.getResvno().toString()), cleanedResbdno);
+            return calculateRemainingAreaForPlot(surveyPlots.get(0), Integer.valueOf(dto.getResvno().toString()), cleanedResbdno,dto.getAgriYear());
         }
 
         return null;
@@ -892,80 +890,152 @@ public class TblBtrDataService {
         );
     }
 
-    private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer identifier, String subdivision) {
-        int currentYear = java.time.LocalDate.now().getYear();
-        int nextYear = currentYear + 1;
-        System.out.println("plots >>>  "+plot);
-        double totalEnumerated = 0.0;
-        double totalArea = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
-        LocalDate today = LocalDate.now();
-        LocalDateTime startDate;
-        LocalDateTime endDate;
+//    private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer identifier, String subdivision,String agriYear) {
+//        int currentYear = java.time.LocalDate.now().getYear();
+//        int nextYear = currentYear + 1;
+//        System.out.println("plots >>>  "+plot);
+//        double totalEnumerated = 0.0;
+//        double totalArea = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
+//
+//
+////        LocalDate today = LocalDate.now();
+////        LocalDateTime startDate;
+////        LocalDateTime endDate;
+//
+////        if (today.getMonthValue() >= 7) {
+////            // July to December
+////            startDate = LocalDate.of(today.getYear(), 7, 1).atStartOfDay();
+////            endDate = LocalDate.of(today.getYear() + 1, 6, 30).atTime(23, 59, 59);
+////        } else {
+////            // January to June
+////            startDate = LocalDate.of(today.getYear() - 1, 7, 1).atStartOfDay();
+////            endDate = LocalDate.of(today.getYear(), 6, 30).atTime(23, 59, 59);
+////        }
+//        LocalDate startDate =
+//                AgriYearUtil.getAgriYearStart(agriYear);
+//
+//        LocalDate endDate =
+//                AgriYearUtil.getAgriYearEnd(agriYear);
+////        List<ClusterFormData> clusterDataList = clusterFormDataRepository.findByPlotAndCreatedAtBetween(
+////                plot,
+////                startDate,
+////                endDate
+////        );
+//
+//        Double clusterDataList =
+//                clusterFormDataRepository.getUsedAreaByAgriYear(
+//                        plot.getId(),
+//                        startDate,
+//                        endDate
+//                );
+//        totalEnumerated += clusterDataList.stream()
+//                .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
+//                .sum();
+//        System.out.println("total >>>  "+totalArea);
+//        System.out.println("Emureted  >>> "+totalEnumerated);
+//        double remainingArea = totalArea - totalEnumerated;
+//        System.out.println("ccccc >>  "+clusterDataList);
+//        System.out.println("remain "+remainingArea);
+//        // For non-survey cases, identifier might be null
+//        Integer resvno = (identifier != null) ? identifier : null;
+//        String resbdno = subdivision;
+//
+//        if (remainingArea <= 0) {
+//            return new ValidationResponse(
+//                    plot.getId(),
+//                    resvno,
+//                    resbdno,
+//                    totalArea,
+//                    "This " + getPlotType(plot) + " cannot be selected for this agricultural year (no remaining area)",
+//                    remainingArea,
+//                    plot.getLtype(),
+//                    null
+//            );
+//        } else if (remainingArea > 0 && totalEnumerated > 0) {
+//            return new ValidationResponse(
+//                    plot.getId(),
+//                    resvno,
+//                    resbdno,
+//                    totalArea,
+//                    "Remaining area available for reuse in this agricultural year",
+//                    remainingArea,
+//                    plot.getLtype(),
+//                    null
+//            );
+//        } else {
+//            return new ValidationResponse(
+//                    plot.getId(),
+//                    resvno,
+//                    resbdno,
+//                    totalArea,
+//                    "Duplicate entry already exists but has available area",
+//                    remainingArea,
+//                    plot.getLtype(),
+//                    null
+//            );
+//        }
+//    }
+private ValidationResponse calculateRemainingAreaForPlot(
+        TblBtrData plot,
+        Integer identifier,
+        String subdivision,
+        String agriYear
+) {
 
-        if (today.getMonthValue() >= 7) {
-            // July to December
-            startDate = LocalDate.of(today.getYear(), 7, 1).atStartOfDay();
-            endDate = LocalDate.of(today.getYear() + 1, 6, 30).atTime(23, 59, 59);
-        } else {
-            // January to June
-            startDate = LocalDate.of(today.getYear() - 1, 7, 1).atStartOfDay();
-            endDate = LocalDate.of(today.getYear(), 6, 30).atTime(23, 59, 59);
-        }
+    double totalArea =
+            plot.getTotCent() != null ? plot.getTotCent() : 0.0;
 
-        List<ClusterFormData> clusterDataList = clusterFormDataRepository.findByPlotAndCreatedAtBetween(
-                plot,
-                startDate,
-                endDate
+    LocalDate startDate =
+            AgriYearUtil.getAgriYearStart(agriYear);
+
+    LocalDate endDate =
+            AgriYearUtil.getAgriYearEnd(agriYear);
+
+    Double usedArea =
+            clusterFormDataRepository.getUsedAreaByAgriYear(
+                    plot.getId(),
+                    startDate,
+                    endDate
+            );
+
+    double totalEnumerated =
+            usedArea != null ? usedArea : 0.0;
+
+    double remainingArea =
+            totalArea - totalEnumerated;
+
+    Integer resvno =
+            identifier != null ? identifier : null;
+
+    String resbdno = subdivision;
+
+    if (remainingArea <= 0) {
+
+        return new ValidationResponse(
+                plot.getId(),
+                resvno,
+                resbdno,
+                totalArea,
+                "This " + getPlotType(plot)
+                        + " cannot be selected for agricultural year "
+                        + agriYear,
+                0.0,
+                plot.getLtype(),
+                null
         );
-
-        totalEnumerated += clusterDataList.stream()
-                .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
-                .sum();
-        System.out.println("total >>>  "+totalArea);
-        System.out.println("Emureted  >>> "+totalEnumerated);
-        double remainingArea = totalArea - totalEnumerated;
-        System.out.println("ccccc >>  "+clusterDataList);
-        System.out.println("remain "+remainingArea);
-        // For non-survey cases, identifier might be null
-        Integer resvno = (identifier != null) ? identifier : null;
-        String resbdno = subdivision;
-
-        if (remainingArea <= 0) {
-            return new ValidationResponse(
-                    plot.getId(),
-                    resvno,
-                    resbdno,
-                    totalArea,
-                    "This " + getPlotType(plot) + " cannot be selected for this agricultural year (no remaining area)",
-                    remainingArea,
-                    plot.getLtype(),
-                    null
-            );
-        } else if (remainingArea > 0 && totalEnumerated > 0) {
-            return new ValidationResponse(
-                    plot.getId(),
-                    resvno,
-                    resbdno,
-                    totalArea,
-                    "Remaining area available for reuse in this agricultural year",
-                    remainingArea,
-                    plot.getLtype(),
-                    null
-            );
-        } else {
-            return new ValidationResponse(
-                    plot.getId(),
-                    resvno,
-                    resbdno,
-                    totalArea,
-                    "Duplicate entry already exists but has available area",
-                    remainingArea,
-                    plot.getLtype(),
-                    null
-            );
-        }
     }
 
+    return new ValidationResponse(
+            plot.getId(),
+            resvno,
+            resbdno,
+            totalArea,
+            "Remaining area available",
+            remainingArea,
+            plot.getLtype(),
+            null
+    );
+}
 
 
 
@@ -988,7 +1058,6 @@ public class TblBtrDataService {
     public TblBtrDetailsResponse getBtrDetails(Long btrId) {
         TblBtrData entity = tblBtrDataRepository.findById(btrId)
                 .orElseThrow(() -> new RuntimeException("BTR record not found with ID: " + btrId));
-
         return new TblBtrDetailsResponse(
                 entity.getResvno(),
                 entity.getResbdno(),

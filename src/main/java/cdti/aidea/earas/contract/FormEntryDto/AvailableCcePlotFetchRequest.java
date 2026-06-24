@@ -13,4 +13,6 @@ import org.springframework.validation.annotation.Validated;
 public class AvailableCcePlotFetchRequest {
   @NotNull(message = "Zone id cannot be null")
   private Long zoneId;
+  @NotNull(message = "Agricultural year cannot be null")
+  private String agriYear;
 }

@@ -35,109 +35,45 @@ public class ClusterController {
     List<ClusterFormResponseDTO> result = clusterService.getFormDataByClusterId(clusterId);
     return ResponseEntity.ok(result);
   }
-//before including agri start and end year
-//  @GetMapping("/user-cluster-summary/{zoneId}")
-//  public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummary(
-//      @PathVariable Integer zoneId) {
-//      System.out.println("zone "+zoneId);
-//    try {
-//      UserClusterSummaryResponse response = clusterService.getUserClusterSummary(zoneId);
-//      return ResponseEntity.ok(response);
-//    } catch (NoSuchElementException e) {
-//      return ResponseEntity.status(HttpStatus.NOT_FOUND)
-//          .body(
-//              new UserClusterSummaryResponse(
-//                  e.getMessage(), 0, 0, 0, 0, "CCe Not Available", Collections.emptyList()));
-//    } catch (Exception e) {
-//      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//          .body(
-//              new UserClusterSummaryResponse(
-//                  "An internal error occurred",
-//                  0,
-//                  0,
-//                  0,
-//                  0,
-//                  "CCe Not Available",
-//                  Collections.emptyList()));
-//    }
-//  }
-
     //after including agri start and end year and is commented
-    @GetMapping("/user-cluster-summary/{zoneId}/{startYear}/{endYear}")
-    public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummaryByYear(
-            @PathVariable Integer zoneId,
-            @PathVariable Integer startYear,
-            @PathVariable Integer endYear) {
-
-        try {
-
-            UserClusterSummaryResponse response =
-                    clusterService.getUserClusterSummaryByYear(
-                            zoneId,
-                            startYear,
-                            endYear
-                    );
-
-            return ResponseEntity.ok(response);
-
-        } catch (NoSuchElementException e) {
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(
-                            new UserClusterSummaryResponse(
-                                    e.getMessage(),
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    "CCE Not Available",
-                                    Collections.emptyList()
-                            )
-                    );
-
-        } catch (Exception e) {
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(
-                            new UserClusterSummaryResponse(
-                                    "An internal error occurred",
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    "CCE Not Available",
-                                    Collections.emptyList()
-                            )
-                    );
-        }
+  @GetMapping("/user-cluster-summary/{zoneId}/{agriYear}")
+  public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummary(
+          @PathVariable Integer zoneId,
+          @PathVariable String agriYear) {
+    try {
+      UserClusterSummaryResponse response = clusterService.getUserClusterSummary(zoneId,agriYear);
+      return ResponseEntity.ok(response);
+    } catch (NoSuchElementException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND)
+          .body(
+              new UserClusterSummaryResponse(
+                  e.getMessage(), 0, 0, 0, 0, "CCe Not Available", Collections.emptyList()));
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(
+              new UserClusterSummaryResponse(
+                  "An internal error occurred",
+                  0,
+                  0,
+                  0,
+                  0,
+                  "CCe Not Available",
+                  Collections.emptyList()));
     }
-//before including start and end year
-//  @GetMapping("/cluster-form-status/{zoneId}")
-//  public ResponseEntity<UserClusterSummaryResponse> getClusterSummary(
-//          @PathVariable Integer zoneId) {
-//
-//    UserClusterSummaryResponse response =
-//            clusterService.getClusterSummaryWithExternalStatus(zoneId);
-//
-//    return ResponseEntity.ok(response);
-//  }
+  }
 
-    //after including start and end year commented due to need
-//    @GetMapping("/cluster-form-status/{zoneId}/{startYear}/{endYear}")
-//    public ResponseEntity<UserClusterSummaryResponse> getClusterSummaryByYear(
-//            @PathVariable Integer zoneId,
-//            @PathVariable Integer startYear,
-//            @PathVariable Integer endYear) {
-//
-//        UserClusterSummaryResponse response =
-//                clusterService.getClusterSummaryWithExternalStatusByYear(
-//                        zoneId,
-//                        startYear,
-//                        endYear
-//                );
-//
-//        return ResponseEntity.ok(response);
-//    }
+
+  @GetMapping("/cluster-form-status/{zoneId}/{agriYear}")
+  public ResponseEntity<UserClusterSummaryResponse> getClusterSummary(
+          @PathVariable Integer zoneId,
+          @PathVariable String agriYear) {
+
+    UserClusterSummaryResponse response =
+            clusterService.getClusterSummaryWithExternalStatus(zoneId, agriYear);
+
+    return ResponseEntity.ok(response);
+  }
+
 
 
 
@@ -252,43 +188,26 @@ public class ClusterController {
     return ResponseEntity.ok(response);
   }
 
-//  @PostMapping("/save-cluster")
-//  public ResponseEntity<?> saveClusterForm(@RequestBody SaveClusterRequestDTO request) {
-//    try {
-//      clusterService.saveClusterData(
-//          request.getUserId(),
-//          request.getKeyplotId(),
-//          request.getClusterNo(),
-//          request.getStatus(),
-//          request.getRemarks(),
-//          request.getSidePlots());
-//      return ResponseEntity.ok(
-//          Collections.singletonMap("message", "Cluster form saved successfully."));
-//
-//    } catch (Exception e) {
-//      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//          .body(e.getMessage());
-//    }
-//  }
-@PostMapping("/save-cluster")
-public ResponseEntity<?> saveClusterForm(@RequestBody SaveClusterRequestDTO request) {
+  @PostMapping("/save-cluster")
+  public ResponseEntity<?> saveClusterForm(@RequestBody SaveClusterRequestDTO request) {
     try {
-        clusterService.saveClusterData(
-                request.getUserId(),
-                request.getZoneId(),
-                request.getKeyplotId(),
-                request.getClusterNo(),
-                request.getStatus(),
-                request.getRemarks(),
-                request.getSidePlots());
-        return ResponseEntity.ok(
-                Collections.singletonMap("message", "Cluster form saved successfully."));
+      clusterService.saveClusterData(
+          request.getUserId(),
+          request.getZoneId(),
+          request.getKeyplotId(),
+          request.getClusterNo(),
+          request.getStatus(),
+          request.getRemarks(),
+              request.getAgriYear(),
+          request.getSidePlots());
+      return ResponseEntity.ok(
+          Collections.singletonMap("message", "Cluster form saved successfully."));
 
     } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(e.getMessage());
     }
-}
+  }
 
   @DeleteMapping("/delete-sideplot/{id}")
   public ResponseEntity<?> deleteClusterFormData(@PathVariable Long id) {

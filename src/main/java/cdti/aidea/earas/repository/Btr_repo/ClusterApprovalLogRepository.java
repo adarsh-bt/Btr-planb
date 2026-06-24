@@ -5,8 +5,10 @@ import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -26,15 +28,62 @@ public interface ClusterApprovalLogRepository
     List<ClusterApprovalLog> findAll();
 
 
-    Page<ClusterApprovalLog> findByZone_DesTalukId(
-            Integer talukId,
-            Pageable pageable
-    );
-
-    Page<ClusterApprovalLog> findByZone_DistId(
-            Integer districtId,
-            Pageable pageable
-    );
+//    Page<ClusterApprovalLog> findByZone_DesTalukId(
+//            Integer talukId,
+//            Pageable pageable
+//    );
+//
+//    Page<ClusterApprovalLog> findByZone_DistId(
+//            Integer districtId,
+//            Pageable pageable
+//    );
 
     Page<ClusterApprovalLog> findAll(Pageable pageable);
+
+        @Query("""
+            SELECT cal
+            FROM ClusterApprovalLog cal
+            JOIN cal.clusterMaster cm
+            JOIN cm.keyPlot kp
+            WHERE cal.zone.desTalukId = :talukId
+            AND kp.agriStartYear = :agriStart
+            AND kp.agriEndYear = :agriEnd
+            """)
+        Page<ClusterApprovalLog> findByTalukAndAgriYear(
+            Integer talukId,
+            LocalDate agriStart,
+            LocalDate agriEnd,
+            Pageable pageable
+            );
+
+                @Query("""
+            SELECT cal
+            FROM ClusterApprovalLog cal
+            JOIN cal.clusterMaster cm
+            JOIN cm.keyPlot kp
+            WHERE cal.zone.distId = :distId
+            AND kp.agriStartYear = :agriStart
+            AND kp.agriEndYear = :agriEnd
+            """)
+                Page<ClusterApprovalLog> findByDistrictAndAgriYear(
+                        Integer distId,
+                        LocalDate agriStart,
+                        LocalDate agriEnd,
+                        Pageable pageable
+                );
+
+                @Query("""
+            SELECT cal
+            FROM ClusterApprovalLog cal
+            JOIN cal.clusterMaster cm
+            JOIN cm.keyPlot kp
+            WHERE kp.agriStartYear = :agriStart
+            AND kp.agriEndYear = :agriEnd
+            """)
+                Page<ClusterApprovalLog> findByAgriYear(
+                        LocalDate agriStart,
+                        LocalDate agriEnd,
+                        Pageable pageable
+                );
+
 }

@@ -24,53 +24,53 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface  ClusterMasterRepository extends JpaRepository<ClusterMaster, Long> {
-    @Query("SELECT c FROM ClusterMaster c WHERE c.keyPlot.id = :keyPlotId")
-    Optional<ClusterMaster> findByKeyPlotId(@Param("keyPlotId") UUID keyPlotId);
+public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Long> {
+  @Query("SELECT c FROM ClusterMaster c WHERE c.keyPlot.id = :keyPlotId")
+  Optional<ClusterMaster> findByKeyPlotId(@Param("keyPlotId") UUID keyPlotId);
 
-    @Query("SELECT c FROM ClusterMaster c WHERE c.zone.zoneId = :userId AND c.isReject = false")
-    List<ClusterMaster> findAllByUserId(@Param("userId") UUID userId);
+  @Query("SELECT c FROM ClusterMaster c WHERE c.zone.zoneId = :userId AND c.isReject = false")
+  List<ClusterMaster> findAllByUserId(@Param("userId") UUID userId);
 
-    @Query("SELECT c FROM ClusterMaster c WHERE c.zone.zoneId = :zoneId AND c.isReject = false")
-    List<ClusterMaster> findAllByZoneIdAndIsRejectFalse(@Param("zoneId") Integer zoneId);
+  @Query("SELECT c FROM ClusterMaster c WHERE c.zone.zoneId = :zoneId AND c.isReject = false")
+  List<ClusterMaster> findAllByZoneIdAndIsRejectFalse(@Param("zoneId") Integer zoneId);
 
-    Optional<ClusterMaster> findTopByKeyPlotOrderByCreatedAtDesc(KeyPlots keyPlot);
+  Optional<ClusterMaster> findTopByKeyPlotOrderByCreatedAtDesc(KeyPlots keyPlot);
 
-    Optional<ClusterMaster> findByKeyPlot(KeyPlots plot);
-
-
-
-    @Query(
-            "SELECT cm FROM ClusterMaster cm "
-                    + "JOIN cm.keyPlot kp "
-                    + "JOIN kp.zone z "
-                    + "WHERE z.zoneId = :zoneId "
-                    + "AND (:landType = 'Wet / Dry' OR LOWER(kp.landType) = LOWER(:landType)) "
-                    + "AND cm.clusterNumber > :currentClusterNumber "
-                    + "AND cm.is_active = true "
-                    + "AND cm.isReject = false "
-                    + "ORDER BY cm.clusterNumber ASC"
-    )
-    List<ClusterMaster> findNextClusterFlexibleLandType(
-            @Param("zoneId") int zoneId,
-            @Param("landType") String landType,
-            @Param("currentClusterNumber") int currentClusterNumber);
+  Optional<ClusterMaster> findByKeyPlot(KeyPlots plot);
 
 
-    List<ClusterMaster> findByKeyPlotIn(List<KeyPlots> keyPlots);
 
-    @Query(
-            "SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm "
-                    + "JOIN cm.keyPlot kp "
-                    + "JOIN kp.btrData bd "
-                    + "WHERE bd.lbcode = :lbcode "
-                    + "AND kp.landType = :landType "
-                    + "AND kp.agriStartYear BETWEEN :startDate AND :endDate")
-    Optional<Integer> findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(
-            @Param("lbcode") String lbcode,
-            @Param("landType") String landType,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+  @Query(
+          "SELECT cm FROM ClusterMaster cm "
+                  + "JOIN cm.keyPlot kp "
+                  + "JOIN kp.zone z "
+                  + "WHERE z.zoneId = :zoneId "
+                  + "AND (:landType = 'Wet / Dry' OR LOWER(kp.landType) = LOWER(:landType)) "
+                  + "AND cm.clusterNumber > :currentClusterNumber "
+                  + "AND cm.is_active = true "
+                  + "AND cm.isReject = false "
+                  + "ORDER BY cm.clusterNumber ASC"
+  )
+  List<ClusterMaster> findNextClusterFlexibleLandType(
+          @Param("zoneId") int zoneId,
+          @Param("landType") String landType,
+          @Param("currentClusterNumber") int currentClusterNumber);
+
+
+  List<ClusterMaster> findByKeyPlotIn(List<KeyPlots> keyPlots);
+
+  @Query(
+          "SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm "
+                  + "JOIN cm.keyPlot kp "
+                  + "JOIN kp.btrData bd "
+                  + "WHERE bd.lbcode = :lbcode "
+                  + "AND kp.landType = :landType "
+                  + "AND kp.agriStartYear BETWEEN :startDate AND :endDate")
+  Optional<Integer> findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(
+          @Param("lbcode") String lbcode,
+          @Param("landType") String landType,
+          @Param("startDate") LocalDate startDate,
+          @Param("endDate") LocalDate endDate);
 
 //  @Query("SELECT MAX(c.clusterNumber) FROM ClusterMaster c " +
 //          "WHERE c.zone.zoneId = :zoneId " +
@@ -278,21 +278,25 @@ LEFT JOIN LocalBodyType lbt ON lbt.id = lb.localbodyType
 
 WHERE cm.zone.zoneId = :zoneId
 AND cm.isReject = false
-AND YEAR(kp.agriStartYear) = :startYear
-AND YEAR(kp.agriEndYear) = :endYear
+AND kp.agriStartYear = :agriStart
+AND kp.agriEndYear = :agriEnd
 
 ORDER BY cm.clusterNumber
 """)
-  List<ClusterSummaryProjection> findClusterSummary(@Param("zoneId") Integer zoneId, @Param("startYear") Integer startYear,
-                                                    @Param("endYear") Integer endYear);
-  @Query("""
-SELECT cfd.clusterMaster.cluMasterId as clusterId,
-       SUM(cfd.enumeratedArea) as totalArea
-FROM ClusterFormData cfd
-WHERE cfd.clusterMaster.cluMasterId IN :clusterIds
-GROUP BY cfd.clusterMaster.cluMasterId
-""")
-  List<ClusterAreaProjection> findTotalAreaByClusterIds(List<Long> clusterIds);
+  List<ClusterSummaryProjection> findClusterSummary(
+          @Param("zoneId") Integer zoneId,
+          @Param("agriStart") LocalDate agriStart,
+          @Param("agriEnd") LocalDate agriEnd
+  );
+
+//  @Query("""
+//SELECT cfd.clusterMaster.cluMasterId as clusterId,
+//       SUM(cfd.enumeratedArea) as totalArea
+//FROM ClusterFormData cfd
+//WHERE cfd.clusterMaster.cluMasterId IN :clusterIds
+//GROUP BY cfd.clusterMaster.cluMasterId
+//""")
+//  List<ClusterAreaProjection> findTotalAreaByClusterIds(List<Long> clusterIds);
 
   @Query("""
 SELECT new cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection(
@@ -325,10 +329,16 @@ LEFT JOIN LocalBodyType lbt ON lbt.id = lb.localbodyType
 
 WHERE cm.zone.zoneId = :zoneId
 AND cm.isReject = false
+AND kp.agriStartYear = :agriStart
+AND kp.agriEndYear = :agriEnd
 
 ORDER BY cm.clusterNumber
 """)
-  List<ClusterSummaryFastProjection> getClusterSummaryFast(@Param("zoneId") Integer zoneId);
+  List<ClusterSummaryFastProjection> getClusterSummaryFast(
+          @Param("zoneId") Integer zoneId,
+          @Param("agriStart") LocalDate agriStart,
+          @Param("agriEnd") LocalDate agriEnd
+  );
 
 
   @Query(value = """
@@ -520,5 +530,6 @@ ORDER BY cm.clusterNumber
 //  List<FormClusterDetailsResponse> findClusterLocalBodyDetails(
 //          @Param("clusterIds") List<Long> clusterIds
 //  );
+
 
 }

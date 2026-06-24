@@ -2,10 +2,14 @@ package cdti.aidea.earas.service;
 
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
+import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+import cdti.aidea.earas.model.Btr_models.Masters.ZoneRevenueTalukMapping;
 import cdti.aidea.earas.model.Btr_models.TblBtrData;
 import cdti.aidea.earas.model.Btr_models.TblNonBtr;
 import cdti.aidea.earas.repository.Btr_repo.TblBtrDataRepository;
+import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
 import cdti.aidea.earas.repository.Btr_repo.TblNonBtrRepository;
+import cdti.aidea.earas.repository.Btr_repo.ZoneRevenueTalukMappingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +24,8 @@ import java.util.*;
 public class OutOfClusterService {
     private final TblBtrDataRepository tblBtrDataRepository;
     private final TblNonBtrRepository tblNonBtrRepository;
+    private final TblMasterZoneRepository tblMasterZoneRepository;
+    private final ZoneRevenueTalukMappingRepository zoneRevenueTalukMappingRepository;
 
     @Transactional
     public Map<String, Object> saveBtr(TblBtrDataDTO dto) {
@@ -61,8 +67,10 @@ public class OutOfClusterService {
     private List<String> validateRequiredFields(TblBtrDataDTO dto) {
         List<String> errors = new ArrayList<>();
 
-        if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
-        if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
+//        if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
+//        if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
+     //   if (dto.getDcode() == null) errors.add("District code (dcode) is required.");
+      //  if (dto.getTcode() == null) errors.add("Taluk code (tcode) is required.");
         if (dto.getVcode() == null) errors.add("Village code (vcode) is required.");
         if (dto.getBcode() == null || dto.getBcode().trim().isEmpty())
             errors.add("Block code (bcode) is required.");
@@ -77,6 +85,19 @@ public class OutOfClusterService {
     //   // ---------------- DTO -> Entity Mapper ----------------
     private TblBtrData mapToEntity(TblBtrDataDTO dto) {
         TblBtrData entity = new TblBtrData();
+        Optional<TblMasterZone> zone =
+                tblMasterZoneRepository.findById(dto.getZoneId());
+
+        List<ZoneRevenueTalukMapping> mappings =
+                zoneRevenueTalukMappingRepository.findByZoneAndIsValidTrue(dto.getZoneId());
+
+        entity.setDcode(zone.get().getDistId());
+
+        if (!mappings.isEmpty()) {
+            entity.setTcode(mappings.get(0).getRevenueTaluk());
+        }
+        entity.setDcode(zone.get().getDistId());
+//        entity.setTcode(mappings.get(0).getRevenueTaluk());
         entity.setDcode(dto.getDcode());
         entity.setTcode(dto.getTcode());
         entity.setVcode(dto.getVcode());
@@ -84,6 +105,7 @@ public class OutOfClusterService {
         entity.setLbcode(dto.getLbcode());
         entity.setLtype(dto.getLtype());
         entity.setLsgcode(dto.getLsgcode());
+//        entity.setLsgcode(dto.getLsgcode());
         entity.setTotCent(dto.getTotCent());
         entity.setResvno(dto.getResvno());
         entity.setResbdno(dto.getResbdno());

@@ -12,10 +12,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -1147,69 +1145,129 @@ public class AdminManage {
             )
             .collect(Collectors.toList());
   }
-//    List<Long> zoneIds =
-//            zones.stream()
-//                    .map(zone -> Long.valueOf(zone.getZoneId()))
-//                    .collect(Collectors.toList());
-//
-//    ResponseEntity<Page<Form1EditLogResponse>> response =
-//            formEntryClient.getEditStatusByZoneIds(
-//                    zoneIds,
-//                    0,
-//                    100);
-//
-//    Page<Form1EditLogResponse> formResponse =
-//            (Page<Form1EditLogResponse>) response.getBody();
-//
-//    Map<Long, Form1EditLogResponse> statusMap =
-//            formResponse.getContent()
-//                    .stream()
-//                    .collect(
-//                            Collectors.toMap(
-//                                    Form1EditLogResponse::getZoneId,
-//                                    data -> data,
-//                                    (a, b) -> a));
-//
-//    return zones.stream()
-//            .map(
-//                    zone -> {
-//
-//                      Optional<DesTaluk> taluk =
-//                              desTalukRepository.findById(
-//                                      zone.getDesTalukId());
-//
-//                      String talukName =
-//                              taluk.map(DesTaluk::getDesTalukNameEn)
-//                                      .orElse("Unknown Taluk");
-//
-//                      Optional<DistrictMaster> district =
-//                              districtMasterRepository.findById(
-//                                      Long.valueOf(zone.getDistId()));
-//
-//                      String districtName =
-//                              district.map(DistrictMaster::getDist_name_en)
-//                                      .orElse("Unknown District");
-//
-//                      Form1EditLogResponse formStatus =
-//                              statusMap.get(
-//                                      Long.valueOf(zone.getZoneId()));
-//
-//                      return new Form1ZoneListResponse(
-//                              zone.getZoneId(),
-//                              zone.getZoneCode(),
-//                              zone.getZoneNameEn(),
-//                              zone.getZoneNameMal(),
-//                              zone.getBtrType().getBtrType(),
-//                              zone.getDesTalukId(),
-//                              zone.getDistrictMaster().getDist_id(),
-//                              talukName,
-//                              districtName);
-//                    })
-//            .sorted(
-//                    Comparator.comparing(
-//                                    Form1ZoneListResponse::getDesDistId)
-//                            .thenComparing(
-//                                    Form1ZoneListResponse::getDesTalukId))
-//            .collect(Collectors.toList());
-//  }
+
+  public Page<ZonesClusterApprovalResponse> getZoneListForClusters(
+          String type,
+          Integer idValue,
+          String agriYear,
+          int page,
+          int size) {
+
+    Pageable pageable = PageRequest.of(page, size);
+
+    List<Long> zoneIds;
+
+    if ("Taluk".equalsIgnoreCase(type)) {
+
+      zoneIds = tblMasterZoneRepository.findByDesTalukId(idValue)
+              .stream()
+              .map(TblMasterZone::getZoneId)
+              .map(Long::valueOf)
+              .toList();
+
+    } else if ("District".equalsIgnoreCase(type)) {
+
+      zoneIds = tblMasterZoneRepository.findByDistId(idValue)
+              .stream()
+              .map(TblMasterZone::getZoneId)
+              .map(Long::valueOf)
+              .toList();
+
+    } else if ("Directorate".equalsIgnoreCase(type)) {
+
+      zoneIds = tblMasterZoneRepository.findAll()
+              .stream()
+              .map(TblMasterZone::getZoneId)
+              .map(Long::valueOf)
+              .toList();
+
+    } else {
+
+      throw new IllegalArgumentException(
+              "Invalid type. Use 'Taluk', 'District', or 'Directorate'");
+    }
+
+    // Fetch data from Form1 service
+    Page<Form1EditLogResponse> editLogs =
+            formEntryClient
+                    .getEditStatusByZoneIds(zoneIds, agriYear, page, size)
+                    .getBody();
+
+    // Prepare response objects
+    List<ZonesClusterApprovalResponse> responses =
+            editLogs.getContent()
+                    .stream()
+                    .map(editLog -> {
+
+                      TblMasterZone zone = tblMasterZoneRepository
+                              .findById(editLog.getZoneId().intValue())
+                              .orElse(null);
+
+                      ZonesClusterApprovalResponse response =
+                              new ZonesClusterApprovalResponse();
+
+                      if (zone != null) {
+
+                        response.setZoneId(zone.getZoneId());
+                        response.setZoneName(zone.getZoneNameEn());
+
+                        DesTaluk taluk = zone.getDesTalukMaster();
+
+                        if (taluk != null) {
+                          response.setTalukId(
+                                  Math.toIntExact(taluk.getDesTalukId()));
+                          response.setTalukName(
+                                  taluk.getDesTalukNameEn());
+                        }
+
+                        DistrictMaster district =
+                                districtMasterRepository
+                                        .findById(
+                                                Long.valueOf(zone.getDistId()))
+                                        .orElse(null);
+
+                        if (district != null) {
+                          response.setDistrictId(district.getDist_id());
+                          response.setDistrictName(
+                                  district.getDist_name_en());
+                        }
+                      }
+
+                      return response;
+
+                    })
+                    .toList();
+
+    // Attach Form1 edit logs
+    enrichForm1EditLogs(responses, editLogs.getContent());
+
+    return new PageImpl<>(
+            responses,
+            pageable,
+            editLogs.getTotalElements()
+    );
+  }
+
+  private void enrichForm1EditLogs(
+          List<ZonesClusterApprovalResponse> responses,
+          List<Form1EditLogResponse> editLogs) {
+
+    Map<Long, Form1EditLogResponse> form1Map =
+            editLogs.stream()
+                    .collect(Collectors.toMap(
+                            Form1EditLogResponse::getZoneId,
+                            Function.identity(),
+                            (first, second) -> second
+                    ));
+
+    responses.forEach(response -> {
+
+      if (response.getZoneId() != null) {
+
+        response.setForm1EditLogResponse(
+                form1Map.get(Long.valueOf(response.getZoneId()))
+        );
+      }
+    });
+  }
 }

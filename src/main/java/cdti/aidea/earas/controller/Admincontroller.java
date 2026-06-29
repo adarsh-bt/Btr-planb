@@ -2,7 +2,6 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
-import cdti.aidea.earas.model.Btr_models.ClusterEditAllowed;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
@@ -13,7 +12,6 @@ import cdti.aidea.earas.service.AdminManage;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
@@ -375,6 +373,46 @@ public class Admincontroller {
     } catch (IllegalArgumentException e) {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     } catch (Exception e) {
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+
+  @GetMapping("/fetch-zones-cluster/{type}/{id}")
+  public ResponseEntity<Page<ZonesClusterApprovalResponse>> getZoneListForClusters(
+          @PathVariable("type") String type,
+          @PathVariable("id") String id,
+          @RequestParam String agriYear,
+
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size
+  ) {
+
+    try {
+
+      Integer idValue = Integer.parseInt(id);
+
+      Page<ZonesClusterApprovalResponse> zoneList =
+              adminManage.getZoneListForClusters(
+                      type,
+                      idValue,
+                      agriYear,
+                      page,
+                      size
+              );
+
+      return new ResponseEntity<>(zoneList, HttpStatus.OK);
+
+    } catch (NumberFormatException e) {
+
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+    } catch (IllegalArgumentException e) {
+
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+    } catch (Exception e) {
+
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

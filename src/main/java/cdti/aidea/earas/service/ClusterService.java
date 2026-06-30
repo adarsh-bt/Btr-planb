@@ -109,7 +109,7 @@ public class ClusterService {
         String cceMessage = null;
 
         CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(Long.valueOf(zoneId),agriYear);
-
+System.out.println("cce  "+cceResult.toString());
         if (cceResult.isFallbackUsed()) {
             cceMessage = "CCE data not available currently.";
         }
@@ -1755,7 +1755,7 @@ System.out.println("year  >>   "+agriYear);
         if (newNumbers.size() != updates.size()) {
             throw new RuntimeException("Duplicate cluster numbers in request");
         }
-        
+
         // 🔹 Step 1: Load all clusters
         Map<Long, ClusterMaster> clusterMap = new HashMap<>();
 
@@ -1790,7 +1790,7 @@ System.out.println("year  >>   "+agriYear);
     }
 
     public ClusterTourResponse getClusterDetails(Long clusterId) {
-
+System.out.println("cluster "+clusterId);
         ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
                 .orElseThrow(() -> new RuntimeException("Cluster not found"));
         ClusterTourResponse response = new ClusterTourResponse();

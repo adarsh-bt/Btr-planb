@@ -1,6 +1,7 @@
 package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
+import cdti.aidea.earas.contract.RequestsDTOs.WorkAllocationVerificationRequest;
 import cdti.aidea.earas.service.WorkallocationService;
 import cdti.aidea.earas.service.Zone_Service;
 import jakarta.validation.Valid;
@@ -44,5 +45,14 @@ public class WorkallocationController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error submitting: " + e.getMessage());
         }
+    }
+
+    @PutMapping("/verification")
+    public ResponseEntity<?> verifyWorkAllocation(
+            @RequestBody WorkAllocationVerificationRequest request) {
+
+        workallocationService.verify(request);
+
+        return ResponseEntity.ok("Verification updated successfully");
     }
 }

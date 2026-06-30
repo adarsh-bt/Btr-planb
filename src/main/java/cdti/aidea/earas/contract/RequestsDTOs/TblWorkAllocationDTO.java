@@ -69,4 +69,8 @@ public class TblWorkAllocationDTO {
     private String agriYear;
     private Long approveId;
     private String status;
+
+    private String VerifiedStatus;
+    private LocalDate VerifiedDate;
+    private String VerifiedBy;
 }

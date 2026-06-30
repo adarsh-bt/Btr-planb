@@ -49,7 +49,6 @@ public class TblWorkAllocationApproval {
     private LocalDate agriEnd;
 
 
-
     @Column(name = "is_active")
     private Boolean isActive = true;
 }

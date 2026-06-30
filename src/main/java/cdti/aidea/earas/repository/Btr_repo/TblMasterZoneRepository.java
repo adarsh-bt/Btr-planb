@@ -33,4 +33,12 @@ public interface TblMasterZoneRepository extends JpaRepository<TblMasterZone, In
     )
 """)
   Page<TblMasterZone> searchZones(@Param("search") String search, Pageable pageable);
+
+  Page<TblMasterZone> findByDesTalukId(Integer desTalukId, Pageable pageable);
+
+  Page<TblMasterZone> findByDistId(Integer distId, Pageable pageable);
+
+  Page<TblMasterZone> findAll(Pageable pageable);
+
+
 }

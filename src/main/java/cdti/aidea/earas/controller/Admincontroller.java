@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -43,14 +44,14 @@ public class Admincontroller {
 
   @PostMapping("/save-keyplot-limits")
   public ResponseEntity<KeyplotsLimitLog> createKeyplotsLimit(
-      @RequestBody KeyplotsLimitLogRequest request) {
+          @RequestBody KeyplotsLimitLogRequest request) {
     KeyplotsLimitLog saved = adminManage.saveOrUpdateKeyplotsLimit(request);
     return ResponseEntity.ok(saved);
   }
 
   @PostMapping("/save-cluster-limits")
   public ResponseEntity<ClusterLimitLog> createOrUpdateClusterLimit(
-      @RequestBody ClusterLimitRequest request) {
+          @RequestBody ClusterLimitRequest request) {
     ClusterLimitLog saved = adminManage.saveOrUpdateClusterLimit(request);
     return ResponseEntity.ok(saved);
   }
@@ -62,7 +63,7 @@ public class Admincontroller {
 
   @GetMapping("/zones/{type}/{id}")
   public ResponseEntity<List<ZoneListResponse>> getById(
-      @PathVariable("type") String type, @PathVariable("id") String id) {
+          @PathVariable("type") String type, @PathVariable("id") String id) {
     try {
       Integer idValue = Integer.parseInt(id); // Parse the ID
 
@@ -79,6 +80,22 @@ public class Admincontroller {
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+//  indfinte
+//@GetMapping("/zones/{type}/{id}")
+//public ResponseEntity<Page<ZoneListResponse>> getById(
+//        @PathVariable String type,
+//        @PathVariable Integer id,
+//        @RequestParam(defaultValue = "0") int page,
+//        @RequestParam(defaultValue = "40") int size) {
+//
+//  return ResponseEntity.ok(
+//          adminManage.AdminViewZonesByType(
+//                  type,
+//                  id,
+//                  PageRequest.of(page, size)
+//          )
+//  );
+//}
 
 //  @GetMapping("/zones_cluster/{type}/{id}")
 //  public ResponseEntity<List<ClusterApprovalTableDTO>> ZonelistClusters(

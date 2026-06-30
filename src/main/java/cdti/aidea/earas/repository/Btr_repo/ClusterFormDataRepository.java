@@ -1,5 +1,6 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.contract.Projection.ClusterLabelProjection;
 import cdti.aidea.earas.contract.Response.BtrClusterUsageResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 
@@ -136,4 +137,29 @@ AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
           LocalDate agriStart,
           LocalDate agriEnd
   );
+
+  @Query("""
+SELECT
+cd.cluDetailId AS cluDetailId,
+p.id AS plotId,
+cd.plotLabel AS plotLabel,
+cd.enumeratedArea AS enumeratedArea,
+p.resvno AS resvno,
+p.resbdno AS resbdno,
+p.totCent AS totCent,
+p.wardnumber AS wardnumber,
+p.houseno AS houseno,
+p.ownername AS ownername,
+p.address AS address,
+p.tpno AS tpno,
+p.tbsubdivisionno AS tbsubdivisionno,
+p.oldsvno AS oldsvno,
+p.oldsubno AS oldsubno,
+p.nonBtrTypeId AS bTypeId
+FROM ClusterFormData cd
+JOIN cd.plot p
+WHERE cd.clusterMaster.cluMasterId = :clusterId
+ORDER BY cd.displayOrder
+""")
+  List<ClusterLabelProjection> findClusterLabels(Long clusterId);
 }

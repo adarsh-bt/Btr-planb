@@ -1563,8 +1563,8 @@ public class KeyPlots_Service {
                 // Only set to true if the record exists and status is exactly "APPROVED"
                 if (approval.isPresent() && "APPROVED".equalsIgnoreCase(approval.get().getStatus())) {
                     isWorkAllocationApproved = true;
-                    status = approval.get().getStatus();
-                }
+
+                }status = approval.get().getStatus();
             }
         }
 
@@ -1579,20 +1579,33 @@ public class KeyPlots_Service {
         );
     }
 
-
     @Transactional
     public String deleteKeyPlot(UUID keyPlotId) {
 
         KeyPlots keyPlot = keyPlotsRepository.findById(keyPlotId)
                 .orElseThrow(() -> new RuntimeException("KeyPlot not found"));
 
-        // 🔹 1. Get single cluster
         Optional<ClusterMaster> clusterOpt =
                 clusterMasterRepository.findByKeyPlot_Id(keyPlotId);
 
         if (clusterOpt.isPresent()) {
 
             ClusterMaster cluster = clusterOpt.get();
+
+            // Status validation
+            String status = cluster.getStatus();
+
+            if ("Under Review".equalsIgnoreCase(status)) {
+                throw new RuntimeException(
+                        "Cluster is Under Review. Contact TSO to change the status On Going before deletion."
+                );
+            }
+
+            if ("Completed".equalsIgnoreCase(status)) {
+                throw new RuntimeException(
+                        "Cluster is Completed. Contact TSO to change the status On Going before deletion."
+                );
+            }
 
             boolean exists = cropAssignmentTrailRepository
                     .existsByCluster_CluMasterIdAndIsRejectedFalse(cluster.getCluMasterId());
@@ -1602,8 +1615,10 @@ public class KeyPlots_Service {
                         "Crops exist. Please remove crops first before deleting KeyPlot."
                 );
             }
-System.out.println(">>>  "+cluster.getCluMasterId());
-            // 🔹 3. Delete ClusterFormData
+
+            System.out.println(">>> " + cluster.getCluMasterId());
+
+            // Delete ClusterFormData
             List<ClusterFormData> details =
                     clusterFormDataRepository.findByClusterMaster(cluster);
 
@@ -1611,20 +1626,19 @@ System.out.println(">>>  "+cluster.getCluMasterId());
                 clusterFormDataRepository.deleteAll(details);
             }
 
-            // 🔹 4. Delete ClusterMaster
+            // Delete ClusterMaster
             clusterMasterRepository.delete(cluster);
         }
 
-        // 🔹 5. Handle BTR
         TblBtrData btrData = keyPlot.getBtrData();
 
-        // 🔹 6. Delete KeyPlot
+        // Delete KeyPlot
         keyPlotsRepository.delete(keyPlot);
 
-        // 🔹 7. Delete BTR
-//        if (btrData != null) {
-//            tblBtrDataRepository.delete(btrData);
-//        }
+        // Delete BTR if needed
+        // if (btrData != null) {
+        //     tblBtrDataRepository.delete(btrData);
+        // }
 
         return "KeyPlot deleted successfully";
     }

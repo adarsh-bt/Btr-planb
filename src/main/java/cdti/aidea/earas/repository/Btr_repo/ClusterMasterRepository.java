@@ -3,7 +3,6 @@ package cdti.aidea.earas.repository.Btr_repo;
 import cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection;
 import cdti.aidea.earas.contract.Projection.ClusterSummaryProjection;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse;
-//import cdti.aidea.earas.model.Btr_models.ClusterFormData;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
 import java.time.LocalDate;
@@ -454,4 +453,46 @@ ORDER BY cm.clusterNumber
           @Param("endDate")
           LocalDateTime endDate
   );
+
+  @Query("""
+    SELECT DISTINCT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    JOIN FETCH z.desTalukMaster dt
+
+    WHERE z.zoneId = :zoneId
+
+    AND kp.agriStartYear = :agriStartYear
+
+    AND kp.agriEndYear = :agriEndYear
+
+    AND UPPER(cm.status) = 'COMPLETED'
+""")
+  List<ClusterMaster> findClustersByDistrictAndAgriYear(
+
+          @Param("zoneId")
+          Integer zoneId,
+
+          @Param("agriStartYear")
+          LocalDate agriStartYear,
+
+          @Param("agriEndYear")
+          LocalDate agriEndYear
+  );
+
+  @Query("""
+    SELECT DISTINCT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    WHERE z.zoneId = :zoneId
+      AND kp.agriStartYear = :agriStartYear
+      AND kp.agriEndYear = :agriEndYear
+      AND UPPER(cm.status) = 'COMPLETED'
+""")
+  List<ClusterMaster> findCompletedClustersByZoneAndAgriYear(
+          @Param("zoneId") Integer zoneId,
+          @Param("agriStartYear") LocalDate agriStartYear,
+          @Param("agriEndYear") LocalDate agriEndYear);
 }

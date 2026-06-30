@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 public class TblBtrDetailsResponse {
     private Integer resvno;
     private String resbdno;
+    private String bcode;
     private double totCent;
     private String address;
     private Integer wardno;
-//    private Integer houseno;
     private String houseno;
     private Integer oldsvno;
     private String oldsubno;
@@ -21,5 +21,11 @@ public class TblBtrDetailsResponse {
     private Integer tpno;
     private String tbsubdivisionno;
     private Long btrtype;
-    private Long clutserno;
+    private String clutserno;
+
+    private Integer villageId;
+    private String villageNameEn;
+
+    private Integer localbodyId;
+    private String localbodyNameEn;
 }

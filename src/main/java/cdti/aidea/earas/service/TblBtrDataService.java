@@ -5,6 +5,7 @@ import cdti.aidea.earas.contract.Response.TblBtrDetailsResponse;
 import cdti.aidea.earas.contract.Response.ValidationResponse;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.model.Btr_models.*;
+import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.repository.Btr_repo.*;
@@ -33,7 +34,8 @@ public class TblBtrDataService {
     private final TblMasterZoneRepository tblMasterZoneRepository;
     private final TblNonBtrRepository tblNonBtrRepository;
     private final TblMasterVillageRepository tblMasterVillageRepository;
-    private final AgriYearUtil agriYearUtil;
+    private final TblMasterVillageRepository villageRepository;
+    private final LocalBodyRepository localBodyRepository;
 
     // ---------------- Single Save ----------------
 //
@@ -986,15 +988,26 @@ public class TblBtrDataService {
 
 
     public TblBtrDetailsResponse getBtrDetails(Long btrId) {
+
         TblBtrData entity = tblBtrDataRepository.findById(btrId)
-                .orElseThrow(() -> new RuntimeException("BTR record not found with ID: " + btrId));
+                .orElseThrow(() ->
+                        new RuntimeException("BTR record not found with ID: " + btrId));
+
+        TblMasterVillage village = villageRepository.findById(entity.getVcode())
+                .orElseThrow(() ->
+                        new RuntimeException("Village not found with ID: " + entity.getVcode()));
+
+        TblLocalBody localBody = localBodyRepository.findByCodeApi(entity.getLbcode())
+                .orElseThrow(() ->
+                        new RuntimeException("Local body not found with code: " + entity.getLbcode()));
 
         return new TblBtrDetailsResponse(
                 entity.getResvno(),
                 entity.getResbdno(),
+                entity.getBcode(),
                 entity.getTotCent(),
                 entity.getAddress(),
-                entity.getWardnumber(),  // assuming field name in entity is wardnumber
+                entity.getWardnumber(),
                 entity.getHouseno(),
                 entity.getOldsvno(),
                 entity.getOldsubno(),
@@ -1002,7 +1015,11 @@ public class TblBtrDataService {
                 entity.getTpno(),
                 entity.getTbsubdivisionno(),
                 entity.getBtrtype().getBTypeId(),
-                null
+                entity.getCl_no(),
+                village.getVillageId(),
+                village.getVillageNameEn(),
+                localBody.getLocalbodyId(),
+                localBody.getLocalbodyNameEn()
         );
     }
 

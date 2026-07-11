@@ -1779,4 +1779,21 @@ public class ClusterService {
         response.setLocalbody(tblLocalBody.get().getLocalbodyNameMal());
         return response;
     }
+
+    public List<String> getClusterLabels(Long clusterId) {
+
+        ClusterMaster clusterMaster =
+                clusterMasterRepository
+                        .findById(clusterId)
+                        .orElseThrow(() -> new RuntimeException("Cluster not found"));
+
+        List<ClusterFormData> formDataList =
+                clusterFormDataRepository.findByClusterMasterOrderByDisplayOrderAsc(clusterMaster);
+
+        return formDataList.stream()
+                .map(ClusterFormData::getPlotLabel)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
 }

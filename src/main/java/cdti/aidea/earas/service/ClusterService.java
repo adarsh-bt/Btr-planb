@@ -88,7 +88,7 @@ public class ClusterService {
                         agriStart,
                         agriEnd
                 );
-
+System.out.println("okee "+clusters.size());
         // ✅ 2. Get cluster IDs
         List<Long> clusterIds = clusters.stream()
                 .map(ClusterSummaryProjection::getClusterId)
@@ -109,7 +109,7 @@ public class ClusterService {
         String cceMessage = null;
 
         CcePlotResult cceResult = cceCropService.getAssignedCcePlotsByZoneId(Long.valueOf(zoneId),agriYear);
-System.out.println("cce  "+cceResult.toString());
+
         if (cceResult.isFallbackUsed()) {
             cceMessage = "CCE data not available currently.";
         }
@@ -222,7 +222,7 @@ System.out.println("cce  "+cceResult.toString());
         // ✅ 2. External API (SAFE + FAST FAIL)
         List<ExternalClusterStatusResponse> externalStatus;
         try {
-            externalStatus = formEntryClient.fetchClusterStatus(zoneId);
+            externalStatus = formEntryClient.fetchClusterStatus(Long.valueOf(zoneId),agriYear);
         } catch (Exception e) {
             externalStatus = Collections.emptyList();
         }

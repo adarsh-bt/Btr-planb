@@ -33,7 +33,9 @@ public interface FormEntryClient {
   ResponseEntity<Response> ccePlotRejection(@RequestBody CcePlotRejectionRequest request);
 
   @GetMapping("/earas-form1-entry/form1/fetch-cluster-status")
-  List<ExternalClusterStatusResponse> fetchClusterStatus(@RequestParam("zoneId") Integer zoneId);
+  List<ExternalClusterStatusResponse> fetchClusterStatus(
+          @RequestParam("zoneId") Long zoneId,
+          @RequestParam("agriYear") String agriYear);
 
   @PostMapping("/earas-form1-entry/available-cce-plot-details/delete-random-crop-cluster")
   ResponseEntity<String> deleteRandomCrop(

@@ -80,7 +80,7 @@ public class AdminManage {
   public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
 
     List<TblMasterZone> zones;
-System.out.println(">>>>||   "+type+"   "+idValue);
+
     if ("Taluk".equalsIgnoreCase(type)) {
       zones = tblMasterZoneRepository.findByDesTalukId(idValue);
 

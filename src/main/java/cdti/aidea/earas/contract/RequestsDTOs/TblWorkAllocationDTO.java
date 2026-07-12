@@ -73,4 +73,5 @@ public class TblWorkAllocationDTO {
     private String VerifiedStatus;
     private LocalDate VerifiedDate;
     private String VerifiedBy;
+    private String VerifiedRemarks;
 }

@@ -1,11 +1,13 @@
 package cdti.aidea.earas.controller;
 
+import cdti.aidea.earas.contract.FormEntryDto.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.WorkAllocationVerificationRequest;
 import cdti.aidea.earas.service.WorkallocationService;
 import cdti.aidea.earas.service.Zone_Service;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +21,17 @@ import java.util.List;
 public class WorkallocationController {
 
     private final WorkallocationService workallocationService;
+
+    @GetMapping("/zone-details-workallocation/{ZoneId}")
+    public ResponseEntity<Response> getKeyPlots(@PathVariable("ZoneId") Integer ZoneId) {
+
+        return new ResponseEntity<>(
+                Response.builder()
+                        .payload(workallocationService.ZoneDetailsWorkAllocation(ZoneId))
+                        .message("Zone details fetched successfully.")
+                        .build(),
+                HttpStatus.OK);
+    }
 
     @GetMapping("/work-allocation-view/{zoneId}/{agriYear}")
     public ResponseEntity<List<TblWorkAllocationDTO>> getByZone(@PathVariable Integer zoneId,@PathVariable("agriYear") String agriYear) {
@@ -47,7 +60,7 @@ public class WorkallocationController {
         }
     }
 
-    @PutMapping("/verification")
+    @PostMapping("/verification")
     public ResponseEntity<?> verifyWorkAllocation(
             @RequestBody WorkAllocationVerificationRequest request) {
 

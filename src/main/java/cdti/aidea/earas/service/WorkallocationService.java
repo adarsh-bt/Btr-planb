@@ -1,15 +1,14 @@
 package cdti.aidea.earas.service;
 
+import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.WorkAllocationVerificationRequest;
-import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+import cdti.aidea.earas.contract.Response.KeyPlotResponse;
+import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.model.Btr_models.TblWorkAllocation;
 import cdti.aidea.earas.model.Btr_models.TblWorkAllocationApproval;
 import cdti.aidea.earas.model.Btr_models.TblWorkAllocationVerification;
-import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblWorkAllocationApprovalRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblWorkAllocationRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblWorkAllocationVerificationRepository;
+import cdti.aidea.earas.repository.Btr_repo.*;
 import cdti.aidea.earas.utils.AgriYearUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +18,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +31,164 @@ public class WorkallocationService {
     private final TblMasterZoneRepository tblMasterZoneRepository;
     private final AgriYearUtil agriYearUtil;
     private final TblWorkAllocationVerificationRepository tblWorkAllocationVerificationRepository;
+
+    private final LocalBodyRepository localBodyRepository;
+    private final LocalBodyTypeRepository localBodyTypeRepository;
+    private final ZoneLocalbodyBlockMappingRepository zoneLocalbodyBlockMappingRepository;
+    private final DistrictMasterRepository districtMasterRepository;
+    private final DesTalukRepository desTalukRepository;
+    private final MasterBlockRepository masterBlockRepository;
+    private final TblZoneLocalbodyMappingRepository tblZoneLocalbodyMappingRepository;
+
+    public Object ZoneDetailsWorkAllocation(Integer zone_id) {
+
+        // ✅ Validate Zone
+        TblMasterZone zone = tblMasterZoneRepository.findById(zone_id)
+                .orElseThrow(() -> new RuntimeException("Zone not available"));
+
+        // ==========================================================
+        // Get mapped Local Bodies for this Zone
+        // ==========================================================
+
+        List<TblZoneLocalbodyMapping> mappings =
+                tblZoneLocalbodyMappingRepository.findByZoneAndIsValid(zone_id, true);
+
+        List<Integer> localBodyIds = mappings.stream()
+                .map(TblZoneLocalbodyMapping::getLocalbody)
+                .distinct()
+                .toList();
+
+        List<TblLocalBody> localBodies = localBodyRepository.findAllById(localBodyIds);
+
+        // ==========================================================
+        // Local Body Type
+        // ==========================================================
+
+        List<Long> typeIds = localBodies.stream()
+                .map(TblLocalBody::getLocalbodyType)
+                .filter(Objects::nonNull)
+                .map(Short::longValue)
+                .distinct()
+                .toList();
+
+        List<LocalBodyType> bodyTypes =
+                localBodyTypeRepository.findByIdIn(typeIds);
+
+        Map<Long, String> typeMap = new HashMap<>();
+
+        for (LocalBodyType type : bodyTypes) {
+            typeMap.put(type.getId(), type.getName());
+        }
+
+        // ==========================================================
+        // Response Data
+        // ==========================================================
+
+        List<Map<String, Object>> responseData = new ArrayList<>();
+
+        List<String> lbCodes = new ArrayList<>();
+
+        for (TblLocalBody lb : localBodies) {
+
+            Map<String, Object> row = new HashMap<>();
+
+            row.put("localbodyId", lb.getLocalbodyId());
+            row.put("lbcode", lb.getCodeApi());
+            row.put("p_name", lb.getLocalbodyNameEn());
+
+            String typeName = "";
+
+            if (lb.getLocalbodyType() != null) {
+                typeName = typeMap.getOrDefault(
+                        Long.valueOf(lb.getLocalbodyType()),
+                        ""
+                );
+            }
+
+            row.put("localbodytype", typeName);
+
+            responseData.add(row);
+
+            lbCodes.add(lb.getCodeApi());
+        }
+
+        // ==========================================================
+        // District & Taluk
+        // ==========================================================
+
+        String districtName = districtMasterRepository
+                .findById(Long.valueOf(zone.getDistId()))
+                .map(DistrictMaster::getDist_name_en)
+                .orElse("");
+
+        String talukName = desTalukRepository
+                .findById(zone.getDesTalukId())
+                .map(DesTaluk::getDesTalukNameEn)
+                .orElse("");
+
+        // ==========================================================
+        // Zone Label
+        // ==========================================================
+
+        String localBodyLabel = "";
+        String localbodyType = "";
+
+        Optional<ZoneLocalbodyBlockMapping> zoneMapping =
+                zoneLocalbodyBlockMappingRepository.findByZoneAndIsValid(
+                        zone.getZoneId(),
+                        true
+                );
+
+        if (zoneMapping.isPresent()) {
+
+            if (zoneMapping.get().getBlockPanchayatMunicipalArea() == 1) {
+
+                localBodyLabel = masterBlockRepository
+                        .findById(zoneMapping.get().getBlockDetails())
+                        .map(MasterBlock::getBlockName)
+                        .orElse("");
+
+                localbodyType = "Block Panchayath";
+
+            } else {
+
+                Optional<TblLocalBody> lb =
+                        localBodyRepository.findById(
+                                zoneMapping.get().getBlockDetails());
+
+                if (lb.isPresent()) {
+
+                    localBodyLabel = lb.get().getLocalbodyNameEn();
+
+                    localbodyType = localBodyTypeRepository
+                            .findById((long) lb.get().getLocalbodyType())
+                            .map(LocalBodyType::getName)
+                            .orElse("");
+                }
+            }
+        }
+
+        // ==========================================================
+        // Return
+        // ==========================================================
+
+        return new KeyPlotResponse<>(
+                "success",
+                "Data fetched successfully",
+                districtName,
+                talukName,
+                localbodyType,
+                localBodyLabel,
+                zone.getZoneNameEn(),
+                responseData,
+                lbCodes,
+                0,
+                0,
+                0,
+                0,
+                new ArrayList<>()
+        );
+    }
 
     public List<TblWorkAllocationDTO> getWorkAllocationsByZoneId(Integer zoneId,String agriYear) {
 
@@ -79,6 +233,10 @@ public class WorkallocationService {
                     String verifiedBy =
                             verification != null && verification.getVerifiedBy() != null
                                     ? verification.getVerifiedBy().toString()
+                                    : null;
+                    String verifiedRemarks =
+                            verification != null && verification.getRemarks() != null
+                                    ? verification.getRemarks().toString()
                                     : null;
 
                     return new TblWorkAllocationDTO(
@@ -133,7 +291,8 @@ public class WorkallocationService {
 
                             verifiedStatus,
                             verifiedDate,
-                            verifiedBy
+                            verifiedBy,
+                            verifiedRemarks
                     );
                 })
                 .collect(Collectors.toList());

@@ -14,4 +14,5 @@ public class FetchDistrictResponse {
     private String landType;
     private Integer districtId;
     private String districtName;
+    private Double enumeratedArea;
 }

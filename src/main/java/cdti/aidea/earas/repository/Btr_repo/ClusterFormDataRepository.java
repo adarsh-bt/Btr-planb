@@ -124,4 +124,11 @@ AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
           LocalDate agriEnd
   );
 
+  @Query("""
+            SELECT COALESCE(SUM(c.enumeratedArea), 0)
+            FROM ClusterFormData c
+            WHERE c.clusterMaster.cluMasterId = :clusterId
+            """)
+  Double getTotalEnumeratedAreaByClusterId(@Param("clusterId") Long clusterId);
+
 }

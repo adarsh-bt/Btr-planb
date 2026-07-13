@@ -31,6 +31,7 @@ public class CceCropService {
   private final ZoneLocalbodyBlockMappingRepository zoneLocalbodyBlockMappingRepository;
   private final MasterBlockRepository masterBlockRepository;
   private final LocalBodyRepository localBodyRepository;
+  private final ClusterFormDataRepository clusterFormDataRepository;
 
   int attempt = 0;
 
@@ -159,8 +160,7 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
 }
 
   public List<FetchDistrictResponse> getDistrictsByClusterIds(List<Long> clusterIds) {
-    List<ClusterMaster> clusters =
-            clusterMasterRepository.findAllById(clusterIds);
+    List<ClusterMaster> clusters = clusterMasterRepository.findAllById(clusterIds);
 
     return clusters.stream()
             .filter(cluster ->
@@ -168,14 +168,18 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
                             && cluster.getZone().getDistrictMaster() != null)
             .map(cluster -> {
 
-              DistrictMaster district =
-                      cluster.getZone().getDistrictMaster();
+              DistrictMaster district = cluster.getZone().getDistrictMaster();
+
+              Double enumeratedArea =
+                      clusterFormDataRepository.getTotalEnumeratedAreaByClusterId(
+                              cluster.getCluMasterId());
 
               return FetchDistrictResponse.builder()
                       .clusterId(cluster.getCluMasterId())
                       .landType(cluster.getKeyPlot().getLandType())
                       .districtId(district.getDist_id())
                       .districtName(district.getDist_name_en())
+                      .enumeratedArea(enumeratedArea)
                       .build();
             })
             .toList();
@@ -228,6 +232,10 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
 
       for (ClusterMaster cluster : clusters) {
 
+        Double enumeratedArea =
+                clusterFormDataRepository.getTotalEnumeratedAreaByClusterId(
+                        cluster.getCluMasterId());
+
         responseList.add(
                 FetchTalukResponse.builder()
                         .clusterId(cluster.getCluMasterId())
@@ -235,6 +243,7 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
                         .talukName(talukName)
                         .createdAt(cluster.getCreatedAt())
                         .landType(cluster.getKeyPlot().getLandType())
+                        .enumeratedArea(enumeratedArea)
                         .build());
       }
     }

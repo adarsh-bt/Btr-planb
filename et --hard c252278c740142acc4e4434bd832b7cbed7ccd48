@@ -1,0 +1,275 @@
+[33mcommit c252278c740142acc4e4434bd832b7cbed7ccd48[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrob11[m[33m, [m[1;31morigin/rob11[m[33m)[m
+Merge: 7c10dcb 1b65567
+Author: robinsamuelroy576 <robin.roy@duk.ac.in>
+Date:   Tue Jun 30 12:16:01 2026 +0530
+
+    saved before push
+
+[33mcommit 7c10dcbe9f792389b8dc4235dcab1a3ea9b65155[m
+Author: robinsamuelroy576 <robin.roy@duk.ac.in>
+Date:   Wed Jun 24 11:24:57 2026 +0530
+
+    saved before pulling from reshma
+
+[33mcommit 1b65567bf23237f742229d5434e4e8cc7f6a59ab[m[33m ([m[1;31morigin/planb-btr01[m[33m)[m
+Author: Reshmaduk <reshma.mb@duk.ac.in>
+Date:   Mon Jun 22 11:37:23 2026 +0530
+
+     Update response of Fetch by btrId for outof cluster fetch
+
+[33mcommit 88c5474780e8fb9e087b19e9f53266b1f34854c3[m[33m ([m[1;31morigin/keerthiplanb-btr[m[33m)[m
+Merge: 6b1850e 28d06e4
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Sun Jun 21 13:23:25 2026 +0530
+
+    cluster details to connect with form1
+
+[33mcommit 6b1850eea0716d560f0b31f7c0b1b0c5bb51be97[m
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Thu Jun 18 17:11:45 2026 +0530
+
+    Btr single save from type 1 to 5 as outof cluster
+
+[33mcommit 28d06e47fd26bb326ca98454ae0dcd2e741f8e11[m
+Author: Reshmaduk <reshma.mb@duk.ac.in>
+Date:   Thu Jun 18 12:40:46 2026 +0530
+
+    Fetch blocks by taluk Id api service updated
+
+[33mcommit 98d4490841f2c6c828d323953c5774909d27fa43[m
+Merge: d0aa749 a98a852
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Wed Jun 17 11:47:50 2026 +0530
+
+    taking recent code from adarsh
+
+[33mcommit d0aa749684f8d03042cc749e86cd2776a69d396d[m
+Merge: cbfa4a9 4439cd0
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Wed Jun 17 11:42:07 2026 +0530
+
+    taking pull from adarsh-b 17/6
+
+[33mcommit c589a6e7df6a6e2cfb267c632967af3a3252f1bf[m
+Author: Reshmaduk <reshma.mb@duk.ac.in>
+Date:   Sat Jun 13 21:34:43 2026 +0530
+
+    updation of clusters wise districts fetch api for form1 service
+
+[33mcommit c095fb2627e8a1d2d51fb76cb7a0ab336356bb74[m
+Merge: 70ea503 a98a852
+Author: Reshmaduk <reshma.mb@duk.ac.in>
+Date:   Thu Jun 11 13:53:34 2026 +0530
+
+    Added Fetch apis for getting districts,taluks and blocks for form1 report
+
+[33mcommit 70ea503033f9c91ac1a58b0258c3a84149983cd7[m
+Merge: a0bcafd 49d09c4
+Author: Reshmaduk <reshma.mb@duk.ac.in>
+Date:   Wed Jun 3 12:22:07 2026 +0530
+
+    form1 edit api for connect the btrservice
+
+[33mcommit a98a8528d0bb0e182c6e2c48560b3e0d2571c29d[m
+Author: Adarsh A <adarsh-bt>
+Date:   Wed Jun 3 12:15:28 2026 +0530
+
+    added the agri year
+
+[33mcommit a0bcafd5868c0344140331b39dccd1568cbb7065[m
+Author: Reshmaduk <reshma.mb@duk.ac.in>
+Date:   Wed Jun 3 11:41:24 2026 +0530
+
+    form1 edit api for connect the btrservice
+
+[33mcommit 49d09c4a81b0cee860ee57945173a8c270317bb1[m
+Author: Adarsh A <adarsh-bt>
+Date:   Wed Jun 3 11:40:02 2026 +0530
+
+    added the agri year
+
+[33mcommit cbfa4a914f644a3488e285574157231cc7fdce85[m
+Merge: 7d0e617 3960972
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Mon Jun 1 15:00:46 2026 +0530
+
+    agri start and end year done in fetch in keyplot and cluster
+
+[33mcommit 4439cd0803fb5e4aa414cdfb00ad16ba2eb0d2ef[m
+Author: Adarsh A <adarsh-bt>
+Date:   Mon Jun 1 14:50:26 2026 +0530
+
+    done the agriyear and keyplots creation
+
+[33mcommit 5648af5fb0f87b874ab12af971f6e3bed1241029[m
+Author: Adarsh A <adarsh-bt>
+Date:   Fri May 29 19:57:45 2026 +0530
+
+    done and before the year wise save
+
+[33mcommit 7d0e6171ede55edef788f922cc63197fd4ef945b[m
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Fri May 22 10:15:52 2026 +0530
+
+    code updation in cluster,zonemapping,keyplotlimit,localbody,revenuetaluk,clusterservice
+
+[33mcommit 9d3329e65ff5c66c0120ca8cedcfa4c95e4c0056[m
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Fri May 15 15:58:52 2026 +0530
+
+    pagination and searchable done in talukId status based on zone name
+
+[33mcommit 79ecf92367e65b95010028d4d76a03643ce6fccb[m
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Thu May 14 17:27:32 2026 +0530
+
+    updation in cluster status
+
+[33mcommit 662a14b08247f0a8912c7bb2b3371b4bd79f8317[m
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Mon May 11 17:33:18 2026 +0530
+
+    talukwise cluster status fetch done
+
+[33mcommit 931e2bc44947e540e55d9012228f7a96b6ba54c9[m
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Sat May 9 13:59:07 2026 +0530
+
+    report generation of alldistricts based on landtype
+
+[33mcommit ce4805cf6c24a1afcc08581c32ff954ca48e157e[m
+Author: Adarsh A <adarsh-bt>
+Date:   Thu May 7 12:26:31 2026 +0530
+
+    move old chcekout and copy then return
+
+[33mcommit 3960972cae17c2822ab880f983ff9ef90aaed311[m
+Author: Adarsh A <adarsh-bt>
+Date:   Thu May 7 10:38:30 2026 +0530
+
+    added the optimzie the quesry , added extra plots detailsin cluster label
+
+[33mcommit cee0b0df1e92ace9f0b5e528d106cd897cd793b1[m
+Merge: 6144b5c 33f01bd
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Thu Apr 30 11:54:25 2026 +0530
+
+    pull latest
+
+[33mcommit 33f01bdcaed1335cf39ac768a81d01a44eb1e9f4[m
+Merge: 499575b 4a786a9
+Author: robinsamuelroy576 <robin.roy@duk.ac.in>
+Date:   Thu Apr 30 11:14:45 2026 +0530
+
+    saved
+
+[33mcommit 6144b5c4cabaea339a44300b90c494fd1c6d3d3b[m
+Merge: a585088 9c2aaba
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Thu Apr 30 11:06:52 2026 +0530
+
+    dupliction check in bulk save of tblbtrdata
+
+[33mcommit a58508896be66cbb56ae610dfa96d2db7949ea59[m
+Merge: 811ddac ecd9a1d
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Tue Apr 28 16:20:30 2026 +0530
+
+    all master post and get and pagination
+
+[33mcommit 9c2aabacb8ab1a2e0733ca1039a54f85f45128fa[m
+Author: Adarsh A <adarsh-bt>
+Date:   Sat Apr 25 18:39:18 2026 +0530
+
+    added keyplots remove, cluster delete crops delete
+
+[33mcommit e9b706a297eafa2abc501bdec244a3dc869c685f[m
+Author: Adarsh A <adarsh-bt>
+Date:   Thu Apr 16 13:13:50 2026 +0530
+
+    added block mapping
+
+[33mcommit ecd9a1d8b91e74f16356587d6ada853edfa4c7d7[m
+Author: Adarsh A <adarsh-bt>
+Date:   Sat Apr 11 13:27:41 2026 +0530
+
+    added for td api
+
+[33mcommit 9e4d3faf0463804105918a51ced7ce526240dd05[m
+Author: Adarsh A <adarsh-bt>
+Date:   Tue Mar 31 09:28:42 2026 +0530
+
+    added cluster order in keyplots and cluster edit intgration
+
+[33mcommit 811ddacf781b9795b9e8d27f4ba640a4ca19045e[m
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Mon Mar 30 09:26:26 2026 +0530
+
+    cluster edit allowed and cluster tour details
+
+[33mcommit f8bffe1bfa3c29b90a7362ca8366d519ff7793f1[m
+Merge: 11cfde9 6374b5c
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Mon Mar 23 10:31:51 2026 +0530
+
+    taking pull from adarsh-b
+
+[33mcommit 11cfde96173a4b00f3543f686e87abf64713c6df[m
+Merge: 5dff577 fa595ac
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Mon Mar 23 10:21:21 2026 +0530
+
+    taking pull from adarsh-b
+
+[33mcommit 6374b5cfe6071761c45a4a09ec864174fc1e7bd6[m
+Author: Adarsh A <adarsh-bt>
+Date:   Mon Mar 23 09:41:18 2026 +0530
+
+    added keyplot rejection
+
+[33mcommit 5dff577d989572bd5545816fc036f52e91d253fa[m
+Merge: d741ab2 36f710d
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Thu Mar 19 13:41:01 2026 +0530
+
+    taking pull from adarsh-b
+
+[33mcommit fa595ac64a8de60ba39ce45939b627c1731b49b7[m
+Author: Adarsh A <adarsh-bt>
+Date:   Thu Mar 19 09:40:59 2026 +0530
+
+    added the cluster number edit
+
+[33mcommit f2eda5268d76083fb50fcad7c0adb78d4ab41f46[m
+Author: Adarsh A <adarsh-bt>
+Date:   Wed Mar 18 16:42:14 2026 +0530
+
+    added the localbody type and zone search in mapping
+
+[33mcommit 3335160c961596360126f34ac0099403e34172a7[m
+Author: Adarsh A <adarsh-bt>
+Date:   Wed Mar 18 15:50:01 2026 +0530
+
+    added the localbody type and zone search in mapping
+
+[33mcommit d741ab2e3cb8edb1e9a942829faaf8b9e06e7bea[m
+Merge: 458be54 71e12b1
+Author: Keerthirs <keerthi.rs@gmail.com>
+Date:   Wed Mar 18 14:26:17 2026 +0530
+
+    taking pull from adarsh-b
+
+[33mcommit 36f710d2f6c1c396bcbcab58a667e7238004bbcf[m
+Author: Adarsh A <adarsh-bt>
+Date:   Tue Mar 17 21:39:08 2026 +0530
+
+    added localbody mapping
+
+[33mcommit 499575b2f02cae385e0a36dd46f2b82530833c33[m
+Merge: 335cd82 d8e2091
+Author: robinsamuelroy576 <robin.roy@duk.ac.in>
+Date:   Tue Mar 17 15:54:20 2026 +0530
+
+    saved before pulling
+
+[33m

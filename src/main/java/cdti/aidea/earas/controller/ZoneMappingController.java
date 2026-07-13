@@ -58,14 +58,7 @@ public class ZoneMappingController {
     try {
       ZoneBtrTypeResponse response = zoneMappingService.getZoneBtrType(zoneId);
 
-      if (response == null) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        "error", "Zone not found",
-                        "message", "No active zone found with id: " + zoneId
-                ));
-      }
-
+      // Return 200 even when no zone is found
       return ResponseEntity.ok(response);
 
     } catch (NumberFormatException e) {

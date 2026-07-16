@@ -2,6 +2,7 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.model.Btr_models.ClusterEditAllowed;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
@@ -12,6 +13,7 @@ import cdti.aidea.earas.service.AdminManage;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
@@ -44,14 +46,14 @@ public class Admincontroller {
 
   @PostMapping("/save-keyplot-limits")
   public ResponseEntity<KeyplotsLimitLog> createKeyplotsLimit(
-          @RequestBody KeyplotsLimitLogRequest request) {
+      @RequestBody KeyplotsLimitLogRequest request) {
     KeyplotsLimitLog saved = adminManage.saveOrUpdateKeyplotsLimit(request);
     return ResponseEntity.ok(saved);
   }
 
   @PostMapping("/save-cluster-limits")
   public ResponseEntity<ClusterLimitLog> createOrUpdateClusterLimit(
-          @RequestBody ClusterLimitRequest request) {
+      @RequestBody ClusterLimitRequest request) {
     ClusterLimitLog saved = adminManage.saveOrUpdateClusterLimit(request);
     return ResponseEntity.ok(saved);
   }
@@ -63,7 +65,7 @@ public class Admincontroller {
 
   @GetMapping("/zones/{type}/{id}")
   public ResponseEntity<List<ZoneListResponse>> getById(
-          @PathVariable("type") String type, @PathVariable("id") String id) {
+      @PathVariable("type") String type, @PathVariable("id") String id) {
     try {
       Integer idValue = Integer.parseInt(id); // Parse the ID
 
@@ -80,22 +82,6 @@ public class Admincontroller {
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-//  indfinte
-//@GetMapping("/zones/{type}/{id}")
-//public ResponseEntity<Page<ZoneListResponse>> getById(
-//        @PathVariable String type,
-//        @PathVariable Integer id,
-//        @RequestParam(defaultValue = "0") int page,
-//        @RequestParam(defaultValue = "40") int size) {
-//
-//  return ResponseEntity.ok(
-//          adminManage.AdminViewZonesByType(
-//                  type,
-//                  id,
-//                  PageRequest.of(page, size)
-//          )
-//  );
-//}
 
 //  @GetMapping("/zones_cluster/{type}/{id}")
 //  public ResponseEntity<List<ClusterApprovalTableDTO>> ZonelistClusters(
@@ -178,10 +164,15 @@ public class Admincontroller {
       return new ResponseEntity<>(zoneList, HttpStatus.OK);
 
     } catch (NumberFormatException e) {
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
     } catch (IllegalArgumentException e) {
+
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
     } catch (Exception e) {
+
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -416,5 +407,61 @@ public class Admincontroller {
     adminManage.softDeleteBlockMapping(id);
 
     return ResponseEntity.ok("Mapping deleted successfully");
+  }
+
+  @GetMapping("/fetch-zones/{type}/{id}")
+  public ResponseEntity<List<Form1ZoneListResponse>> getZones(
+          @PathVariable("type") String type, @PathVariable("id") String id) {
+    try {
+      Integer idValue = Integer.parseInt(id);
+      List<Form1ZoneListResponse> zoneList = adminManage.getZonesByUserType(type, idValue);
+      return new ResponseEntity<>(zoneList, HttpStatus.OK);
+    } catch (NumberFormatException e) {
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    } catch (IllegalArgumentException e) {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    } catch (Exception e) {
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+
+  @GetMapping("/fetch-zones-cluster/{type}/{id}")
+  public ResponseEntity<Page<ZonesClusterApprovalResponse>> getZoneListForClusters(
+          @PathVariable("type") String type,
+          @PathVariable("id") String id,
+          @RequestParam String agriYear,
+
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size
+  ) {
+
+    try {
+
+      Integer idValue = Integer.parseInt(id);
+
+      Page<ZonesClusterApprovalResponse> zoneList =
+              adminManage.getZoneListForClusters(
+                      type,
+                      idValue,
+                      agriYear,
+                      page,
+                      size
+              );
+
+      return new ResponseEntity<>(zoneList, HttpStatus.OK);
+
+    } catch (NumberFormatException e) {
+
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+    } catch (IllegalArgumentException e) {
+
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+    } catch (Exception e) {
+
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

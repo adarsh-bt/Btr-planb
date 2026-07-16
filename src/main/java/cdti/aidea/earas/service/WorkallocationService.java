@@ -489,7 +489,41 @@ public class WorkallocationService {
         tblWorkAllocationVerificationRepository.save(verification);
     }
 
+    @Transactional
+    public void revokeWorkAllocation(Long approvalId, String remarks, UUID revokedBy) {
+        // Find the approval
+        TblWorkAllocationApproval approval = tblWorkAllocationApprovalRepository
+                .findById(approvalId)
+                .orElseThrow(() -> new RuntimeException("Approval not found"));
 
+        // Update status to RETURNED
+        approval.setStatus("RETURNED");
+        approval.setRevokedRemark(remarks);
+        approval.setRevokedAt(LocalDateTime.now());
+        approval.setRevokedBy(revokedBy);
+        tblWorkAllocationApprovalRepository.save(approval);
+
+        // Update all work allocations to editable
+        List<TblWorkAllocation> allocations = tblWorkAllocationRepository
+                .findByApprovalId(approvalId);
+
+        for (TblWorkAllocation allocation : allocations) {
+            allocation.setIsEdit(true);
+            allocation.setUpdated(LocalDate.now());
+            tblWorkAllocationRepository.save(allocation);
+        }
+
+        // Update verification status
+        TblWorkAllocationVerification verification = tblWorkAllocationVerificationRepository
+                .findByApproval_Id(approvalId)
+                .orElse(null);
+
+        if (verification != null) {
+            verification.setStatus("PENDING");
+            verification.setUpdatedAt(LocalDateTime.now());
+            tblWorkAllocationVerificationRepository.save(verification);
+        }
+    }
 //    public List<TblWorkAllocationDTO> saveOrSubmitWorkAllocations(
 //            List<TblWorkAllocationDTO> dtos,
 //            boolean isSubmit) {

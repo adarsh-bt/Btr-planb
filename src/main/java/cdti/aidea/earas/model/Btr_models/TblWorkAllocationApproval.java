@@ -33,6 +33,15 @@ public class TblWorkAllocationApproval {
     @Column(name = "approved_by")
     private UUID approvedBy;
 
+    @Column(name = "revoked_by")
+    private UUID revokedBy;
+
+    @Column(name = "revoked_at")
+    private LocalDateTime RevokedAt;
+
+    @Column(columnDefinition = "TEXT")
+    private String revokedRemark;
+
     @Column(name = "approved_date")
     private LocalDateTime approvedDate;
 
@@ -41,6 +50,9 @@ public class TblWorkAllocationApproval {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime UpdatedAt;
 
     @Column(name = "agri_start")
     private LocalDate agriStart;

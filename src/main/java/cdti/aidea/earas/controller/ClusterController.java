@@ -76,7 +76,6 @@ public class ClusterController {
 
 
 
-
   //    cluster labels for App
   @PostMapping("/cluster-labels")
   public ResponseEntity<Map<String, Object>> getGroupedClusterFormData(
@@ -159,26 +158,6 @@ public class ClusterController {
       @Valid @RequestBody CropReplaceClusterRequest request) {
     return clusterService.getNextCluster(request);
   }
-  //    @GetMapping("/{kpId}/resbdnos-by-village-block")
-  //    public ResponseEntity<ResbdnoListReponse> getResbdnosByVillageBlock(
-  //            @PathVariable UUID kpId,
-  //            @RequestParam Integer villageId,
-  //            @RequestParam String blockCode,
-  //            @RequestParam(required = false) Integer resvno) {
-  //        ResbdnoListReponse response = clusterService.getResbdnoAreaList(kpId, villageId,
-  // blockCode, resvno);
-  //        return ResponseEntity.ok(response);
-  //    }
-
-  //
-  //    @GetMapping("/{kpId}/resbdnos")
-  //    public ResponseEntity<ResbdnoListReponse> getResbdnoListByKeyPlot(
-  //            @PathVariable UUID kpId,
-  //            @RequestParam(name = "resvno", required = false) Integer resvno) {
-  //
-  //        ResbdnoListReponse response = clusterService.getResbdnoList(kpId, resvno);
-  //        return ResponseEntity.ok(response);
-  //    }
 
   @GetMapping("/{kpId}/plot-details")
   public ResponseEntity<ClusterPlotAreaRes> getPlotDetails(
@@ -261,45 +240,7 @@ public class ClusterController {
             clusterService.getBtrClusterUsage(btrId)
     );
   }
-//  @PostMapping("/cluster-plot-save")
-//  public
 
-  //    Reject the Cluster
-  //    @PostMapping("/reject-cluster/{keyPlotId}")
-  //    public ResponseEntity<?> rejectAndReplaceCluster(
-  //            @PathVariable Long keyPlotId,
-  //            @RequestBody KeyPlotRejectRequest request) {
-  //        System.out.println("reject "+keyPlotId+"  "+request.getReason());
-  //        System.out.println("reject Cluster"+keyPlotId+"  "+request.getReason_for_cluster());
-  //        try {
-  //            Map<String, Object> newPlot = keyPlots_Service.rejectAndReplaceKeyplot(keyPlotId,
-  // request);
-  //            return ResponseEntity.ok(newPlot);
-  //        } catch (EntityNotFoundException e) {
-  //            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-  //        } catch (RuntimeException e) {
-  //            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage()); // Or
-  // INTERNAL_SERVER_ERROR based on the type of error
-  //        } catch (Exception e) {
-  //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-  //                    .body("Error rejecting and replacing keyplot: " + e.getMessage());
-  //        }
-  //    }
-
-  //    @PostMapping("/save-cluster")
-  //    public ResponseEntity<?> saveClusterForm(
-  //            @RequestParam("keyplotId") UUID keyplotId,
-  //            @RequestParam("clusterNo") Integer clusterNo,
-  //            @RequestBody List<SidePlotDTO> sidePlots) {
-  //
-  //        try {
-  //            clusterService.saveClusterData(keyplotId, clusterNo, sidePlots);
-  //            return ResponseEntity.ok("Cluster form saved successfully.");
-  //        } catch (Exception e) {
-  //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-  //                    .body("Error saving cluster form: " + e.getMessage());
-  //        }
-  //    }
   @PatchMapping("/update-sideplot/{id}")
   public ResponseEntity<?> updateClusterPlot(
           @PathVariable Long id,
@@ -329,4 +270,23 @@ public class ClusterController {
   public ClusterTourResponse getCluster(@PathVariable Long id) {
     return clusterService.getClusterDetails(id);
   }
+
+  @PostMapping("/cluster-labels/list")
+  public ResponseEntity<List<String>> getClusterLabels(
+          @Valid @RequestBody ClusterIdRequest request) {
+
+    List<String> labels = clusterService.getClusterLabels(request.getClusterId());
+    return ResponseEntity.ok(labels);
+  }
+
+  @GetMapping("/cluster-list")
+  public ResponseEntity<List<ClusterIdNumberResponse>> getClusterList(
+          @RequestParam Integer zoneId,
+          @RequestParam String agriYear) {
+
+    return ResponseEntity.ok(
+            clusterService.getClusters(zoneId, agriYear)
+    );
+  }
+
 }

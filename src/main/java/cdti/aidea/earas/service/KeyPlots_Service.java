@@ -1654,7 +1654,7 @@ public class KeyPlots_Service {
         if (dto.getCceAvailablePlotId() == null) {
             throw new RuntimeException("CCE Available Plot ID is required");
         }
-
+        System.out.println("crop id "+dto.getCropId()+" cluster id "+dto.getClusterId());
         // 🔴 2. CHECK EXISTENCE (no update yet)
         CropAssignmentTrail trail = cropAssignmentTrailRepository
                 .findByCropIdAndCluster_CluMasterIdAndIsRejectedFalse(

@@ -12,6 +12,9 @@ import java.util.UUID;
 public class Form1EditLogResponse {
     private UUID id;
     private UUID form1StatusDetailsId;
+    private Long zoneId;
+    private Long seasonId;
+    private String seasonName;
     private String status;
     private UUID requestedBy;
     private UUID approvedBy;

@@ -1,6 +1,7 @@
 package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.FormEntryDto.Response;
+import cdti.aidea.earas.contract.RequestsDTOs.RevokeRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.WorkAllocationVerificationRequest;
 import cdti.aidea.earas.service.WorkallocationService;
@@ -67,5 +68,15 @@ public class WorkallocationController {
         workallocationService.verify(request);
 
         return ResponseEntity.ok("Verification updated successfully");
+    }
+
+    @PostMapping("/work-allocation-revoke")
+    public ResponseEntity<?> revokeWorkAllocation(@RequestBody RevokeRequest request) {
+        try {
+            workallocationService.revokeWorkAllocation(request.getApprovalId(), request.getRemarks(),request.getRevokedBy());
+            return ResponseEntity.ok("Work allocation revoked successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error revoking: " + e.getMessage());
+        }
     }
 }

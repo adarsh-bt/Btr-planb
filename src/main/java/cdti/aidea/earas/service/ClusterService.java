@@ -373,29 +373,44 @@ System.out.println("okee "+clusters.size());
     }
 
     // 🔄 Fetch crop data from external service using Feign
-    Response cropsResponse = formEntryClient.fetchCceCrops(clusterId);
+      Response cropsResponse = formEntryClient.fetchCceCrops(clusterId);
 
-    // Convert payload into list of crop responses
-    List<FetchAvailableCceCropsResponse> crops = new ArrayList<>();
-    if (cropsResponse.getPayload() instanceof List<?>) {
-      for (Object obj : (List<?>) cropsResponse.getPayload()) {
-        if (obj instanceof LinkedHashMap) {
-          LinkedHashMap map = (LinkedHashMap) obj;
-          FetchAvailableCceCropsResponse crop = new FetchAvailableCceCropsResponse();
-          crop.setCropId(Long.parseLong(map.get("cropId").toString()));
-          crop.setCropName(map.get("cropName").toString());
-          crop.setIsActive((Boolean) map.get("isActive"));
-          if (map.get("cceAvailablePlotId") != null) {
-            crop.setCceAvailablePlotId(UUID.fromString(map.get("cceAvailablePlotId").toString()));
+      List<FetchAvailableCceCropsResponse> crops = new ArrayList<>();
+      boolean isClusterForm1Completed = false;
+
+      if (cropsResponse.getPayload() instanceof List<?> payload && !payload.isEmpty()) {
+
+          Object first = payload.get(0);
+
+          if (first instanceof LinkedHashMap<?, ?> firstMap) {
+              Object completed = firstMap.get("isClusterForm1Completed");
+              if (completed != null) {
+                  isClusterForm1Completed = Boolean.parseBoolean(completed.toString());
+              }
           }
-          crops.add(crop);
-        }
+
+          for (Object obj : payload) {
+              if (obj instanceof LinkedHashMap<?, ?> map) {
+
+                  FetchAvailableCceCropsResponse crop = new FetchAvailableCceCropsResponse();
+                  crop.setCropId(Long.parseLong(map.get("cropId").toString()));
+                  crop.setCropName(map.get("cropName").toString());
+                  crop.setIsActive((Boolean) map.get("isActive"));
+
+                  if (map.get("cceAvailablePlotId") != null) {
+                      crop.setCceAvailablePlotId(
+                              UUID.fromString(map.get("cceAvailablePlotId").toString()));
+                  }
+
+                  crops.add(crop);
+              }
+          }
       }
-    }
 
     Map<String, Object> response = new HashMap<>();
     response.put("clusterId", clusterId);
     response.put("labels", labelToPlotsMap);
+    response.put("isClusterForm1Completed", isClusterForm1Completed);
     response.put("cluster_min", clusterMin);
     response.put("cluster_max", clusterMax);
     response.put("tso_cluster_limit", tsoClusterLimit);
@@ -1790,13 +1805,18 @@ System.out.println("year  >>   "+agriYear);
     }
 
     public ClusterTourResponse getClusterDetails(Long clusterId) {
-System.out.println("cluster "+clusterId);
+
+        System.out.println("cluster " + clusterId);
+
         ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
                 .orElseThrow(() -> new RuntimeException("Cluster not found"));
+
         ClusterTourResponse response = new ClusterTourResponse();
-        Optional<TblLocalBody> tblLocalBody = localBodyRepository.findByCodeApi(cluster.getKeyPlot().getBtrData().getLbcode());
-        System.out.println(cluster.getKeyPlot().getBtrData().getLbcode());
-        System.out.println(cluster.getKeyPlot().getBtrData());
+
+        Optional<TblLocalBody> tblLocalBody =
+                localBodyRepository.findByCodeApi(
+                        cluster.getKeyPlot().getBtrData().getLbcode());
+
         response.setClusterNo(cluster.getClusterNumber());
         response.setZoneName(cluster.getZone().getZoneNameEn());
         response.setLandType(cluster.getKeyPlot().getLandType());
@@ -1806,6 +1826,47 @@ System.out.println("cluster "+clusterId);
         response.setNumber(cluster.getKeyPlot().getPhone_number());
         response.setTalukName(cluster.getKeyPlot().getZone().getDesTalukMaster().getDesTalukNameEn());
         response.setDistrictName(cluster.getKeyPlot().getZone().getDistrictMaster().getDist_name_en());
+
+        // Add labels in display order
+        List<String> labels = clusterFormDataRepository
+                .findByClusterMasterOrderByDisplayOrderAsc(cluster)
+                .stream()
+                .map(ClusterFormData::getPlotLabel)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        response.setClusterLabels(labels);
+
         return response;
+    }
+
+    public List<String> getClusterLabels(Long clusterId) {
+
+        ClusterMaster clusterMaster =
+                clusterMasterRepository
+                        .findById(clusterId)
+                        .orElseThrow(() -> new RuntimeException("Cluster not found"));
+
+        List<ClusterFormData> formDataList =
+                clusterFormDataRepository.findByClusterMasterOrderByDisplayOrderAsc(clusterMaster);
+
+        return formDataList.stream()
+                .map(ClusterFormData::getPlotLabel)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    public List<ClusterIdNumberResponse> getClusters(Integer zoneId, String agriYear) {
+
+        LocalDate agriStart = AgriYearUtil.getAgriYearStart(agriYear);
+        LocalDate agriEnd = AgriYearUtil.getAgriYearEnd(agriYear);
+
+        return clusterMasterRepository.findClusterIdAndNumber(
+                zoneId,
+                agriStart,
+                agriEnd
+        );
     }
 }

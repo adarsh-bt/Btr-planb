@@ -2,6 +2,7 @@ package cdti.aidea.earas.repository.Btr_repo;
 
 import cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection;
 import cdti.aidea.earas.contract.Projection.ClusterSummaryProjection;
+import cdti.aidea.earas.contract.Response.ClusterIdNumberResponse;
 import cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
@@ -23,476 +24,364 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Long> {
-  @Query("SELECT c FROM ClusterMaster c WHERE c.keyPlot.id = :keyPlotId")
-  Optional<ClusterMaster> findByKeyPlotId(@Param("keyPlotId") UUID keyPlotId);
-
-//  @Query("SELECT c FROM ClusterMaster c WHERE c.zone.zoneId = :userId AND c.isReject = false")
-//  List<ClusterMaster> findAllByUserId(@Param("userId") UUID userId);
-//
-//  @Query("SELECT c FROM ClusterMaster c WHERE c.zone.zoneId = :zoneId AND c.isReject = false")
-//  List<ClusterMaster> findAllByZoneIdAndIsRejectFalse(@Param("zoneId") Integer zoneId);
-
-  Optional<ClusterMaster> findTopByKeyPlotOrderByCreatedAtDesc(KeyPlots keyPlot);
-
-  Optional<ClusterMaster> findByKeyPlot(KeyPlots plot);
+    @Query("SELECT c FROM ClusterMaster c WHERE c.keyPlot.id = :keyPlotId")
+    Optional<ClusterMaster> findByKeyPlotId(@Param("keyPlotId") UUID keyPlotId);
 
 
+    Optional<ClusterMaster> findTopByKeyPlotOrderByCreatedAtDesc(KeyPlots keyPlot);
 
-  @Query(
-          "SELECT cm FROM ClusterMaster cm "
-                  + "JOIN cm.keyPlot kp "
-                  + "JOIN kp.zone z "
-                  + "WHERE z.zoneId = :zoneId "
-                  + "AND (:landType = 'Wet / Dry' OR LOWER(kp.landType) = LOWER(:landType)) "
-                  + "AND cm.clusterNumber > :currentClusterNumber "
-                  + "AND cm.is_active = true "
-                  + "AND cm.isReject = false "
-                  + "ORDER BY cm.clusterNumber ASC"
-  )
-  List<ClusterMaster> findNextClusterFlexibleLandType(
-          @Param("zoneId") int zoneId,
-          @Param("landType") String landType,
-          @Param("currentClusterNumber") int currentClusterNumber);
+    Optional<ClusterMaster> findByKeyPlot(KeyPlots plot);
 
 
-  List<ClusterMaster> findByKeyPlotIn(List<KeyPlots> keyPlots);
+    @Query(
+            "SELECT cm FROM ClusterMaster cm "
+                    + "JOIN cm.keyPlot kp "
+                    + "JOIN kp.zone z "
+                    + "WHERE z.zoneId = :zoneId "
+                    + "AND (:landType = 'Wet / Dry' OR LOWER(kp.landType) = LOWER(:landType)) "
+                    + "AND cm.clusterNumber > :currentClusterNumber "
+                    + "AND cm.is_active = true "
+                    + "AND cm.isReject = false "
+                    + "ORDER BY cm.clusterNumber ASC"
+    )
+    List<ClusterMaster> findNextClusterFlexibleLandType(
+            @Param("zoneId") int zoneId,
+            @Param("landType") String landType,
+            @Param("currentClusterNumber") int currentClusterNumber);
 
-  @Query(
-          "SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm "
-                  + "JOIN cm.keyPlot kp "
-                  + "JOIN kp.btrData bd "
-                  + "WHERE bd.lbcode = :lbcode "
-                  + "AND kp.landType = :landType "
-                  + "AND kp.agriStartYear BETWEEN :startDate AND :endDate")
-  Optional<Integer> findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(
-          @Param("lbcode") String lbcode,
-          @Param("landType") String landType,
-          @Param("startDate") LocalDate startDate,
-          @Param("endDate") LocalDate endDate);
 
-//  @Query("SELECT MAX(c.clusterNumber) FROM ClusterMaster c " +
-//          "WHERE c.zone.zoneId = :zoneId " +
-//          "AND c.createdAt BETWEEN :start AND :end")
-//  Optional<Integer> findMaxClusterNumberByZoneAndDateRange(
-//          @Param("zoneId") Integer zoneId,
-//          @Param("start") LocalDateTime start,
-//          @Param("end") LocalDateTime end);
-@Query("""
-    SELECT MAX(c.clusterNumber)
-    FROM ClusterMaster c
-    JOIN c.keyPlot kp
-    WHERE c.zone.zoneId = :zoneId
-      AND kp.agriStartYear = :agriStart
-      AND kp.agriEndYear = :agriEnd
-""")
-Optional<Integer> findMaxClusterNumberByAgriYear(
-        @Param("zoneId") Integer zoneId,
-        @Param("agriStart") LocalDate agriStart,
-        @Param("agriEnd") LocalDate agriEnd
-);
+    List<ClusterMaster> findByKeyPlotIn(List<KeyPlots> keyPlots);
 
-  Optional<ClusterMaster> findByKeyPlot_Id(UUID kpId);
+    @Query(
+            "SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm "
+                    + "JOIN cm.keyPlot kp "
+                    + "JOIN kp.btrData bd "
+                    + "WHERE bd.lbcode = :lbcode "
+                    + "AND kp.landType = :landType "
+                    + "AND kp.agriStartYear BETWEEN :startDate AND :endDate")
+    Optional<Integer> findMaxClusterNumberByLbcodeAndLandTypeAndDateRange(
+            @Param("lbcode") String lbcode,
+            @Param("landType") String landType,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+
+    @Query("""
+                SELECT MAX(c.clusterNumber)
+                FROM ClusterMaster c
+                JOIN c.keyPlot kp
+                WHERE c.zone.zoneId = :zoneId
+                  AND kp.agriStartYear = :agriStart
+                  AND kp.agriEndYear = :agriEnd
+            """)
+    Optional<Integer> findMaxClusterNumberByAgriYear(
+            @Param("zoneId") Integer zoneId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
+
+    Optional<ClusterMaster> findByKeyPlot_Id(UUID kpId);
 //  Optional<ClusterFormData> findByClusterMaster(ClusterMaster clusterMaster);
 
-//  @Query("SELECT cm FROM ClusterMaster cm " +
-//          "WHERE cm.zone.zoneId = :zoneId " +
-//          "AND cm.clusterNumber = :clusterNumber " +
-//          "AND cm.keyPlot.agriStartYear = :agriStart " +
-//          "AND cm.keyPlot.agriEndYear = :agriEnd")
-//  Optional<ClusterMaster> findByZoneAndClusterNumberAndAgriYear(
-//          @Param("zoneId") Long zoneId,
-//          @Param("clusterNumber") Integer clusterNumber,
-//          @Param("agriStart") LocalDate agriStart,
-//          @Param("agriEnd") LocalDate agriEnd);
 
-//  @Query("SELECT MAX(cm.clusterNumber) FROM ClusterMaster cm " +
-//          "WHERE cm.zone.zoneId = :zoneId " +
-//          "AND cm.keyPlot.agriStartYear = :agriStart " +
-//          "AND cm.keyPlot.agriEndYear = :agriEnd")
-//  Optional<Integer> findMaxClusterNumberByZoneAndAgriYear(
-//          @Param("zoneId") Long zoneId,
-//          @Param("agriStart") LocalDate agriStart,
-//          @Param("agriEnd") LocalDate agriEnd);
-//
-//  @Query("SELECT c FROM ClusterMaster c WHERE c.zone.zoneId = :zoneId AND c.clusterNumber = :clusterNumber")
-//  Optional<ClusterMaster> findByZoneAndClusterNumber(
-//          @Param("zoneId") Integer zoneId,
-//          @Param("clusterNumber") Integer clusterNumber
-//  );
-//
-//  @Query("SELECT COUNT(c) > 0 FROM ClusterMaster c WHERE c.keyPlot.id = :keyPlotId AND c.status <> 'Not Started'")
-//  boolean existsByKeyPlotIdAndStatusNotNotStarted(@Param("keyPlotId") UUID keyPlotId);
+    @Query("""
+            SELECT new cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse(
+                kp.id,
+                b.dcode,
+                b.tcode,
+                cm.cluMasterId,
+                kp.zone.zoneId,
+                cm.clusterNumber,
+                b.id,
+                bt.bTypeName,
+                COALESCE(v.villageNameEn, 'Unknown'),
+                v.villageId,
+                b.bcode,
+                COALESCE(lb.localbodyNameEn, b.lbcode),
+                b.lbcode,
+                cm.status,
+                cm.is_editable,
+                CONCAT(b.resvno, '/', b.resbdno),
+                b.ownername,
+                b.address,
+                b.wardnumber,
+                b.houseno,
+                b.tpno,
+                b.tbsubdivisionno,
+                b.oldsvno,
+                b.oldsubno,
+                b.totCent,
+                COALESCE(cfd.enumeratedArea, 0.0),
+                kp.landType
+            )
+            FROM ClusterMaster cm
+            JOIN cm.keyPlot kp
+            JOIN kp.btrData b
+            JOIN b.btrtype bt
+            LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
+            LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
+            LEFT JOIN ClusterFormData cfd 
+                ON cfd.plot = b 
+                AND cfd.plotLabel = 'K' 
+                AND cfd.clusterMaster.cluMasterId = cm.cluMasterId
+            
+            WHERE cm.zone.zoneId = :zoneId
+            AND kp.agriStartYear = :agriStart
+            AND kp.agriEndYear = :agriEnd
+            
+            ORDER BY cm.clusterNumber
+            """)
+    Page<KeyPlotDetailsListResponse> findAllKeyPlotDetails(
+            @Param("zoneId") Integer zoneId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd,
+            Pageable pageable
+    );
 
-//  @Query("""
-//    SELECT cm
-//    FROM ClusterMaster cm
-//    JOIN FETCH cm.keyPlot kp
-//    JOIN FETCH kp.btrData
-//    WHERE cm.zone = :zone
-//    ORDER BY cm.clusterNumber ASC
-//""")
-//  List<ClusterMaster> findAllByZoneOrderByClusterNumber(@Param("zone") TblMasterZone zone);
+
+    @Query("""
+            SELECT new cdti.aidea.earas.contract.Projection.ClusterSummaryProjection(
+            
+                cm.cluMasterId,
+                cm.clusterNumber,
+            
+                kp.id,
+                kp.landType,
+            
+                COALESCE(v.villageNameEn, 'Village not found'),
+                b.vcode,
+            
+                COALESCE(lb.localbodyNameEn, 'Local body not found'),
+                COALESCE(lbt.name, 'Unknown'),
+                b.lbcode,
+            
+                b.bcode,
+                CONCAT(b.resvno, '/', b.resbdno),
+            
+                cm.status
+            )
+            FROM ClusterMaster cm
+            JOIN cm.keyPlot kp
+            JOIN kp.btrData b
+            
+            LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
+            LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
+            LEFT JOIN LocalBodyType lbt ON lbt.id = lb.localbodyType
+            
+            WHERE cm.zone.zoneId = :zoneId
+            AND cm.isReject = false
+            AND kp.agriStartYear = :agriStart
+            AND kp.agriEndYear = :agriEnd
+            
+            ORDER BY cm.clusterNumber
+            """)
+    List<ClusterSummaryProjection> findClusterSummary(
+            @Param("zoneId") Integer zoneId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
 
 
-//  @Query("""
-//SELECT new cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse(
-//    kp.id,
-//    b.dcode,
-//    b.tcode,
-//    cm.cluMasterId,
-//    kp.zone.zoneId,
-//    cm.clusterNumber,
-//    b.id,
-//    bt.bTypeName,
-//    COALESCE(v.villageNameEn, 'Unknown'),
-//    v.villageId,
-//    b.bcode,
-//    COALESCE(lb.localbodyNameEn, b.lbcode),
-//    b.lbcode,
-//    cm.status,
-//    cm.is_editable,
-//    CONCAT(b.resvno, '/', b.resbdno),
-//    b.ownername,
-//    b.address,
-//    b.wardnumber,
-//    b.houseno,
-//    b.tpno,
-//    b.tbsubdivisionno,
-//    b.oldsvno,
-//    b.oldsubno,
-//    b.totCent,
-//    COALESCE(cfd.enumeratedArea, 0.0),
-//    kp.landType
-//)
-//FROM ClusterMaster cm
-//JOIN cm.keyPlot kp
-//JOIN kp.btrData b
-//JOIN b.btrtype bt
-//LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
-//LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
-//LEFT JOIN ClusterFormData cfd
-//    ON cfd.plot = b
-//    AND cfd.plotLabel = 'K'
-//    AND cfd.clusterMaster.cluMasterId = cm.cluMasterId
-//WHERE cm.zone.zoneId = :zoneId
-//ORDER BY cm.clusterNumber
-//""")
-//  Page<KeyPlotDetailsListResponse> findAllKeyPlotDetails(
-//          @Param("zoneId") Integer zoneId,
-//          Pageable pageable
-//  );
-@Query("""
-SELECT new cdti.aidea.earas.contract.Response.KeyPlotDetailsListResponse(
-    kp.id,
-    b.dcode,
-    b.tcode,
+    @Query("""
+            SELECT new cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection(
+            
+                cm.cluMasterId,
+                cm.clusterNumber,
+            
+                kp.id,
+                kp.landType,
+            
+                COALESCE(v.villageNameEn, 'Village not found'),
+                b.vcode,
+            
+                COALESCE(lb.localbodyNameEn, 'Local body not found'),
+                COALESCE(lbt.name, 'Unknown'),
+                b.lbcode,
+            
+                b.bcode,
+                CONCAT(b.resvno, '/', b.resbdno),
+            
+                b.totCent
+            )
+            FROM ClusterMaster cm
+            JOIN cm.keyPlot kp
+            JOIN kp.btrData b
+            
+            LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
+            LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
+            LEFT JOIN LocalBodyType lbt ON lbt.id = lb.localbodyType
+            
+            WHERE cm.zone.zoneId = :zoneId
+            AND cm.isReject = false
+            AND kp.agriStartYear = :agriStart
+            AND kp.agriEndYear = :agriEnd
+            
+            ORDER BY cm.clusterNumber
+            """)
+    List<ClusterSummaryFastProjection> getClusterSummaryFast(
+            @Param("zoneId") Integer zoneId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
+
+
+    //state and district wise list
+    @Query("""
+                SELECT DISTINCT cm
+                FROM ClusterMaster cm
+                JOIN FETCH cm.keyPlot kp
+                JOIN FETCH cm.zone z
+                LEFT JOIN FETCH z.districtMaster
+            
+                WHERE
+                (
+                    CAST(:startDate AS timestamp) IS NULL
+                    OR cm.createdAt >= :startDate
+                )
+            
+                AND
+                (
+                    CAST(:endDate AS timestamp) IS NULL
+                    OR cm.createdAt <= :endDate
+                )
+            """)
+    List<ClusterMaster> getDashboardData(
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
+
+    //based on districtId district and talukwise status list
+    @Query("""
+                SELECT DISTINCT cm
+                FROM ClusterMaster cm
+                JOIN FETCH cm.keyPlot kp
+                JOIN FETCH cm.zone z
+                JOIN FETCH z.desTalukMaster dt
+            
+                WHERE z.distId = :districtId
+            
+                AND
+                (
+                    CAST(:startDate AS timestamp) IS NULL
+                    OR cm.createdAt >= :startDate
+                )
+            
+                AND
+                (
+                    CAST(:endDate AS timestamp) IS NULL
+                    OR cm.createdAt <= :endDate
+                )
+            """)
+    List<ClusterMaster> getTalukWiseDashboardData(
+
+            @Param("districtId")
+            Integer districtId,
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
+
+    //based on taluk id gets details of zone status
+    @Query("""
+                SELECT DISTINCT cm
+                FROM ClusterMaster cm
+                JOIN FETCH cm.keyPlot kp
+                JOIN FETCH cm.zone z
+                JOIN FETCH z.desTalukMaster dt
+            
+                WHERE z.desTalukId = :talukId
+            
+                AND
+                (
+                    CAST(:startDate AS timestamp) IS NULL
+                    OR cm.createdAt >= :startDate
+                )
+            
+                AND
+                (
+                    CAST(:endDate AS timestamp) IS NULL
+                    OR cm.createdAt <= :endDate
+                )
+            """)
+    List<ClusterMaster> getZoneWiseDashboardData(
+
+            @Param("talukId")
+            Integer talukId,
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
+
+    @Query("""
+                SELECT DISTINCT cm
+                FROM ClusterMaster cm
+                JOIN FETCH cm.keyPlot kp
+                JOIN FETCH cm.zone z
+                JOIN FETCH z.desTalukMaster dt
+            
+                WHERE z.zoneId = :zoneId
+            
+                AND kp.agriStartYear = :agriStartYear
+            
+                AND kp.agriEndYear = :agriEndYear
+            
+                AND UPPER(cm.status) = 'COMPLETED'
+            """)
+    List<ClusterMaster> findClustersByDistrictAndAgriYear(
+
+            @Param("zoneId")
+            Integer zoneId,
+
+            @Param("agriStartYear")
+            LocalDate agriStartYear,
+
+            @Param("agriEndYear")
+            LocalDate agriEndYear
+    );
+
+    @Query("""
+                SELECT DISTINCT cm
+                FROM ClusterMaster cm
+                JOIN FETCH cm.keyPlot kp
+                JOIN FETCH cm.zone z
+                WHERE z.zoneId = :zoneId
+                  AND kp.agriStartYear = :agriStartYear
+                  AND kp.agriEndYear = :agriEndYear
+                  AND UPPER(cm.status) = 'COMPLETED'
+            """)
+    List<ClusterMaster> findCompletedClustersByZoneAndAgriYear(
+            @Param("zoneId") Integer zoneId,
+            @Param("agriStartYear") LocalDate agriStartYear,
+            @Param("agriEndYear") LocalDate agriEndYear);
+
+    @Query("""
+SELECT new cdti.aidea.earas.contract.Response.ClusterIdNumberResponse(
     cm.cluMasterId,
-    kp.zone.zoneId,
     cm.clusterNumber,
-    b.id,
-    bt.bTypeName,
-    COALESCE(v.villageNameEn, 'Unknown'),
-    v.villageId,
-    b.bcode,
-    COALESCE(lb.localbodyNameEn, b.lbcode),
-    b.lbcode,
-    cm.status,
-    cm.is_editable,
-    CONCAT(b.resvno, '/', b.resbdno),
-    b.ownername,
-    b.address,
-    b.wardnumber,
-    b.houseno,
-    b.tpno,
-    b.tbsubdivisionno,
-    b.oldsvno,
-    b.oldsubno,
-    b.totCent,
-    COALESCE(cfd.enumeratedArea, 0.0),
     kp.landType
 )
 FROM ClusterMaster cm
 JOIN cm.keyPlot kp
-JOIN kp.btrData b
-JOIN b.btrtype bt
-LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
-LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
-LEFT JOIN ClusterFormData cfd 
-    ON cfd.plot = b 
-    AND cfd.plotLabel = 'K' 
-    AND cfd.clusterMaster.cluMasterId = cm.cluMasterId
-
 WHERE cm.zone.zoneId = :zoneId
 AND kp.agriStartYear = :agriStart
 AND kp.agriEndYear = :agriEnd
-
-ORDER BY cm.clusterNumber
-""")
-Page<KeyPlotDetailsListResponse> findAllKeyPlotDetails(
-        @Param("zoneId") Integer zoneId,
-        @Param("agriStart") LocalDate agriStart,
-        @Param("agriEnd") LocalDate agriEnd,
-        Pageable pageable
-);
-
-//  @Query("""
-//SELECT cm FROM ClusterMaster cm
-//JOIN FETCH cm.keyPlot kp
-//JOIN FETCH kp.btrData b
-//WHERE cm.zone.zoneId = :zoneId
-//AND cm.isReject = false
-//""")
-//  List<ClusterMaster> findAllWithDetails(@Param("zoneId") Integer zoneId);
-
-
-  @Query("""
-SELECT new cdti.aidea.earas.contract.Projection.ClusterSummaryProjection(
-
-    cm.cluMasterId,
-    cm.clusterNumber,
-
-    kp.id,
-    kp.landType,
-
-    COALESCE(v.villageNameEn, 'Village not found'),
-    b.vcode,
-
-    COALESCE(lb.localbodyNameEn, 'Local body not found'),
-    COALESCE(lbt.name, 'Unknown'),
-    b.lbcode,
-
-    b.bcode,
-    CONCAT(b.resvno, '/', b.resbdno),
-
-    cm.status
-)
-FROM ClusterMaster cm
-JOIN cm.keyPlot kp
-JOIN kp.btrData b
-
-LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
-LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
-LEFT JOIN LocalBodyType lbt ON lbt.id = lb.localbodyType
-
-WHERE cm.zone.zoneId = :zoneId
+AND cm.is_active = true
 AND cm.isReject = false
-AND kp.agriStartYear = :agriStart
-AND kp.agriEndYear = :agriEnd
-
 ORDER BY cm.clusterNumber
 """)
-  List<ClusterSummaryProjection> findClusterSummary(
-          @Param("zoneId") Integer zoneId,
-          @Param("agriStart") LocalDate agriStart,
-          @Param("agriEnd") LocalDate agriEnd
-  );
-
-//  @Query("""
-//SELECT cfd.clusterMaster.cluMasterId as clusterId,
-//       SUM(cfd.enumeratedArea) as totalArea
-//FROM ClusterFormData cfd
-//WHERE cfd.clusterMaster.cluMasterId IN :clusterIds
-//GROUP BY cfd.clusterMaster.cluMasterId
-//""")
-//  List<ClusterAreaProjection> findTotalAreaByClusterIds(List<Long> clusterIds);
-
-  @Query("""
-SELECT new cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection(
-
-    cm.cluMasterId,
-    cm.clusterNumber,
-
-    kp.id,
-    kp.landType,
-
-    COALESCE(v.villageNameEn, 'Village not found'),
-    b.vcode,
-
-    COALESCE(lb.localbodyNameEn, 'Local body not found'),
-    COALESCE(lbt.name, 'Unknown'),
-    b.lbcode,
-
-    b.bcode,
-    CONCAT(b.resvno, '/', b.resbdno),
-
-    b.totCent
-)
-FROM ClusterMaster cm
-JOIN cm.keyPlot kp
-JOIN kp.btrData b
-
-LEFT JOIN TblMasterVillage v ON v.lsgCode = b.lsgcode
-LEFT JOIN TblLocalBody lb ON lb.codeApi = b.lbcode
-LEFT JOIN LocalBodyType lbt ON lbt.id = lb.localbodyType
-
-WHERE cm.zone.zoneId = :zoneId
-AND cm.isReject = false
-AND kp.agriStartYear = :agriStart
-AND kp.agriEndYear = :agriEnd
-
-ORDER BY cm.clusterNumber
-""")
-  List<ClusterSummaryFastProjection> getClusterSummaryFast(
-          @Param("zoneId") Integer zoneId,
-          @Param("agriStart") LocalDate agriStart,
-          @Param("agriEnd") LocalDate agriEnd
-  );
-
-
-//  @Query(value = """
-//        SELECT
-//            cm.cluster_number AS clusterNumber,
-//            kp.land_type AS landType,
-//            lb.localbody_name_en AS localbodyNameEn
-//        FROM cluster_master cm
-//        JOIN keyplot_selections kp
-//            ON cm.plot_id = kp.kp_id
-//        JOIN tbl_btr_data bd
-//            ON kp.btr_id = bd.id
-//        LEFT JOIN tbl_master_localbody lb
-//            ON bd.lbcode = lb.code_api
-//        WHERE cm.clu_master_id = :clusterId
-//        """, nativeQuery = true)
-//  Optional<Map<String, Object>> getClusterDetails(
-//          @Param("clusterId") Long clusterId);
-//Report Generation Status of Cluster details
-
-  //state and district wise list
-  @Query("""
-    SELECT DISTINCT cm
-    FROM ClusterMaster cm
-    JOIN FETCH cm.keyPlot kp
-    JOIN FETCH cm.zone z
-    LEFT JOIN FETCH z.districtMaster
-
-    WHERE
-    (
-        CAST(:startDate AS timestamp) IS NULL
-        OR cm.createdAt >= :startDate
-    )
-
-    AND
-    (
-        CAST(:endDate AS timestamp) IS NULL
-        OR cm.createdAt <= :endDate
-    )
-""")
-  List<ClusterMaster> getDashboardData(
-
-          @Param("startDate")
-          LocalDateTime startDate,
-
-          @Param("endDate")
-          LocalDateTime endDate
-  );
-
-  //based on districtId district and talukwise status list
-  @Query("""
-    SELECT DISTINCT cm
-    FROM ClusterMaster cm
-    JOIN FETCH cm.keyPlot kp
-    JOIN FETCH cm.zone z
-    JOIN FETCH z.desTalukMaster dt
-
-    WHERE z.distId = :districtId
-  
-    AND
-    (
-        CAST(:startDate AS timestamp) IS NULL
-        OR cm.createdAt >= :startDate
-    )
-
-    AND
-    (
-        CAST(:endDate AS timestamp) IS NULL
-        OR cm.createdAt <= :endDate
-    )
-""")
-  List<ClusterMaster> getTalukWiseDashboardData(
-
-          @Param("districtId")
-          Integer districtId,
-
-          @Param("startDate")
-          LocalDateTime startDate,
-
-          @Param("endDate")
-          LocalDateTime endDate
-  );
-
-  //based on taluk id gets details of zone status
-  @Query("""
-    SELECT DISTINCT cm
-    FROM ClusterMaster cm
-    JOIN FETCH cm.keyPlot kp
-    JOIN FETCH cm.zone z
-    JOIN FETCH z.desTalukMaster dt
-
-    WHERE z.desTalukId = :talukId
-
-    AND
-    (
-        CAST(:startDate AS timestamp) IS NULL
-        OR cm.createdAt >= :startDate
-    )
-
-    AND
-    (
-        CAST(:endDate AS timestamp) IS NULL
-        OR cm.createdAt <= :endDate
-    )
-""")
-  List<ClusterMaster> getZoneWiseDashboardData(
-
-          @Param("talukId")
-          Integer talukId,
-
-          @Param("startDate")
-          LocalDateTime startDate,
-
-          @Param("endDate")
-          LocalDateTime endDate
-  );
-
-  @Query("""
-    SELECT DISTINCT cm
-    FROM ClusterMaster cm
-    JOIN FETCH cm.keyPlot kp
-    JOIN FETCH cm.zone z
-    JOIN FETCH z.desTalukMaster dt
-
-    WHERE z.zoneId = :zoneId
-
-    AND kp.agriStartYear = :agriStartYear
-
-    AND kp.agriEndYear = :agriEndYear
-
-    AND UPPER(cm.status) = 'COMPLETED'
-""")
-  List<ClusterMaster> findClustersByDistrictAndAgriYear(
-
-          @Param("zoneId")
-          Integer zoneId,
-
-          @Param("agriStartYear")
-          LocalDate agriStartYear,
-
-          @Param("agriEndYear")
-          LocalDate agriEndYear
-  );
-
-  @Query("""
-    SELECT DISTINCT cm
-    FROM ClusterMaster cm
-    JOIN FETCH cm.keyPlot kp
-    JOIN FETCH cm.zone z
-    WHERE z.zoneId = :zoneId
-      AND kp.agriStartYear = :agriStartYear
-      AND kp.agriEndYear = :agriEndYear
-      AND UPPER(cm.status) = 'COMPLETED'
-""")
-  List<ClusterMaster> findCompletedClustersByZoneAndAgriYear(
-          @Param("zoneId") Integer zoneId,
-          @Param("agriStartYear") LocalDate agriStartYear,
-          @Param("agriEndYear") LocalDate agriEndYear);
+    List<ClusterIdNumberResponse> findClusterIdAndNumber(
+            @Param("zoneId") Integer zoneId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
 }

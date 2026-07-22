@@ -162,4 +162,7 @@ WHERE cd.clusterMaster.cluMasterId = :clusterId
 ORDER BY cd.displayOrder
 """)
   List<ClusterLabelProjection> findClusterLabels(Long clusterId);
+
+
+
 }

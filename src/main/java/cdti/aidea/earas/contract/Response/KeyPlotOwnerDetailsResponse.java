@@ -37,5 +37,6 @@ public class KeyPlotOwnerDetailsResponse {
   private Integer distId;
   private Integer zoneId;
   private String zoneName;
+  private Boolean is_Start;
 }
 

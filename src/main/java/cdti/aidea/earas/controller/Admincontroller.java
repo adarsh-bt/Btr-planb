@@ -82,7 +82,22 @@ public class Admincontroller {
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+  @GetMapping("/zones/dropdown/{type}/{id}")
+  public ResponseEntity<List<ZoneDropdownResponse>> getZoneDropdown(
+          @PathVariable String type,
+          @PathVariable Integer id) {
 
+    return ResponseEntity.ok(adminManage.getZoneDropdown(type, id));
+  }
+
+  @GetMapping("/taluks/dropdown/{districtId}")
+  public ResponseEntity<List<TalukDropdownResponse>> getTalukDropdown(
+          @PathVariable Integer districtId) {
+
+    return ResponseEntity.ok(
+            adminManage.getTalukDropdown(districtId)
+    );
+  }
 //  @GetMapping("/zones_cluster/{type}/{id}")
 //  public ResponseEntity<List<ClusterApprovalTableDTO>> ZonelistClusters(
 //          @PathVariable("type") String type, @PathVariable("id") String id) {

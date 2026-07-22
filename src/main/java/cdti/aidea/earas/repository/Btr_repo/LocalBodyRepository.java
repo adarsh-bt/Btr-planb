@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LocalBodyRepository extends JpaRepository<TblLocalBody, Integer> {
 
+  List<TblLocalBody> findByLocalbodyIdInOrderByLocalbodyNameEnAsc(List<Integer> ids);
   // Corrected method name to match the entity field
   List<TblLocalBody> findAllByCodeApiIn(List<String> codeApis);
 

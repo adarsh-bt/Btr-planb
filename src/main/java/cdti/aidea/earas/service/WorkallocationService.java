@@ -58,7 +58,8 @@ public class WorkallocationService {
                 .distinct()
                 .toList();
 
-        List<TblLocalBody> localBodies = localBodyRepository.findAllById(localBodyIds);
+        List<TblLocalBody> localBodies =
+                localBodyRepository.findByLocalbodyIdInOrderByLocalbodyNameEnAsc(localBodyIds);
 
         // ==========================================================
         // Local Body Type
@@ -492,15 +493,17 @@ public class WorkallocationService {
     @Transactional
     public void revokeWorkAllocation(Long approvalId, String remarks, UUID revokedBy) {
         // Find the approval
+        System.out.println("remarks   "+remarks);
         TblWorkAllocationApproval approval = tblWorkAllocationApprovalRepository
                 .findById(approvalId)
                 .orElseThrow(() -> new RuntimeException("Approval not found"));
 
         // Update status to RETURNED
         approval.setStatus("RETURNED");
-        approval.setRevokedRemark(remarks);
+        approval.setRemark(remarks);
         approval.setRevokedAt(LocalDateTime.now());
         approval.setRevokedBy(revokedBy);
+        approval.setUpdatedAt(LocalDateTime.now());
         tblWorkAllocationApprovalRepository.save(approval);
 
         // Update all work allocations to editable

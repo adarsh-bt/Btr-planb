@@ -7,9 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ClusterIdNumberResponse {
+public class ClusterLabelResponse {
 
-    private Long clusterId;
-    private Integer clusterNumber;
-    private String landType;
+    private String label;
+    private Double totalEnumeratedArea;
 }

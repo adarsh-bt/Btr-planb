@@ -7,9 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ClusterIdNumberResponse {
+public class ZoneDropdownResponse {
 
-    private Long clusterId;
-    private Integer clusterNumber;
-    private String landType;
+    private Integer zoneId;
+    private String zoneNameEn;
+    private String zoneType;
 }

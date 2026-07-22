@@ -23,6 +23,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -1426,6 +1427,11 @@ public class KeyPlots_Service {
         response.setTpSubNo(keyPlotDetails.getBtrData().getTbsubdivisionno());
         response.setOldSurvey(keyPlotDetails.getBtrData().getOldsvno());
         response.setOldSubDivNo(keyPlotDetails.getBtrData().getOldsubno());
+        response.setIs_Start(
+                StringUtils.hasText(keyPlotDetails.getOwner_name()) ||
+                        StringUtils.hasText(keyPlotDetails.getAddress()) ||
+                        StringUtils.hasText(keyPlotDetails.getPhone_number())
+        );
         // ✅ Zone & District (SAFE manual mapping)
         if (keyPlotDetails.getZone() != null) {
             response.setZoneId(keyPlotDetails.getZone().getZoneId());

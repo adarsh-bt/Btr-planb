@@ -5,11 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class ClusterIdNumberResponse {
+@AllArgsConstructor
+public class TalukDropdownResponse {
 
-    private Long clusterId;
-    private Integer clusterNumber;
-    private String landType;
+    private Integer talukId;
+    private String talukName;
 }

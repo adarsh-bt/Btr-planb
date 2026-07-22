@@ -141,6 +141,15 @@ public class AdminManage {
             .toList();
   }
 
+  public List<ZoneDropdownResponse> getZoneDropdown(String type, Integer idValue) {
+    return tblMasterZoneRepository.findZoneDropdown(type, idValue);
+  }
+
+  public List<TalukDropdownResponse> getTalukDropdown(Integer districtId) {
+
+    return tblMasterZoneRepository.findTalukDropdown(districtId);
+  }
+
   public List<ClusterApprovalTableDTO> zoneListForClusterss(String type, Integer idValue) {
     List<ClusterApprovalLog> approvalLogs;
 

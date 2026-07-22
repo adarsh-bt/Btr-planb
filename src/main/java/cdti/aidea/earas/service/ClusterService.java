@@ -1828,12 +1828,20 @@ System.out.println("year  >>   "+agriYear);
         response.setDistrictName(cluster.getKeyPlot().getZone().getDistrictMaster().getDist_name_en());
 
         // Add labels in display order
-        List<String> labels = clusterFormDataRepository
-                .findByClusterMasterOrderByDisplayOrderAsc(cluster)
-                .stream()
-                .map(ClusterFormData::getPlotLabel)
-                .filter(Objects::nonNull)
-                .distinct()
+        List<ClusterFormData> formDataList =
+                clusterFormDataRepository.findByClusterMasterOrderByDisplayOrderAsc(cluster);
+
+        Map<String, Double> areaMap = formDataList.stream()
+                .filter(f -> f.getPlotLabel() != null)
+                .collect(Collectors.groupingBy(
+                        ClusterFormData::getPlotLabel,
+                        LinkedHashMap::new,   // preserve display order
+                        Collectors.summingDouble(f ->
+                                f.getEnumeratedArea() != null ? f.getEnumeratedArea() : 0.0)
+                ));
+
+        List<ClusterLabelResponse> labels = areaMap.entrySet().stream()
+                .map(e -> new ClusterLabelResponse(e.getKey(), e.getValue()))
                 .toList();
 
         response.setClusterLabels(labels);

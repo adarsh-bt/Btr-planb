@@ -20,5 +20,5 @@ public class ClusterTourResponse {
     private String number;
     private String districtName;
     private String talukName;
-    private List<String> clusterLabels;
+    private List<ClusterLabelResponse> clusterLabels;
 }

@@ -27,6 +27,7 @@ public interface ClusterFormDataRepository extends JpaRepository<ClusterFormData
       TblBtrData plot, LocalDateTime localDateTime, LocalDateTime localDateTime1);
 
   Optional<ClusterFormData> findByClusterMasterAndPlotAndPlotLabel(ClusterMaster clusterMaster, TblBtrData plot, String label);
+
   List<ClusterFormData> findByClusterMasterOrderByDisplayOrderAsc(ClusterMaster clusterMaster);
   @Query("""
 SELECT MAX(c.displayOrder)
@@ -169,4 +170,7 @@ WHERE cd.clusterMaster.cluMasterId = :clusterId
 ORDER BY cd.displayOrder
 """)
   List<ClusterLabelProjection> findClusterLabels(Long clusterId);
+
+
+
 }

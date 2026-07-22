@@ -96,6 +96,11 @@ public class TblWorkAllocation {
 
     private Boolean isActive = true;
 
+    @Column(name = "approval_id")
+    private Long approvalId;
+
+    private Boolean isEdit;
+
     private LocalDate agriStart;
     private LocalDate agriEnd;
 }

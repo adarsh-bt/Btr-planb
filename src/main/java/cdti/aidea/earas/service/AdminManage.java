@@ -8,6 +8,7 @@ import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
+import cdti.aidea.earas.utils.AgriYearUtil;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,10 @@ public class AdminManage {
   private final MasterBlockRepository masterBlockRepository;
   private final LocalBodyRepository localBodyRepository;
   private final LocalBodyTypeRepository localBodyTypeRepository;
-  private final FormEntryClient formEntryClient;
+  private final TblWorkAllocationRepository tblWorkAllocationRepository;
+  private final TblWorkAllocationApprovalRepository tblWorkAllocationApprovalRepository;
+  private AgriYearUtil agriYearUtil;
+  private FormEntryClient formEntryClient;
 
   public List<KeyplotsLimitLogResponse> getAllKeyplots() {
     List<KeyplotsLimitLog> entities = repository.findAll();
@@ -75,69 +79,71 @@ public class AdminManage {
   }
 
   public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
-    try {
-      List<TblMasterZone> zones = null;
-      System.out.println("sssss");
-      // Decide which ID to use based on the type (Taluk, District, or Directorate)
-      if ("Taluk".equalsIgnoreCase(type)) {
-        zones = tblMasterZoneRepository.findByDesTalukId(idValue);
-      } else if ("District".equalsIgnoreCase(type)) {
-        zones = tblMasterZoneRepository.findByDistId(idValue);
-      } else if ("Directorate".equalsIgnoreCase(type)) {
-        // If type is DIRECTORATE, use appropriate repository method (change if needed)
-        zones = tblMasterZoneRepository.findAll();
-      } else {
-        throw new IllegalArgumentException("Invalid type. Use 'Taluk', 'District', or 'Directorate'.");
-      }
 
-      if (zones == null || zones.isEmpty()) {
-        throw new IllegalArgumentException("No zones found for the given ID.");
-      }
+    List<TblMasterZone> zones;
 
-      // Directly map all zones to the response DTO
-      List<ZoneListResponse> zoneList = zones.stream()
-              .map(zone -> {
-                // Fetch taluk
-                Optional<DesTaluk> taluk = desTalukRepository.findById(Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()));
-                String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("Unknown Taluk");
+    if ("Taluk".equalsIgnoreCase(type)) {
+      zones = tblMasterZoneRepository.findByDesTalukId(idValue);
 
-                // Fetch district
-                Optional<DistrictMaster> district = districtMasterRepository.findById(Long.valueOf(zone.getDistId()));
-                String districtName = district.map(DistrictMaster::getDist_name_en).orElse("Unknown District");
+    } else if ("District".equalsIgnoreCase(type)) {
+      zones = tblMasterZoneRepository.findByDistId(idValue);
 
-                // Fetch active user assignment
-                Optional<UserZoneAssignment> activeAssignment =
-                        userZoneAssignmentRepositoty.findByTblMasterZoneAndIsActiveTrue(zone);
-
-                UUID assignedUserId = activeAssignment.map(UserZoneAssignment::getUserId).orElse(null);
-
-                // Build response including assigned user
-                return new ZoneListResponse(
-                        zone.getZoneId(),
-                        zone.getZoneCode(),
-                        zone.getZoneNameEn(),
-                        zone.getZoneNameMal(),
-                        zone.getBtrType().getBtrType(),
-                        Math.toIntExact(zone.getDesTalukMaster().getDesTalukId()),
-                        zone.getDistrictMaster().getDist_id(),
-                        talukName,
-                        districtName,
-                        assignedUserId  // <-- New field added
-                );
-              })
-              .collect(Collectors.toList());
-      zoneList.sort(Comparator.comparing(ZoneListResponse::getDesTalukId).reversed());
-      zoneList.sort(Comparator.comparing(ZoneListResponse::getDesDistId).reversed());
-      return zoneList;
-
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Something went wrong while fetching zones", e);
+    } else {
+      zones = tblMasterZoneRepository.findAll();
     }
+
+    // Load lookup tables ONCE
+    Map<Integer, DesTaluk> talukMap = desTalukRepository.findAll()
+            .stream()
+            .collect(Collectors.toMap(
+                    DesTaluk::getDesTalukId,
+                    Function.identity()
+            ));
+
+    Map<Integer, DistrictMaster> districtMap = districtMasterRepository.findAll()
+            .stream()
+            .collect(Collectors.toMap(
+                    DistrictMaster::getDist_id,
+                    Function.identity()
+            ));
+
+    Map<Integer, UUID> assignmentMap = userZoneAssignmentRepositoty
+            .findAllActiveAssignments()
+            .stream()
+            .collect(Collectors.toMap(
+                    assignment -> assignment.getTblMasterZone().getZoneId(),
+                    UserZoneAssignment::getUserId
+            ));
+
+    return zones.stream()
+            .map(zone -> {
+
+              DesTaluk taluk = talukMap.get(zone.getDesTalukId());
+              DistrictMaster district = districtMap.get(zone.getDistId());
+
+              return new ZoneListResponse(
+                      zone.getZoneId(),
+                      zone.getZoneCode(),
+                      zone.getZoneNameEn(),
+                      zone.getZoneNameMal(),
+                      zone.getBtrType().getBtrType(),
+                      zone.getDesTalukId(),
+                      zone.getDistId(),
+                      taluk != null ? taluk.getDesTalukNameEn() : "",
+                      district != null ? district.getDist_name_en() : "",
+                      assignmentMap.get(zone.getZoneId())
+              );
+            })
+            .sorted(
+                    Comparator.comparing(ZoneListResponse::getDesDistId)
+                            .thenComparing(ZoneListResponse::getDesTalukId)
+            )
+            .toList();
   }
 
   public List<ClusterApprovalTableDTO> zoneListForClusterss(String type, Integer idValue) {
     List<ClusterApprovalLog> approvalLogs;
-    System.out.println("type " + type + " : " + idValue);
+
     if ("Taluk".equalsIgnoreCase(type)) {
       approvalLogs = clusterApprovalLogRepository
               .findByZone_DesTalukId(idValue);
@@ -168,8 +174,11 @@ public class AdminManage {
           String type,
           Integer idValue,
           int page,
-          int size
+          int size,
+          String agriYear
   ) {
+    LocalDate agriStart = AgriYearUtil.getAgriYearStart(agriYear);
+    LocalDate agriEnd = AgriYearUtil.getAgriYearEnd(agriYear);
 
     Pageable pageable = PageRequest.of(
             page,
@@ -183,18 +192,35 @@ public class AdminManage {
 
     if ("Taluk".equalsIgnoreCase(type)) {
 
-      approvalLogs = clusterApprovalLogRepository
-              .findByZone_DesTalukId(idValue, pageable);
+      approvalLogs =
+              clusterApprovalLogRepository
+                      .findByTalukAndAgriYear(
+                              idValue,
+                              agriStart,
+                              agriEnd,
+                              pageable
+                      );
 
     } else if ("District".equalsIgnoreCase(type)) {
 
-      approvalLogs = clusterApprovalLogRepository
-              .findByZone_DistId(idValue, pageable);
+      approvalLogs =
+              clusterApprovalLogRepository
+                      .findByDistrictAndAgriYear(
+                              idValue,
+                              agriStart,
+                              agriEnd,
+                              pageable
+                      );
 
     } else if ("Directorate".equalsIgnoreCase(type)) {
 
-      approvalLogs = clusterApprovalLogRepository
-              .findAll(pageable);
+      approvalLogs =
+              clusterApprovalLogRepository
+                      .findByAgriYear(
+                              agriStart,
+                              agriEnd,
+                              pageable
+                      );
 
     } else {
 
@@ -246,6 +272,160 @@ public class AdminManage {
     );
   }
 
+  //  work allocation
+  public Page<WorkAllocationApprovalTableDTO> zoneListForWorkAllocation(
+          String type,
+          Integer idValue,
+          int page,
+          int size,
+          String agriYear
+  ) {
+
+    LocalDate agriStart =
+            AgriYearUtil.getAgriYearStart(agriYear);
+
+    LocalDate agriEnd =
+            AgriYearUtil.getAgriYearEnd(agriYear);
+
+    Pageable pageable =
+            PageRequest.of(
+                    page,
+                    size,
+                    Sort.by(Sort.Direction.DESC, "createdAt")
+            );
+
+    Page<TblWorkAllocationApproval> approvals;
+
+    if ("Taluk".equalsIgnoreCase(type)) {
+
+      approvals =
+              tblWorkAllocationApprovalRepository
+                      .findByTalukIdAndAgriYear(
+                              idValue,
+                              agriStart,
+                              agriEnd,
+                              pageable
+                      );
+
+    } else if ("District".equalsIgnoreCase(type)) {
+
+      approvals =
+              tblWorkAllocationApprovalRepository
+                      .findByDistrictIdAndAgriYear(
+                              idValue,
+                              agriStart,
+                              agriEnd,
+                              pageable
+                      );
+
+    } else if ("Directorate".equalsIgnoreCase(type)) {
+
+      approvals =
+              tblWorkAllocationApprovalRepository
+                      .findAllSubmittedByAgriYear(
+                              agriStart,
+                              agriEnd,
+                              pageable
+                      );
+
+    } else {
+
+      throw new IllegalArgumentException(
+              "Invalid type. Use 'Taluk', 'District', or 'Directorate'"
+      );
+    }
+
+    return approvals.map(this::convertToApprovalDTO);
+  }
+
+  private WorkAllocationApprovalTableDTO convertToApprovalDTO(TblWorkAllocationApproval approval) {
+    WorkAllocationApprovalTableDTO dto = new WorkAllocationApprovalTableDTO();
+    dto.setApprovalId(approval.getId());
+    dto.setStatus(approval.getStatus());
+    dto.setRequestedBy(approval.getRequestedBy());
+    dto.setApprovedBy(approval.getApprovedBy());
+    dto.setRemarks(approval.getRemark());
+    dto.setCreatedAt(approval.getCreatedAt());
+    dto.setApprovedDate(approval.getApprovedDate());
+    dto.setCreatedAt(approval.getCreatedAt());
+
+    // Pull connected zone data through an active data row in the target batch
+    List<TblWorkAllocation> linkedRows = tblWorkAllocationRepository.findByApprovalId(approval.getId());
+    if (!linkedRows.isEmpty()) {
+      TblMasterZone zone = linkedRows.get(0).getZone();
+      if (zone != null) {
+        dto.setZoneId(zone.getZoneId());
+        dto.setZoneName(zone.getZoneNameEn());
+        dto.setTalukId(zone.getDesTalukId());
+        dto.setTalukName(zone.getDesTalukMaster().getDesTalukNameEn()); // Assumes lookup names exist in your TblMasterZone metadata
+        dto.setDistrictId(zone.getDistId());
+        dto.setDistrictName(zone.getDistrictMaster().getDist_name_en());
+      }
+    }
+    return dto;
+
+  }
+
+
+  @Transactional
+  public WorkAllocationApproveDTO approveOrRejectWorkAllocation(@Valid WorkAllocationApproveDTO dto) {
+
+    if (dto.getApprovalLogId() == null) {
+      throw new IllegalArgumentException("Approval ID must be provided");
+    }
+
+    // 1. Find the parent approval log tracking record
+    TblWorkAllocationApproval approval = tblWorkAllocationApprovalRepository.findById(dto.getApprovalLogId())
+            .orElseThrow(() -> new RuntimeException("Approval record not found for ID: " + dto.getApprovalLogId()));
+
+    // 2. Fetch all allocation rows associated with this specific approval batch ID
+    List<TblWorkAllocation> allocations = tblWorkAllocationRepository.findByApprovalId(approval.getId());
+
+    String finalStatus;
+    boolean targetIsEdit;
+
+    // 3. Determine the 3 branching pathways
+    if (Boolean.TRUE.equals(dto.getApprove())) {
+      if (Boolean.TRUE.equals(dto.getIs_edit())) {
+        // Path 2: Approved but explicitly put under review with edit mode ON
+        finalStatus = "UNDER REVIEW";
+        targetIsEdit = true;
+      } else {
+        // Path 1: Standard final approval
+        finalStatus = "APPROVED";
+        targetIsEdit = false;
+      }
+    } else {
+      // Path 3: Returned to user for correction
+      finalStatus = "RETURNED";
+      targetIsEdit = true;
+    }
+
+    // 4. Update approval record parameters
+    approval.setStatus(finalStatus);
+    approval.setApprovedBy(dto.getApprover_id());
+    approval.setApprovedDate(LocalDateTime.now());
+    approval.setRemark(dto.getRemarks()); // Matches entity property 'remark'
+
+    tblWorkAllocationApprovalRepository.save(approval);
+
+    // 5. Mass-update all linked row states to change users' UI inputs access
+    for (TblWorkAllocation allocation : allocations) {
+      allocation.setIsEdit(targetIsEdit);
+      allocation.setUpdated(LocalDate.now());
+      tblWorkAllocationRepository.save(allocation);
+    }
+
+    // 6. 🔥 RETURN DTO MATCHING THE CLUSTER PATTERN (NOT VOID)
+    return new WorkAllocationApproveDTO(
+            approval.getId(),
+            true,
+            approval.getApprovedBy(),
+            approval.getRemark(),
+            approval.getIsActive()
+    );
+  }
+//  end
 
   public List<ClusterLimitRequest> getAllClusterLimits() {
     List<ClusterLimitLog> entity = clusterLimitLogRepository.findAll();

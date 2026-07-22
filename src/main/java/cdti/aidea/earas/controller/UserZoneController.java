@@ -146,6 +146,8 @@ public class UserZoneController {
         HttpStatus.OK);
   }
 
+
+
   @GetMapping("/zones/assigned/{userId}")
   public ResponseEntity<?> getUserAssignedZones(@PathVariable("userId") UUID userId) {
     try {

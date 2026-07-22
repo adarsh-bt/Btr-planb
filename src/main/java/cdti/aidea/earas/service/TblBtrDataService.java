@@ -250,12 +250,7 @@ public class TblBtrDataService {
         } else {
             btrData = tblBtrDataRepository.save(mapToEntity(dto));
         }
-//        Optional<Integer> maxClusterNumberOpt =
-//                clusterMasterRepository.findMaxClusterNumberByAgriYear(
-//                        zone.getZoneId(),
-//                        startDate.atStartOfDay(),
-//                        endDate.atTime(23, 59, 59)
-//                );
+
         Optional<Integer> maxClusterNumberOpt =
                 clusterMasterRepository.findMaxClusterNumberByAgriYear(
                         zone.getZoneId(),
@@ -380,7 +375,31 @@ public class TblBtrDataService {
     }
 
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
+
+        LocalDate startDate =
+                AgriYearUtil.getAgriYearStart(dto.getAgriYear());
+
+        LocalDate endDate =
+                AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
+        Optional<Integer> maxClusterNumberOpt =
+                clusterMasterRepository.findMaxClusterNumberByAgriYear(
+                        Math.toIntExact(dto.getZoneId()),
+                        startDate,
+                        endDate
+                );
         if (dto.getId() != null) {
+            int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
+
+            if (nextClusterNumber > 100) {
+                return new ValidationErrorResponse(
+                        0,
+                        null,
+                        0,
+                        null,
+                        0.0,
+                        "Keyplots limit for current year is 100"
+                );
+            }
             return null;
         }
         boolean existsRes = false;
@@ -406,34 +425,7 @@ public class TblBtrDataService {
                                 + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
             }}
 
-        LocalDate today = LocalDate.now();
-        LocalDate agriStart =
-                (today.getMonthValue() >= 6)
-                        ? LocalDate.of(today.getYear(), 6, 1)
-                        : LocalDate.of(today.getYear() - 1, 6, 1);
 
-        LocalDate agriEnd =
-                (today.getMonthValue() >= 6)
-                        ? LocalDate.of(today.getYear() + 1, 7, 31)
-                        : LocalDate.of(today.getYear(), 7, 31);
-        LocalDate startDate =
-                AgriYearUtil.getAgriYearStart(dto.getAgriYear());
-
-        LocalDate endDate =
-                AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
-
-//        Optional<Integer> maxClusterNumberOpt =
-//                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
-//                        Math.toIntExact(dto.getZoneId()),
-//                        startDate.atStartOfDay(),
-//                        endDate.atTime(23, 59, 59)
-//                );
-        Optional<Integer> maxClusterNumberOpt =
-                clusterMasterRepository.findMaxClusterNumberByAgriYear(
-                        Math.toIntExact(dto.getZoneId()),
-                        startDate,
-                        endDate
-                );
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
 
         if (nextClusterNumber > 100) {
@@ -980,7 +972,6 @@ public class TblBtrDataService {
 
 
     public TblBtrDetailsResponse getBtrDetails(Long btrId) {
-
         TblBtrData entity = tblBtrDataRepository.findById(btrId)
                 .orElseThrow(() ->
                         new RuntimeException("BTR record not found with ID: " + btrId));

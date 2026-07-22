@@ -36,11 +36,12 @@ public class ClusterController {
     return ResponseEntity.ok(result);
   }
 
-  @GetMapping("/user-cluster-summary/{zoneId}")
+  @GetMapping("/user-cluster-summary/{zoneId}/{agriYear}")
   public ResponseEntity<UserClusterSummaryResponse> getUserClusterSummary(
-      @PathVariable Integer zoneId) {
+          @PathVariable Integer zoneId,
+          @PathVariable String agriYear) {
     try {
-      UserClusterSummaryResponse response = clusterService.getUserClusterSummary(zoneId);
+      UserClusterSummaryResponse response = clusterService.getUserClusterSummary(zoneId,agriYear);
       return ResponseEntity.ok(response);
     } catch (NoSuchElementException e) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -62,16 +63,16 @@ public class ClusterController {
   }
 
 
-  @GetMapping("/cluster-form-status/{zoneId}")
+  @GetMapping("/cluster-form-status/{zoneId}/{agriYear}")
   public ResponseEntity<UserClusterSummaryResponse> getClusterSummary(
-          @PathVariable Integer zoneId) {
+          @PathVariable Integer zoneId,
+          @PathVariable String agriYear) {
 
     UserClusterSummaryResponse response =
-            clusterService.getClusterSummaryWithExternalStatus(zoneId);
+            clusterService.getClusterSummaryWithExternalStatus(zoneId, agriYear);
 
     return ResponseEntity.ok(response);
   }
-
 
 
 
@@ -176,6 +177,7 @@ public class ClusterController {
           request.getClusterNo(),
           request.getStatus(),
           request.getRemarks(),
+              request.getAgriYear(),
           request.getSidePlots());
       return ResponseEntity.ok(
           Collections.singletonMap("message", "Cluster form saved successfully."));
@@ -270,11 +272,23 @@ public class ClusterController {
   }
 
   @PostMapping("/cluster-labels/list")
-  public ResponseEntity<List<String>> getClusterLabels(
+  public ResponseEntity<List<Map<String, Object>>> getClusterLabels(
           @Valid @RequestBody ClusterIdRequest request) {
 
-    List<String> labels = clusterService.getClusterLabels(request.getClusterId());
-    return ResponseEntity.ok(labels);
+    List<Map<String, Object>> response =
+            clusterService.getClusterLabels(request.getClusterId());
+
+    return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/cluster-list")
+  public ResponseEntity<List<ClusterIdNumberResponse>> getClusterList(
+          @RequestParam Integer zoneId,
+          @RequestParam String agriYear) {
+
+    return ResponseEntity.ok(
+            clusterService.getClusters(zoneId, agriYear)
+    );
   }
 
 }

@@ -195,7 +195,7 @@ public class KeyPlotsController {
 @PostMapping("/update-enumerated-area")
 public ResponseEntity<?> updateEnumeratedArea(
         @RequestBody UpdateEnumeratedKeyAreaDTO dto) {
-System.out.println("dto  "+dto);
+
     ClusterFormData updatedData =
             (ClusterFormData) keyPlots_Service.updateEnumeratedArea(dto);
 

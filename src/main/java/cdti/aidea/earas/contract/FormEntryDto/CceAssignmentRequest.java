@@ -1,6 +1,8 @@
 package cdti.aidea.earas.contract.FormEntryDto;
 
 import java.util.UUID;
+
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,8 +20,8 @@ public class CceAssignmentRequest {
   private String cceSourceType;
   private UUID addedBy;
   private String landType;
-  private String agriStartYear;
-  private String agriEndYear;
+  @NotNull(message = "Agricultural year cannot be null")
+  private String agriYear;
   private Boolean isActive;
   private Boolean isSelected;
 }

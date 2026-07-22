@@ -17,4 +17,6 @@ public class KeyplotCountResponse {
     private Long allowedKeyplotsLimit;
     private Long usedKeyplotsCount;
     private Long remainingKeyplots;
+    private Boolean is_WorkAllocation;
+    private String status;
 }

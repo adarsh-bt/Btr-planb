@@ -1849,7 +1849,7 @@ System.out.println("year  >>   "+agriYear);
         return response;
     }
 
-    public List<Map<String, Object>> getClusterLabels(Long clusterId) {
+    public List<ClusterLabelResponse> getClusterLabels(Long clusterId) {
 
         ClusterMaster clusterMaster =
                 clusterMasterRepository
@@ -1874,15 +1874,14 @@ System.out.println("year  >>   "+agriYear);
             labelAreaMap.merge(data.getPlotLabel(), area, Double::sum);
         }
 
-        List<Map<String, Object>> response = new ArrayList<>();
+        List<ClusterLabelResponse> response = new ArrayList<>();
 
         for (Map.Entry<String, Double> entry : labelAreaMap.entrySet()) {
 
-            Map<String, Object> map = new LinkedHashMap<>();
-            map.put("clusterLabel", entry.getKey());
-            map.put("sidePlotArea", entry.getValue()); // sum of enumeratedArea
-
-            response.add(map);
+            response.add(
+                    new ClusterLabelResponse(
+                            entry.getKey(),
+                            entry.getValue()));
         }
 
         return response;

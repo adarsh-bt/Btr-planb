@@ -272,13 +272,11 @@ public class ClusterController {
   }
 
   @PostMapping("/cluster-labels/list")
-  public ResponseEntity<List<Map<String, Object>>> getClusterLabels(
+  public ResponseEntity<List<ClusterLabelResponse>> getClusterLabels(
           @Valid @RequestBody ClusterIdRequest request) {
 
-    List<Map<String, Object>> response =
-            clusterService.getClusterLabels(request.getClusterId());
-
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(
+            clusterService.getClusterLabels(request.getClusterId()));
   }
 
   @GetMapping("/cluster-list")

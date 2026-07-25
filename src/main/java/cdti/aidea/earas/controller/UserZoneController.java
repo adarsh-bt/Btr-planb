@@ -6,6 +6,7 @@ import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.LbCodeResponse;
 import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
+import cdti.aidea.earas.contract.Response.ZoneLocationResponse;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
 import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
 import cdti.aidea.earas.service.BtrExportService;
@@ -193,6 +194,11 @@ public class UserZoneController {
     );
   }
 
+  @GetMapping("/zone-location/{zoneId}")
+  public ResponseEntity<ZoneLocationResponse> getZoneLocation(
+          @PathVariable Integer zoneId) {
 
+    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId));
+  }
 
 }

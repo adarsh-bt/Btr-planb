@@ -4,9 +4,14 @@ import cdti.aidea.earas.contract.LocalbodyDto;
 import cdti.aidea.earas.contract.Response.ZoneBtrTypeResponse;
 import cdti.aidea.earas.contract.RevenueTalukDto;
 import cdti.aidea.earas.contract.RevenueVillageDto;
+import cdti.aidea.earas.repository.Btr_repo.DistrictMasterRepository;
 import cdti.aidea.earas.service.ZoneMappingService;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class ZoneMappingController {
 
   private final ZoneMappingService zoneMappingService;
+
 
   // Modified Endpoint: Returns a JSON object
   @GetMapping("/district/{zoneId}")
@@ -82,4 +88,6 @@ public class ZoneMappingController {
               ));
     }
   }
+
+
 }

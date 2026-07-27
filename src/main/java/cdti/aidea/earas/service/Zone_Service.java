@@ -726,5 +726,23 @@ public class Zone_Service {
   }
 
 
+  public ZoneLocationResponse getZoneLocationDetails(Integer zoneId) {
+    List<Object[]> results = tblMasterZoneRepository.getZoneLocationDetails(zoneId);
 
+    if (results.isEmpty()) {
+      throw new RuntimeException("Zone not found");
+    }
+
+    Object[] result = results.get(0);
+
+    return ZoneLocationResponse.builder()
+            .districtId(result[0] == null ? null : ((Number) result[0]).intValue())
+            .districtName((String) result[1])
+            .talukId(result[2] == null ? null : ((Number) result[2]).intValue())
+            .talukName((String) result[3])
+            .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
+            .blockName((String) result[5])
+            .zoneName((String) result[6])
+            .build();
+  }
 }

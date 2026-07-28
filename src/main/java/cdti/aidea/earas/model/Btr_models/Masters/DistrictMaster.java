@@ -14,7 +14,8 @@ public class DistrictMaster {
   @Id private Integer dist_id;
   private String dist_name_en;
   private String dist_name_mal;
-  private boolean is_active;
+  @Column(name = "is_active")
+  private boolean active;
   private Integer dist_lsg_code;
   private String dist_code;
   private String census_code_2011;

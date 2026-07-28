@@ -333,4 +333,17 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId,String agriYear) {
 
     return responseList;
   }
+
+  public List<FormClusterDetailsResponse> getClusterLocalBodyDetails(List<Long> clusterIds) {
+
+    List<Object[]> rows = clusterMasterRepository.findClusterLocalBodyDetails(clusterIds);
+
+    return rows.stream()
+            .map(r -> FormClusterDetailsResponse.builder()
+                    .clusterId(((Number) r[0]).longValue())
+                    .clusterNo(((Number) r[1]).intValue())
+                    .localBodyName((String) r[2])
+                    .build())
+            .toList();
+  }
 }

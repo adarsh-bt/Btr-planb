@@ -1240,7 +1240,7 @@ public class AdminManage {
     }
     Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
 
-    return masterBlockRepository.findByDistrictAndIsValidTrue(zone.get().getDesDistId());
+    return masterBlockRepository.findByDistrictAndIsValidTrue(zone.get().getDistId());
   }
 
   public List<TblLocalBody> getLocalBodies(Short typeId, int zonetId) {

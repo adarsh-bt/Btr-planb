@@ -343,6 +343,7 @@ public class TblBtrDataService {
             // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno
             // (mapped to mainno and subno)
             else if (typeId == 4) {
+                System.out.println("tp no sub "+dto.getTbsubdivisionno()+"   >>  "+dto.getTpno());
                 entity.setOwnername(dto.getOwnername());
                 entity.setAddress(dto.getAddress());
                 entity.setTpno(dto.getTpno());

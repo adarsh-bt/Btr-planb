@@ -1,5 +1,6 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.contract.FormEntryDto.FormClusterDetailsResponse;
 import cdti.aidea.earas.contract.Projection.ClusterSummaryFastProjection;
 import cdti.aidea.earas.contract.Projection.ClusterSummaryProjection;
 import cdti.aidea.earas.contract.Response.ClusterIdNumberResponse;
@@ -384,4 +385,21 @@ ORDER BY cm.clusterNumber
             @Param("agriStart") LocalDate agriStart,
             @Param("agriEnd") LocalDate agriEnd
     );
+
+
+    @Query(value = """
+SELECT
+    cm.clu_master_id AS clusterId,
+    cm.cluster_number AS clusterNo,
+    lb.localbody_name_en AS localBodyName
+FROM cluster_master cm
+JOIN keyplot_selections kp
+    ON cm.plot_id = kp.kp_id
+JOIN tbl_btr_data btr
+    ON kp.btr_id = btr.id
+LEFT JOIN tbl_master_localbody lb
+    ON btr.lbcode = lb.code_api
+WHERE cm.clu_master_id IN (:clusterIds)
+""", nativeQuery = true)
+    List<Object[]> findClusterLocalBodyDetails(@Param("clusterIds") List<Long> clusterIds);
 }

@@ -5,6 +5,7 @@ import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.contract.ZoneLocationResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
@@ -46,6 +47,7 @@ public class Zone_Service {
   private final LocalBodyTypeRepository localBodyTypeRepository;
   private final TblWorkAllocationRepository tblWorkAllocationRepository;
   private final TblSeasonMasterRepository seasonMasterRepository;
+  private final ClusterFormDataRepository clusterFormDataRepository;
 
   public List<ZoneListResponse> UserZonesByType(String type, Integer idValue) {
     try {
@@ -725,6 +727,34 @@ public class Zone_Service {
             .toList();
   }
 
+  //get method to fetch the details while passing zone id
+  public ZoneLocationResponse getZoneLocationDetails(Integer zoneId, Long clusterId) {
 
+    List<Object[]> results = tblMasterZoneRepository.getZoneLocationDetails(zoneId);
+
+    if (results.isEmpty()) {
+      throw new RuntimeException("Zone not found");
+    }
+
+    Object[] result = results.get(0);
+    ZoneLocationResponse.ZoneLocationResponseBuilder builder =
+            ZoneLocationResponse.builder()
+                    .districtId(result[0] == null ? null : ((Number) result[0]).intValue())
+                    .districtName((String) result[1])
+                    .talukId(result[2] == null ? null : ((Number) result[2]).intValue())
+                    .talukName((String) result[3])
+                    .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
+                    .blockName((String) result[5])
+                    .zoneName((String) result[6])
+                    .localbodyId(result[7] == null ? null : ((Number) result[7]).intValue())
+                    .localbodyName((String) result[8])
+                    .lbCode((String) result[9]);
+
+    if (clusterId != null) {
+      builder.totalClusterEnumArea(
+              clusterFormDataRepository.getTotalClusterArea(clusterId));
+    }
+    return builder.build();
+  }
 
 }

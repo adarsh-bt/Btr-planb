@@ -196,9 +196,10 @@ public class UserZoneController {
 
   @GetMapping("/zone-location/{zoneId}")
   public ResponseEntity<ZoneLocationResponse> getZoneLocation(
-          @PathVariable Integer zoneId) {
+          @PathVariable Integer zoneId,
+          @RequestParam(required = false) Long clusterId) {
 
-    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId));
+    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId,clusterId));
   }
 
 }

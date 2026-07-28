@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.poi.hpsf.Decimal;
 
 @Builder
 @AllArgsConstructor
@@ -22,4 +23,10 @@ public class ZoneLocationResponse {
     private String blockName;
 
     private String zoneName;
+    private Integer localbodyId;
+    private String localbodyName;
+    private String lbCode;
+
+    private Double totalClusterEnumArea;
+
 }

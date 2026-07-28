@@ -46,6 +46,7 @@ public class Zone_Service {
   private final LocalBodyTypeRepository localBodyTypeRepository;
   private final TblWorkAllocationRepository tblWorkAllocationRepository;
   private final TblSeasonMasterRepository seasonMasterRepository;
+  private final ClusterFormDataRepository clusterFormDataRepository;
 
   public List<ZoneListResponse> UserZonesByType(String type, Integer idValue) {
     try {
@@ -726,7 +727,8 @@ public class Zone_Service {
   }
 
 
-  public ZoneLocationResponse getZoneLocationDetails(Integer zoneId) {
+  public ZoneLocationResponse getZoneLocationDetails(Integer zoneId, Long clusterId) {
+
     List<Object[]> results = tblMasterZoneRepository.getZoneLocationDetails(zoneId);
 
     if (results.isEmpty()) {
@@ -734,15 +736,23 @@ public class Zone_Service {
     }
 
     Object[] result = results.get(0);
+    ZoneLocationResponse.ZoneLocationResponseBuilder builder =
+            ZoneLocationResponse.builder()
+                    .districtId(result[0] == null ? null : ((Number) result[0]).intValue())
+                    .districtName((String) result[1])
+                    .talukId(result[2] == null ? null : ((Number) result[2]).intValue())
+                    .talukName((String) result[3])
+                    .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
+                    .blockName((String) result[5])
+                    .zoneName((String) result[6])
+                    .localbodyId(result[7] == null ? null : ((Number) result[7]).intValue())
+                    .localbodyName((String) result[8])
+                    .lbCode((String) result[9]);
 
-    return ZoneLocationResponse.builder()
-            .districtId(result[0] == null ? null : ((Number) result[0]).intValue())
-            .districtName((String) result[1])
-            .talukId(result[2] == null ? null : ((Number) result[2]).intValue())
-            .talukName((String) result[3])
-            .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
-            .blockName((String) result[5])
-            .zoneName((String) result[6])
-            .build();
+    if (clusterId != null) {
+      builder.totalClusterEnumArea(
+              clusterFormDataRepository.getTotalClusterArea(clusterId));
+    }
+    return builder.build();
   }
 }

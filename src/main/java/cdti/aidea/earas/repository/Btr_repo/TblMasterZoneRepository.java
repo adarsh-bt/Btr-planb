@@ -78,7 +78,6 @@ ORDER BY z.zoneNameEn
     List<TalukDropdownResponse> findTalukDropdown(
             @Param("districtId") Integer districtId);
 
-
   @Query(value = """
 SELECT
     d.dist_id,
@@ -95,7 +94,10 @@ SELECT
         THEN b.block_name
         ELSE lb.localbody_name_en
     END AS blockName,
-    z.zone_name_en AS zoneName   -- added zone name
+    z.zone_name_en AS zoneName ,  -- added zone name
+    lb.localbody_id AS localbodyId,
+    lb.localbody_name_en AS localbodyName,
+    lb.code_api AS lbCode
 FROM tbl_master_zone z
 LEFT JOIN tbl_master_taluk_des t
        ON z.des_taluk_id = t.des_taluk_id

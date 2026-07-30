@@ -402,4 +402,21 @@ LEFT JOIN tbl_master_localbody lb
 WHERE cm.clu_master_id IN (:clusterIds)
 """, nativeQuery = true)
     List<Object[]> findClusterLocalBodyDetails(@Param("clusterIds") List<Long> clusterIds);
+
+    @Query(value = """
+SELECT
+    lb.localbody_id,
+    lb.localbody_name_en,
+    lb.code_api,
+    kp.land_type
+FROM cluster_master cm
+JOIN keyplot_selections kp
+    ON cm.plot_id = kp.kp_id
+JOIN tbl_btr_data bd
+    ON kp.btr_id = bd.id
+JOIN tbl_master_localbody lb
+    ON lb.code_api = bd.lbcode
+WHERE cm.clu_master_id = :clusterId
+""", nativeQuery = true)
+    List<Object[]> getClusterLocalBodyDetails(@Param("clusterId") Long clusterId);
 }

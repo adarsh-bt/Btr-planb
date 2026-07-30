@@ -3,6 +3,7 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.Response.TblBtrDetailsResponse;
 import cdti.aidea.earas.contract.Response.ValidationResponse;
+import cdti.aidea.earas.contract.Response.ZoneLocationResponse;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
@@ -36,6 +37,7 @@ public class TblBtrDataService {
     private final TblMasterVillageRepository tblMasterVillageRepository;
     private final TblMasterVillageRepository villageRepository;
     private final LocalBodyRepository localBodyRepository;
+    private final Zone_Service zoneService;
 
     // ---------------- Single Save ----------------
 //
@@ -973,6 +975,7 @@ public class TblBtrDataService {
 
 
     public TblBtrDetailsResponse getBtrDetails(Long btrId) {
+
         TblBtrData entity = tblBtrDataRepository.findById(btrId)
                 .orElseThrow(() ->
                         new RuntimeException("BTR record not found with ID: " + btrId));
@@ -984,6 +987,9 @@ public class TblBtrDataService {
         TblLocalBody localBody = localBodyRepository.findByCodeApi(entity.getLbcode())
                 .orElseThrow(() ->
                         new RuntimeException("Local body not found with code: " + entity.getLbcode()));
+
+        ZoneLocationResponse zoneLocation =
+                zoneService.getZoneLocationDetails(entity.getZone().intValue(), null);
 
         return new TblBtrDetailsResponse(
                 entity.getResvno(),
@@ -1000,10 +1006,22 @@ public class TblBtrDataService {
                 entity.getTbsubdivisionno(),
                 entity.getBtrtype().getBTypeId(),
                 entity.getCl_no(),
+                entity.getLbcode(),
+                entity.getLtype(),
+
                 village.getVillageId(),
                 village.getVillageNameEn(),
+
                 localBody.getLocalbodyId(),
-                localBody.getLocalbodyNameEn()
+                localBody.getLocalbodyNameEn(),
+
+                zoneLocation.getDistrictId(),
+                zoneLocation.getDistrictName(),
+                zoneLocation.getTalukId(),
+                zoneLocation.getTalukName(),
+                zoneLocation.getBlockId(),
+                zoneLocation.getBlockName(),
+                zoneLocation.getZoneName()
         );
     }
 

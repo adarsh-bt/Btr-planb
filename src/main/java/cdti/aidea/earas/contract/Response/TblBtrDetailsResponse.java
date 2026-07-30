@@ -22,10 +22,23 @@ public class TblBtrDetailsResponse {
     private String tbsubdivisionno;
     private Long btrtype;
     private String clutserno;
+    private String lbCode;
+    private String landType;
 
     private Integer villageId;
     private String villageNameEn;
 
     private Integer localbodyId;
     private String localbodyNameEn;
+
+    private Integer districtId;
+    private String districtName;
+
+    private Integer talukId;
+    private String talukName;
+
+    private Integer blockId;
+    private String blockName;
+
+    private String zoneName;
 }

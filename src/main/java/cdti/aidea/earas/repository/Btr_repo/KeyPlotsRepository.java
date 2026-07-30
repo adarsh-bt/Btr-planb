@@ -2,8 +2,10 @@ package cdti.aidea.earas.repository.Btr_repo;
 
 import cdti.aidea.earas.model.Btr_models.KeyPlots;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
+
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.persistence.LockModeType;
@@ -124,6 +126,7 @@ AND (
           LocalDate previousEnd
   );
 
+  Optional<KeyPlots> findByBtrData_Id(Long btrId);
 }
 
 

@@ -265,17 +265,12 @@ System.out.println("distid  "+distId);
 
     return ResponseEntity.ok(response);
   }
-//  @GetMapping("/zone-location/{zoneId}")
-//  public ResponseEntity<ZoneLocationResponse> getZoneLocation(
-//          @PathVariable Integer zoneId) {
-//
-//    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId));
-  //}
-@GetMapping("/zone-location/{zoneId}")
-public ResponseEntity<ZoneLocationResponse> getZoneLocation(
-        @PathVariable Integer zoneId,
-        @RequestParam(required = false) Long clusterId) {
+  @GetMapping("/zone-location/{zoneId}")
+  public ResponseEntity<ZoneLocationResponse> getZoneLocation(
+          @PathVariable Integer zoneId,
+          @RequestParam(required = false) Long clusterId) {
 
-  return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId,clusterId));
-}
+    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId,clusterId));
+  }
+
 }

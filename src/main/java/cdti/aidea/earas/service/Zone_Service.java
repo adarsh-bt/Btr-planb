@@ -46,9 +46,7 @@ public class Zone_Service {
   private final LocalBodyTypeRepository localBodyTypeRepository;
   private final TblWorkAllocationRepository tblWorkAllocationRepository;
   private final TblSeasonMasterRepository seasonMasterRepository;
-  private final ClusterMasterRepository clusterMasterRepository;
   private final ClusterFormDataRepository clusterFormDataRepository;
-
 
   public List<ZoneListResponse> UserZonesByType(String type, Integer idValue) {
     try {
@@ -729,27 +727,6 @@ public class Zone_Service {
   }
 
 
-//  public ZoneLocationResponse getZoneLocationDetails(Integer zoneId) {
-//    List<Object[]> results = tblMasterZoneRepository.getZoneLocationDetails(zoneId);
-//
-//    if (results.isEmpty()) {
-//      throw new RuntimeException("Zone not found");
-//    }
-//
-//    Object[] result = results.get(0);
-//
-//    return ZoneLocationResponse.builder()
-//            .districtId(result[0] == null ? null : ((Number) result[0]).intValue())
-//            .districtName((String) result[1])
-//            .talukId(result[2] == null ? null : ((Number) result[2]).intValue())
-//            .talukName((String) result[3])
-//            .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
-//            .blockName((String) result[5])
-//            .zoneName((String) result[6])
-//            .build();
-//  }
-
-  //testing lbcode values
   public ZoneLocationResponse getZoneLocationDetails(Integer zoneId, Long clusterId) {
 
     List<Object[]> results = tblMasterZoneRepository.getZoneLocationDetails(zoneId);
@@ -768,27 +745,13 @@ public class Zone_Service {
                     .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
                     .blockName((String) result[5])
                     .zoneName((String) result[6])
-                    .localbodyId(null)
-                    .localbodyName(null)
-                    .lbCode(null);
+                    .localbodyId(result[7] == null ? null : ((Number) result[7]).intValue())
+                    .localbodyName((String) result[8])
+                    .lbCode((String) result[9]);
 
     if (clusterId != null) {
       builder.totalClusterEnumArea(
               clusterFormDataRepository.getTotalClusterArea(clusterId));
-
-      List<Object[]> lbResults =
-              clusterMasterRepository.getClusterLocalBodyDetails(clusterId);
-
-      if (!lbResults.isEmpty()) {
-        Object[] lbResult = lbResults.get(0);
-
-        builder.localbodyId(
-                lbResult[0] == null ? null : ((Number) lbResult[0]).intValue());
-
-        builder.localbodyName((String) lbResult[1]);
-
-        builder.lbCode((String) lbResult[2]);
-      }
     }
     return builder.build();
   }

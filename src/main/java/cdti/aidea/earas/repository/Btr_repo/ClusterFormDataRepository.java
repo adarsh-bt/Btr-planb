@@ -4,7 +4,6 @@ import cdti.aidea.earas.contract.Projection.ClusterLabelProjection;
 import cdti.aidea.earas.contract.Response.BtrClusterUsageResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,6 +11,7 @@ import java.util.Optional;
 
 import cdti.aidea.earas.model.Btr_models.TblBtrData;
 import cdti.aidea.earas.repository.Btr_repo.projection.ClusterAreaProjection;
+import org.apache.poi.hpsf.Decimal;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -172,12 +172,11 @@ ORDER BY cd.displayOrder
 """)
   List<ClusterLabelProjection> findClusterLabels(Long clusterId);
 
-//tset lbcode
-@Query("""
-SELECT COALESCE(SUM(c.enumeratedArea),0)
+
+  @Query("""
+SELECT COALESCE(SUM(c.enumeratedArea), 0)
 FROM ClusterFormData c
 WHERE c.clusterMaster.cluMasterId = :clusterId
 """)
-BigDecimal getTotalClusterArea(@Param("clusterId") Long clusterId);
-
+  Double getTotalClusterArea(@Param("clusterId") Long clusterId);
 }

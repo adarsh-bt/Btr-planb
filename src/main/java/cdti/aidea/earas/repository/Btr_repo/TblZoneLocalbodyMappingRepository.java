@@ -11,6 +11,10 @@ public interface TblZoneLocalbodyMappingRepository
     extends JpaRepository<TblZoneLocalbodyMapping, Integer> {
   List<TblZoneLocalbodyMapping> findAllByZoneAndIsValid(Integer zone, Boolean isValid);
 
+  List<TblZoneLocalbodyMapping> findByZoneAndIsValid(
+          Integer zone,
+          Boolean isValid);
+
   @Query(value = """
     SELECT 
         zlm.zone_localbody_mapping_id,

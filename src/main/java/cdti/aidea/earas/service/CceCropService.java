@@ -31,6 +31,7 @@ public class CceCropService {
   private final ZoneLocalbodyBlockMappingRepository zoneLocalbodyBlockMappingRepository;
   private final MasterBlockRepository masterBlockRepository;
   private final LocalBodyRepository localBodyRepository;
+  private final ClusterFormDataRepository clusterFormDataRepository;
 
   int attempt = 0;
 
@@ -100,7 +101,6 @@ public class CceCropService {
                 "random",
                 userId,
                 crop.getAgriStartYear(),
-                crop.getAgriEndYear(),
                 plot.getLandType(),
                 //                        "2025-07-01",
                 //                        "2026-06-30",
@@ -131,11 +131,11 @@ public class CceCropService {
 //    log.warn("Fallback triggered for zoneId: {}", zoneId, t);
 //    return new CcePlotResult(Collections.emptyList(), true);
 //  }
-public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
+public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId,String agriYear) {
 
   try {
     AvailableCcePlotFetchRequest request =
-            new AvailableCcePlotFetchRequest(zoneId);
+            new AvailableCcePlotFetchRequest(zoneId,agriYear);
 
     Map<String, Object> response =
             formEntryClient.getAvailableCcePlotsByZoneId(request);
@@ -159,8 +159,7 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
 }
 
   public List<FetchDistrictResponse> getDistrictsByClusterIds(List<Long> clusterIds) {
-    List<ClusterMaster> clusters =
-            clusterMasterRepository.findAllById(clusterIds);
+    List<ClusterMaster> clusters = clusterMasterRepository.findAllById(clusterIds);
 
     return clusters.stream()
             .filter(cluster ->
@@ -168,14 +167,18 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
                             && cluster.getZone().getDistrictMaster() != null)
             .map(cluster -> {
 
-              DistrictMaster district =
-                      cluster.getZone().getDistrictMaster();
+              DistrictMaster district = cluster.getZone().getDistrictMaster();
+
+              Double enumeratedArea =
+                      clusterFormDataRepository.getTotalEnumeratedAreaByClusterId(
+                              cluster.getCluMasterId());
 
               return FetchDistrictResponse.builder()
                       .clusterId(cluster.getCluMasterId())
                       .landType(cluster.getKeyPlot().getLandType())
                       .districtId(district.getDist_id())
                       .districtName(district.getDist_name_en())
+                      .enumeratedArea(enumeratedArea)
                       .build();
             })
             .toList();
@@ -228,6 +231,10 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
 
       for (ClusterMaster cluster : clusters) {
 
+        Double enumeratedArea =
+                clusterFormDataRepository.getTotalEnumeratedAreaByClusterId(
+                        cluster.getCluMasterId());
+
         responseList.add(
                 FetchTalukResponse.builder()
                         .clusterId(cluster.getCluMasterId())
@@ -235,6 +242,7 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
                         .talukName(talukName)
                         .createdAt(cluster.getCreatedAt())
                         .landType(cluster.getKeyPlot().getLandType())
+                        .enumeratedArea(enumeratedArea)
                         .build());
       }
     }
@@ -324,5 +332,18 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId) {
     }
 
     return responseList;
+  }
+
+  public List<FormClusterDetailsResponse> getClusterLocalBodyDetails(List<Long> clusterIds) {
+
+    List<Object[]> rows = clusterMasterRepository.findClusterLocalBodyDetails(clusterIds);
+
+    return rows.stream()
+            .map(r -> FormClusterDetailsResponse.builder()
+                    .clusterId(((Number) r[0]).longValue())
+                    .clusterNo(((Number) r[1]).intValue())
+                    .localBodyName((String) r[2])
+                    .build())
+            .toList();
   }
 }

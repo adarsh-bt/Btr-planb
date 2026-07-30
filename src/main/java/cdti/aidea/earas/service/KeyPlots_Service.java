@@ -23,6 +23,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -53,6 +54,8 @@ public class KeyPlots_Service {
     private final TblMasterZoneRepository tblMasterZoneRepository;
     private final KeyplotsLimitLogRepository keyplotsLimitLogRepository;
     private final CropAssignmentTrailRepository cropAssignmentTrailRepository;
+    private final TblWorkAllocationApprovalRepository tblWorkAllocationApprovalRepository;
+    private final TblWorkAllocationRepository tblWorkAllocationRepository;
     private final AgriYearUtil agriYearUtil;
 
     @PersistenceContext private EntityManager entityManager;
@@ -1424,6 +1427,11 @@ public class KeyPlots_Service {
         response.setTpSubNo(keyPlotDetails.getBtrData().getTbsubdivisionno());
         response.setOldSurvey(keyPlotDetails.getBtrData().getOldsvno());
         response.setOldSubDivNo(keyPlotDetails.getBtrData().getOldsubno());
+        response.setIs_Start(
+                StringUtils.hasText(keyPlotDetails.getOwner_name()) ||
+                        StringUtils.hasText(keyPlotDetails.getAddress()) ||
+                        StringUtils.hasText(keyPlotDetails.getPhone_number())
+        );
         // ✅ Zone & District (SAFE manual mapping)
         if (keyPlotDetails.getZone() != null) {
             response.setZoneId(keyPlotDetails.getZone().getZoneId());
@@ -1511,20 +1519,17 @@ public class KeyPlots_Service {
     }
 
 
-    public KeyplotCountResponse getKeyplotsLimitStatus(Integer zoneId ,String agriYear) {
+    public KeyplotCountResponse getKeyplotsLimitStatus(Integer zoneId, String agriYear) {
 
         // 1️⃣ Get keyplots limit where in_active = true
         KeyplotsLimitLog activeLimit =
                 keyplotsLimitLogRepository.findFirstByIsActiveTrueAndIsInActiveTrueOrderByCreatedAtDesc();
-        if (activeLimit != null) {
-
-            System.out.println("system "+keyplotsLimitLogRepository.findByIsInActiveTrueAndIsActiveFalse());
-        }
-
 
         if (activeLimit != null) {
+            System.out.println("system " + keyplotsLimitLogRepository.findByIsInActiveTrueAndIsActiveFalse());
             System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
         }
+
         if (activeLimit == null) {
             throw new IllegalStateException(
                     "No active keyplots limit found (in_active = true)"
@@ -1533,29 +1538,52 @@ public class KeyPlots_Service {
 
         Long allowedLimit = activeLimit.getKeyplotsLimit();
 
-        LocalDate startDate =
-                AgriYearUtil.getAgriYearStart(agriYear);
-
-        LocalDate endDate =
-                AgriYearUtil.getAgriYearEnd(agriYear);
+        LocalDate startDate = AgriYearUtil.getAgriYearStart(agriYear);
+        LocalDate endDate = AgriYearUtil.getAgriYearEnd(agriYear);
 
         // 2️⃣ Count only VALID keyplots
-        Long usedCount =
-                keyPlotsRepository.countActiveKeyplotsByZone(zoneId);
-        Long u = keyPlotsRepository.countActiveKeyplotsByZoneAndYear(zoneId,startDate,endDate);
-
+        Long u = keyPlotsRepository.countActiveKeyplotsByZoneAndYear(zoneId, startDate, endDate);
         u = (u == null) ? 0L : u;
 
         // 3️⃣ Remaining count
         Long remaining = allowedLimit - u;
+
+        // 4️⃣ Check if Work Allocation is APPROVED for this zone and year
+        boolean isWorkAllocationApproved = false;
+        String status = "Not Submitted";
+
+        List<TblWorkAllocation> allocations =
+                tblWorkAllocationRepository.findByZoneAndAgriYear(
+                        zoneId,
+                        startDate,
+                        endDate
+                );
+
+        // If data exists, check its shared approval status
+        if (allocations != null && !allocations.isEmpty()) {
+            Long approvalId = allocations.get(0).getApprovalId();
+            if (approvalId != null) {
+                Optional<TblWorkAllocationApproval> approval =
+                        tblWorkAllocationApprovalRepository.findById(approvalId);
+
+                // Only set to true if the record exists and status is exactly "APPROVED"
+                if (approval.isPresent() && "APPROVED".equalsIgnoreCase(approval.get().getStatus())) {
+                    isWorkAllocationApproved = true;
+
+                }status = approval.get().getStatus();
+            }
+        }
+
+        // 5️⃣ Return response mapping with the dynamic boolean value
         return new KeyplotCountResponse(
                 zoneId,
                 allowedLimit,
                 u,
-                Math.max(remaining, 0)
+                Math.max(remaining, 0),
+                isWorkAllocationApproved,
+                status
         );
     }
-
 
     @Transactional
     public String deleteKeyPlot(UUID keyPlotId) {
@@ -1563,13 +1591,27 @@ public class KeyPlots_Service {
         KeyPlots keyPlot = keyPlotsRepository.findById(keyPlotId)
                 .orElseThrow(() -> new RuntimeException("KeyPlot not found"));
 
-        // 🔹 1. Get single cluster
         Optional<ClusterMaster> clusterOpt =
                 clusterMasterRepository.findByKeyPlot_Id(keyPlotId);
 
         if (clusterOpt.isPresent()) {
 
             ClusterMaster cluster = clusterOpt.get();
+
+            // Status validation
+            String status = cluster.getStatus();
+
+            if ("Under Review".equalsIgnoreCase(status)) {
+                throw new RuntimeException(
+                        "Cluster is Under Review. Contact TSO to change the status On Going before deletion."
+                );
+            }
+
+            if ("Completed".equalsIgnoreCase(status)) {
+                throw new RuntimeException(
+                        "Cluster is Completed. Contact TSO to change the status On Going before deletion."
+                );
+            }
 
             boolean exists = cropAssignmentTrailRepository
                     .existsByCluster_CluMasterIdAndIsRejectedFalse(cluster.getCluMasterId());
@@ -1579,8 +1621,10 @@ public class KeyPlots_Service {
                         "Crops exist. Please remove crops first before deleting KeyPlot."
                 );
             }
-System.out.println(">>>  "+cluster.getCluMasterId());
-            // 🔹 3. Delete ClusterFormData
+
+            System.out.println(">>> " + cluster.getCluMasterId());
+
+            // Delete ClusterFormData
             List<ClusterFormData> details =
                     clusterFormDataRepository.findByClusterMaster(cluster);
 
@@ -1588,20 +1632,19 @@ System.out.println(">>>  "+cluster.getCluMasterId());
                 clusterFormDataRepository.deleteAll(details);
             }
 
-            // 🔹 4. Delete ClusterMaster
+            // Delete ClusterMaster
             clusterMasterRepository.delete(cluster);
         }
 
-        // 🔹 5. Handle BTR
         TblBtrData btrData = keyPlot.getBtrData();
 
-        // 🔹 6. Delete KeyPlot
+        // Delete KeyPlot
         keyPlotsRepository.delete(keyPlot);
 
-        // 🔹 7. Delete BTR
-//        if (btrData != null) {
-//            tblBtrDataRepository.delete(btrData);
-//        }
+        // Delete BTR if needed
+        // if (btrData != null) {
+        //     tblBtrDataRepository.delete(btrData);
+        // }
 
         return "KeyPlot deleted successfully";
     }
@@ -1617,7 +1660,7 @@ System.out.println(">>>  "+cluster.getCluMasterId());
         if (dto.getCceAvailablePlotId() == null) {
             throw new RuntimeException("CCE Available Plot ID is required");
         }
-
+        System.out.println("crop id "+dto.getCropId()+" cluster id "+dto.getClusterId());
         // 🔴 2. CHECK EXISTENCE (no update yet)
         CropAssignmentTrail trail = cropAssignmentTrailRepository
                 .findByCropIdAndCluster_CluMasterIdAndIsRejectedFalse(
@@ -1800,9 +1843,9 @@ System.out.println(zone.getZoneId());
         Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
         // Handle both cases: with and without subdivision
         if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
-            System.out.println("ssss :  "+ dto.getResvno()+"  : "+cleanedResbdno);
-            System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
-                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
+//            System.out.println("ssss :  "+ dto.getResvno()+"  : "+cleanedResbdno);
+//            System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
+//                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
 
 
             // Case 1: User provided both survey number AND subdivision
@@ -1975,7 +2018,7 @@ System.out.println(zone.getZoneId());
     public ValidationResponse validateDuplicateForNonBtrCluster(TblBtrDataDTO dto) {
         TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
-        System.out.println(">>>>   " + dto);
+
         String lbcode = dto.getLbcode() != null ? dto.getLbcode() : getLbcodeFromZone(zone);
 
         Integer type = Math.toIntExact(dto.getBtrtype());
@@ -2204,6 +2247,7 @@ System.out.println(zone.getZoneId());
         response.setMessage("Multiple subdivisions found for Old Survey number: " + oldsvno + ". Please select one.");
         response.setAvailableSubdivisions(subdivisions);
         response.setTotalcent(plots.get(0).getTotCent());
+        response.setLandType(plots.get(0).getLtype());
         return response;
     }
 

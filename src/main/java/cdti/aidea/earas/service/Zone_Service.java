@@ -5,7 +5,6 @@ import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.*;
-import cdti.aidea.earas.contract.ZoneLocationResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
@@ -47,7 +46,9 @@ public class Zone_Service {
   private final LocalBodyTypeRepository localBodyTypeRepository;
   private final TblWorkAllocationRepository tblWorkAllocationRepository;
   private final TblSeasonMasterRepository seasonMasterRepository;
+  private final ClusterMasterRepository clusterMasterRepository;
   private final ClusterFormDataRepository clusterFormDataRepository;
+
 
   public List<ZoneListResponse> UserZonesByType(String type, Integer idValue) {
     try {
@@ -575,7 +576,7 @@ public class Zone_Service {
       Map<String, Object> data = new HashMap<>();
 
       data.put("p_name", localBodyNameMap.get(s.getLbcode()));
-
+      data.put("lbcode",s.getLbcode());
       data.put("Wet_area", s.getWet_area());
       data.put("Dry_area", s.getDry_area());
       data.put("Total_area", s.getTotal_area());
@@ -727,7 +728,28 @@ public class Zone_Service {
             .toList();
   }
 
-  //get method to fetch the details while passing zone id
+
+//  public ZoneLocationResponse getZoneLocationDetails(Integer zoneId) {
+//    List<Object[]> results = tblMasterZoneRepository.getZoneLocationDetails(zoneId);
+//
+//    if (results.isEmpty()) {
+//      throw new RuntimeException("Zone not found");
+//    }
+//
+//    Object[] result = results.get(0);
+//
+//    return ZoneLocationResponse.builder()
+//            .districtId(result[0] == null ? null : ((Number) result[0]).intValue())
+//            .districtName((String) result[1])
+//            .talukId(result[2] == null ? null : ((Number) result[2]).intValue())
+//            .talukName((String) result[3])
+//            .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
+//            .blockName((String) result[5])
+//            .zoneName((String) result[6])
+//            .build();
+//  }
+
+  //testing lbcode values
   public ZoneLocationResponse getZoneLocationDetails(Integer zoneId, Long clusterId) {
 
     List<Object[]> results = tblMasterZoneRepository.getZoneLocationDetails(zoneId);
@@ -746,15 +768,28 @@ public class Zone_Service {
                     .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
                     .blockName((String) result[5])
                     .zoneName((String) result[6])
-                    .localbodyId(result[7] == null ? null : ((Number) result[7]).intValue())
-                    .localbodyName((String) result[8])
-                    .lbCode((String) result[9]);
+                    .localbodyId(null)
+                    .localbodyName(null)
+                    .lbCode(null);
 
     if (clusterId != null) {
       builder.totalClusterEnumArea(
               clusterFormDataRepository.getTotalClusterArea(clusterId));
+
+      List<Object[]> lbResults =
+              clusterMasterRepository.getClusterLocalBodyDetails(clusterId);
+
+      if (!lbResults.isEmpty()) {
+        Object[] lbResult = lbResults.get(0);
+
+        builder.localbodyId(
+                lbResult[0] == null ? null : ((Number) lbResult[0]).intValue());
+
+        builder.localbodyName((String) lbResult[1]);
+
+        builder.lbCode((String) lbResult[2]);
+      }
     }
     return builder.build();
   }
-
 }

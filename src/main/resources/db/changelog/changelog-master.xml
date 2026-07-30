@@ -23,4 +23,7 @@
 <!--    <include file="/db/changelog/changelog-0.0.18.sql"/>-->
     <include file="/db/changelog/changelog-0.0.19.sql"/>
     <include file="/db/changelog/changelog-0.0.20.sql"/>
+    <include file="/db/changelog/changelog-0.0.21.sql"/>
+    <include file="/db/changelog/changelog-0.0.22.sql"/>
+    <include file="/db/changelog/changelog-0.0.23.sql"/>
 </databaseChangeLog>

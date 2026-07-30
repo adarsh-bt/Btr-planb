@@ -65,4 +65,14 @@ public class CceCropController {
                     .message("Blocks fetched successfully")
                     .build());
   }
+
+  @GetMapping("/cluster-localbody")
+  public ResponseEntity<List<FormClusterDetailsResponse>>
+  getClusterLocalBodyDetails(
+          @RequestParam List<Long> clusterIds) {
+
+    return ResponseEntity.ok(
+            cceCropService.getClusterLocalBodyDetails(clusterIds)
+    );
+  }
 }

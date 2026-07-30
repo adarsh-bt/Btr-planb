@@ -68,7 +68,7 @@ System.out.println("localbodires "+localbodies);
   public List<RevenueTalukDto> getRevenueTaluksByZone(Integer zoneId, String lang) {
     if (zoneId == null) throw new IllegalArgumentException("zoneId must not be null");
 
-    List<ZoneRevenueTalukMapping> mappings = zoneRevenueTalukMappingRepository.findByZone(zoneId);
+    List<ZoneRevenueTalukMapping> mappings = zoneRevenueTalukMappingRepository.findByZoneAndIsValidTrue(zoneId);
     return mappings.stream()
         .filter(m -> Boolean.TRUE.equals(m.getIsValid()))
         .filter(m -> Objects.nonNull(m.getRevenueTaluk()))

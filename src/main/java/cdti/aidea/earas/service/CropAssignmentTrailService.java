@@ -9,7 +9,10 @@ import cdti.aidea.earas.model.Btr_models.KeyPlots;
 import cdti.aidea.earas.repository.Btr_repo.ClusterMasterRepository;
 import cdti.aidea.earas.repository.Btr_repo.CropAssignmentTrailRepository;
 import cdti.aidea.earas.repository.Btr_repo.KeyPlotsRepository;
+import cdti.aidea.earas.utils.AgriYearUtil;
 import feign.FeignException;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,11 +39,6 @@ public class CropAssignmentTrailService {
   public List<Long> saveCropAssignmentTrail(
           List<CropAssignmentTrailSaveDto> saveDtoList) {
 
-    int currentYear = LocalDateTime.now().getYear();
-    int nextYear = currentYear + 1;
-
-    String agriYear =
-            currentYear + "-" + String.valueOf(nextYear).substring(2);
 
     List<Long> savedIds = new ArrayList<>();
 
@@ -204,6 +202,7 @@ public class CropAssignmentTrailService {
 
           cceRequest.setPlotId(saveDto.getKeyplotId());
         }
+
         cceRequest.setClusterId(saveDto.getClusterId());
 
         cceRequest.setZoneId(
@@ -216,10 +215,11 @@ public class CropAssignmentTrailService {
         cceRequest.setAddedBy(saveDto.getAddedBy());
 
         cceRequest.setLandType(saveDto.getLandType());
-System.out.println(">>>    "+saveDto.getLandType());
-        cceRequest.setAgriStartYear(agriYear);
 
-        cceRequest.setAgriEndYear(agriYear);
+
+        LocalDate startDate = AgriYearUtil.getAgriYearStart(saveDto.getAgriYear());
+        LocalDate endDate = AgriYearUtil.getAgriYearEnd(saveDto.getAgriYear());
+        cceRequest.setAgriYear(saveDto.getAgriYear());
 
         cceRequest.setIsActive(
                 !Boolean.TRUE.equals(saveDto.getIsRejected()));

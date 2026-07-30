@@ -1,5 +1,6 @@
 package cdti.aidea.earas.repository.Btr_repo;
 
+import cdti.aidea.earas.contract.Projection.ClusterLabelProjection;
 import cdti.aidea.earas.contract.Response.BtrClusterUsageResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 
@@ -27,6 +28,7 @@ public interface ClusterFormDataRepository extends JpaRepository<ClusterFormData
       TblBtrData plot, LocalDateTime localDateTime, LocalDateTime localDateTime1);
 
   Optional<ClusterFormData> findByClusterMasterAndPlotAndPlotLabel(ClusterMaster clusterMaster, TblBtrData plot, String label);
+
   List<ClusterFormData> findByClusterMasterOrderByDisplayOrderAsc(ClusterMaster clusterMaster);
   @Query("""
 SELECT MAX(c.displayOrder)
@@ -125,11 +127,57 @@ AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
           LocalDate agriEnd
   );
 
-  //to receive cluster area connect with form service
   @Query("""
+            SELECT COALESCE(SUM(c.enumeratedArea), 0)
+            FROM ClusterFormData c
+            WHERE c.clusterMaster.cluMasterId = :clusterId
+            """)
+  Double getTotalEnumeratedAreaByClusterId(@Param("clusterId") Long clusterId);
+
+  @Query("""
+SELECT COALESCE(SUM(c.enumeratedArea),0)
+FROM ClusterFormData c
+WHERE c.plot.id = :plotId
+AND c.clusterMaster.keyPlot.agriStartYear = :agriStart
+AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
+""")
+  Double getUsedAreaByAgriYear(
+          Long plotId,
+          LocalDate agriStart,
+          LocalDate agriEnd
+  );
+
+  @Query("""
+SELECT
+cd.cluDetailId AS cluDetailId,
+p.id AS plotId,
+cd.plotLabel AS plotLabel,
+cd.enumeratedArea AS enumeratedArea,
+p.resvno AS resvno,
+p.resbdno AS resbdno,
+p.totCent AS totCent,
+p.wardnumber AS wardnumber,
+p.houseno AS houseno,
+p.ownername AS ownername,
+p.address AS address,
+p.tpno AS tpno,
+p.tbsubdivisionno AS tbsubdivisionno,
+p.oldsvno AS oldsvno,
+p.oldsubno AS oldsubno,
+p.nonBtrTypeId AS bTypeId
+FROM ClusterFormData cd
+JOIN cd.plot p
+WHERE cd.clusterMaster.cluMasterId = :clusterId
+ORDER BY cd.displayOrder
+""")
+  List<ClusterLabelProjection> findClusterLabels(Long clusterId);
+
+//tset lbcode
+@Query("""
 SELECT COALESCE(SUM(c.enumeratedArea),0)
 FROM ClusterFormData c
 WHERE c.clusterMaster.cluMasterId = :clusterId
 """)
-  BigDecimal getTotalClusterArea(@Param("clusterId") Long clusterId);
+BigDecimal getTotalClusterArea(@Param("clusterId") Long clusterId);
+
 }

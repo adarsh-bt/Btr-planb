@@ -17,4 +17,5 @@ public class FetchTalukResponse {
     private String talukName;
     private LocalDateTime createdAt;
     private String landType;
+    private Double enumeratedArea;
 }

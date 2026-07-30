@@ -62,7 +62,8 @@ public class TblBtrData {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "non_btr_type_id")
   private TblNonBtr btrtype;
-
+  @Column(name = "non_btr_type_id", insertable = false, updatable = false)
+  private Integer nonBtrTypeId;
   //    private String remarks;
   //       private Double area;
      private LocalDateTime insertionTime;

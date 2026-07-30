@@ -2,6 +2,7 @@ package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
+import cdti.aidea.earas.model.Btr_models.ClusterEditAllowed;
 import cdti.aidea.earas.model.Btr_models.ClusterLimitLog;
 import cdti.aidea.earas.model.Btr_models.KeyplotsLimitLog;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
@@ -12,6 +13,7 @@ import cdti.aidea.earas.service.AdminManage;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
@@ -19,6 +21,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -79,7 +82,22 @@ public class Admincontroller {
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+  @GetMapping("/zones/dropdown/{type}/{id}")
+  public ResponseEntity<List<ZoneDropdownResponse>> getZoneDropdown(
+          @PathVariable String type,
+          @PathVariable Integer id) {
 
+    return ResponseEntity.ok(adminManage.getZoneDropdown(type, id));
+  }
+
+  @GetMapping("/taluks/dropdown/{districtId}")
+  public ResponseEntity<List<TalukDropdownResponse>> getTalukDropdown(
+          @PathVariable Integer districtId) {
+
+    return ResponseEntity.ok(
+            adminManage.getTalukDropdown(districtId)
+    );
+  }
 //  @GetMapping("/zones_cluster/{type}/{id}")
 //  public ResponseEntity<List<ClusterApprovalTableDTO>> ZonelistClusters(
 //          @PathVariable("type") String type, @PathVariable("id") String id) {
@@ -104,9 +122,9 @@ public class Admincontroller {
   public ResponseEntity<Page<ClusterApprovalTableDTO>> ZonelistClusters(
           @PathVariable("type") String type,
           @PathVariable("id") String id,
-
           @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "10") int size
+          @RequestParam(defaultValue = "10") int size,
+          @RequestParam String agriYear
   ) {
 
     try {
@@ -118,7 +136,8 @@ public class Admincontroller {
                       type,
                       idValue,
                       page,
-                      size
+                      size,
+                      agriYear
               );
 
       return new ResponseEntity<>(zoneList, HttpStatus.OK);
@@ -137,6 +156,50 @@ public class Admincontroller {
     }
   }
 
+  @GetMapping("/zones_work-allocation_approvals/{type}/{id}/{agriYear}")
+  public ResponseEntity<Page<WorkAllocationApprovalTableDTO>> ZoneListWorkAllocation(
+          @PathVariable("type") String type,
+          @PathVariable("id") String id,
+          @PathVariable("agriYear") String agriYear,
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size
+  ) {
+    try {
+      Integer idValue = Integer.parseInt(id);
+
+      Page<WorkAllocationApprovalTableDTO> zoneList =
+              adminManage.zoneListForWorkAllocation(
+                      type,
+                      idValue,
+                      page,
+                      size,
+                      agriYear
+              );
+
+      return new ResponseEntity<>(zoneList, HttpStatus.OK);
+
+    } catch (NumberFormatException e) {
+
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+    } catch (IllegalArgumentException e) {
+
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+    } catch (Exception e) {
+
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @PostMapping("/approve-reject-workAllocation")
+  public ResponseEntity<?>  approveOrRejectWorkAllocation(
+          @Valid @RequestBody WorkAllocationApproveDTO request) {
+
+    return ResponseEntity.ok(
+            adminManage.approveOrRejectWorkAllocation(request)
+    );
+  }
   @PostMapping("/approve-reject")
   public ResponseEntity<?> approveOrReject(
           @Valid @RequestBody ClusterApprovalActionDTO request) {

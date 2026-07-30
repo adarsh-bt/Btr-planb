@@ -6,8 +6,10 @@ import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.LbCodeResponse;
 import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
-import cdti.aidea.earas.contract.ZoneLocationResponse;
+import cdti.aidea.earas.contract.Response.ZoneLocationResponse;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
+import cdti.aidea.earas.repository.Btr_repo.DesTalukRepository;
+import cdti.aidea.earas.repository.Btr_repo.DistrictMasterRepository;
 import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
 import cdti.aidea.earas.service.BtrExportService;
 import cdti.aidea.earas.service.Zone_Service;
@@ -15,8 +17,12 @@ import jakarta.validation.Valid;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
@@ -36,7 +42,8 @@ public class UserZoneController {
   private final Zone_Service zoneService;
   private final BtrExportService btrExportService;
   private final TblMasterZoneRepository tblMasterZoneRepository;
-
+  private final DistrictMasterRepository districtMasterRepository;
+  private final DesTalukRepository desTalukRepository;
   //    if array
 
   //    "roles": ["District Level Approver", "User"]
@@ -147,6 +154,8 @@ public class UserZoneController {
         HttpStatus.OK);
   }
 
+
+
   @GetMapping("/zones/assigned/{userId}")
   public ResponseEntity<?> getUserAssignedZones(@PathVariable("userId") UUID userId) {
     try {
@@ -191,14 +200,82 @@ public class UserZoneController {
                     .build()
     );
   }
-  //to fetch the zone details if cluster id passed cluster area displays
-  @GetMapping("/zone-location/{zoneId}")
-  public ResponseEntity<ZoneLocationResponse> getZoneLocation(
-          @PathVariable Integer zoneId,
-          @RequestParam(required = false) Long clusterId) {
 
-    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId,clusterId));
+  @GetMapping("/districts")
+  public ResponseEntity<Map<String, Object>> getActiveDistricts() {
+
+    List<Map<String, Object>> districtList = districtMasterRepository.findByActiveTrue()
+            .stream()
+            .map(d -> {
+              Map<String, Object> district = new HashMap<>();
+              district.put("distId", d.getDist_id());
+              district.put("distNameEn", d.getDist_name_en());
+              return district;
+            })
+            .collect(Collectors.toList());
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("status", true);
+    response.put("message", "District list fetched successfully");
+    response.put("data", districtList);
+
+    return ResponseEntity.ok(response);
   }
 
+  @GetMapping("/taluks")
+  public ResponseEntity<Map<String, Object>> getActiveTaluks(@RequestParam int distId) {
+System.out.println("distid  "+distId);
+    List<Map<String, Object>> talukList = desTalukRepository
+            .findByDistIdAndIsActiveTrue(distId)
+            .stream()
+            .map(taluk -> {
+              Map<String, Object> map = new HashMap<>();
+              map.put("id", taluk.getDesTalukId());
+              map.put("talukNameEn", taluk.getDesTalukNameEn());
+              return map;
+            })
+            .collect(Collectors.toList());
 
+    Map<String, Object> response = new HashMap<>();
+    response.put("status", true);
+    response.put("message", "Taluk list fetched successfully");
+    response.put("data", talukList);
+
+    return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/zones")
+  public ResponseEntity<Map<String, Object>> getZonesByTaluk(@RequestParam Integer desTalukId) {
+
+    List<Map<String, Object>> zoneList = tblMasterZoneRepository
+            .findByDesTalukId(desTalukId)
+            .stream()
+            .map(zone -> {
+              Map<String, Object> map = new HashMap<>();
+              map.put("zoneId", zone.getZoneId());
+              map.put("zoneNameEn", zone.getZoneNameEn());
+              return map;
+            })
+            .collect(Collectors.toList());
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("status", true);
+    response.put("message", "Zone list fetched successfully");
+    response.put("data", zoneList);
+
+    return ResponseEntity.ok(response);
+  }
+//  @GetMapping("/zone-location/{zoneId}")
+//  public ResponseEntity<ZoneLocationResponse> getZoneLocation(
+//          @PathVariable Integer zoneId) {
+//
+//    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId));
+  //}
+@GetMapping("/zone-location/{zoneId}")
+public ResponseEntity<ZoneLocationResponse> getZoneLocation(
+        @PathVariable Integer zoneId,
+        @RequestParam(required = false) Long clusterId) {
+
+  return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId,clusterId));
+}
 }

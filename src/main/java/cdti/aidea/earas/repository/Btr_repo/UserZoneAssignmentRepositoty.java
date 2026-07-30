@@ -2,6 +2,8 @@ package cdti.aidea.earas.repository.Btr_repo;
 
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,4 +30,10 @@ public interface UserZoneAssignmentRepositoty extends JpaRepository<UserZoneAssi
 
   List<UserZoneAssignment> findAllByUserIdAndIsActiveTrue(UUID userId);
 
+  @Query("""
+SELECT u
+FROM UserZoneAssignment u
+WHERE u.isActive = true
+""")
+  List<UserZoneAssignment> findAllActiveAssignments();
 }

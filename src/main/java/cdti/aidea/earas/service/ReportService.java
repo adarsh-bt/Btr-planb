@@ -35,7 +35,7 @@ public ClusterReportResponse getDashboardData(
         YearMonth startMonth,
         YearMonth endMonth
 ) {
-
+System.out.println("start year "+startMonth+"  "+endMonth);
     if (startMonth == null) {
         throw new RuntimeException("start month is required");
     }

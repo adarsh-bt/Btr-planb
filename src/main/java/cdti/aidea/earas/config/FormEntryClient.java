@@ -54,4 +54,8 @@ public interface FormEntryClient {
           @RequestParam(defaultValue = "0") int page,
           @RequestParam(defaultValue = "10") int size);
 
+  @PostMapping("/earas-form1-entry/api/progress-report/delete-all-cluster-details/{clusterId}")
+  ResponseEntity<Response> deleteAllClusterDetails(
+          @PathVariable Long clusterId);
+
 }

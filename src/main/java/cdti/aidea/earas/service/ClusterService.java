@@ -376,18 +376,13 @@ System.out.println("okee "+clusters.size());
       Response cropsResponse = formEntryClient.fetchCceCrops(clusterId);
 
       List<FetchAvailableCceCropsResponse> crops = new ArrayList<>();
-      boolean isClusterForm1Completed = false;
+
 
       if (cropsResponse.getPayload() instanceof List<?> payload && !payload.isEmpty()) {
 
           Object first = payload.get(0);
 
-          if (first instanceof LinkedHashMap<?, ?> firstMap) {
-              Object completed = firstMap.get("isClusterForm1Completed");
-              if (completed != null) {
-                  isClusterForm1Completed = Boolean.parseBoolean(completed.toString());
-              }
-          }
+
 
           for (Object obj : payload) {
               if (obj instanceof LinkedHashMap<?, ?> map) {
@@ -410,7 +405,6 @@ System.out.println("okee "+clusters.size());
     Map<String, Object> response = new HashMap<>();
     response.put("clusterId", clusterId);
     response.put("labels", labelToPlotsMap);
-    response.put("isClusterForm1Completed", isClusterForm1Completed);
     response.put("cluster_min", clusterMin);
     response.put("cluster_max", clusterMax);
     response.put("tso_cluster_limit", tsoClusterLimit);

@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface DistrictMasterRepository extends JpaRepository<DistrictMaster, Long> {
     List<DistrictMaster> findByActiveTrue();
+    //List<DistrictMaster> findByIsActiveTrue();
 }

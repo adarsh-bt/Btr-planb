@@ -36,4 +36,9 @@ public interface TblWorkAllocationRepository extends JpaRepository<TblWorkAlloca
             LocalDate agriStart,
             LocalDate agriEnd
     );
+    //work allocation report district wise all kerala
+    List<TblWorkAllocation> findByAgriStartAndAgriEndAndIsActiveTrue(
+            LocalDate agriStart,
+            LocalDate agriEnd
+    );
 }

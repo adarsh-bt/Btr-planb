@@ -14,5 +14,7 @@ public interface ZoneLocalbodyBlockMappingRepository
   Optional<ZoneLocalbodyBlockMapping> findByZoneAndIsValid(Integer zone, Boolean isValid);
 
   List<ZoneLocalbodyBlockMapping> findByZone(Integer zone);
+  Optional<ZoneLocalbodyBlockMapping>
+  findByZoneAndIsValidTrue(Integer zone);
 
 }

@@ -1,6 +1,7 @@
 package cdti.aidea.earas.contract;
 
 import lombok.*;
+import org.apache.poi.hpsf.Decimal;
 
 import java.math.BigDecimal;
 
@@ -25,5 +26,5 @@ public class ZoneLocationResponse {
 
     private String zoneName;
 
-    private BigDecimal totalClusterEnumArea;
+    private Double totalClusterEnumArea;
 }

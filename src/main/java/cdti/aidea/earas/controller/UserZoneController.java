@@ -1,7 +1,6 @@
 package cdti.aidea.earas.controller;
 
 import cdti.aidea.earas.common.exception.Response;
-import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.LbCodeResponse;
 import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
@@ -16,7 +15,6 @@ import cdti.aidea.earas.service.Zone_Service;
 import jakarta.validation.Valid;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -200,7 +198,14 @@ public class UserZoneController {
                     .build()
     );
   }
+  //to fetch the zone details if cluster id passed cluster area displays
+  @GetMapping("/zone-location/{zoneId}")
+  public ResponseEntity<ZoneLocationResponse> getZoneLocation(
+          @PathVariable Integer zoneId,
+          @RequestParam(required = false) Long clusterId) {
 
+    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId,clusterId));
+  }
   @GetMapping("/districts")
   public ResponseEntity<Map<String, Object>> getActiveDistricts() {
 
@@ -265,12 +270,6 @@ System.out.println("distid  "+distId);
 
     return ResponseEntity.ok(response);
   }
-  @GetMapping("/zone-location/{zoneId}")
-  public ResponseEntity<ZoneLocationResponse> getZoneLocation(
-          @PathVariable Integer zoneId,
-          @RequestParam(required = false) Long clusterId) {
 
-    return ResponseEntity.ok(zoneService.getZoneLocationDetails(zoneId,clusterId));
-  }
 
 }

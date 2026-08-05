@@ -1623,7 +1623,20 @@ public class KeyPlots_Service {
             }
 
             System.out.println(">>> " + cluster.getCluMasterId());
+            try {
+                ResponseEntity<Response> response =
+                        formEntryClient.deleteAllClusterDetails(cluster.getCluMasterId());
 
+                if (!response.getStatusCode().is2xxSuccessful()) {
+                    throw new RuntimeException("Unable to delete Form Service cluster data.");
+                }
+
+            } catch (Exception ex) {
+                throw new RuntimeException(
+                        "Form Service deletion failed. KeyPlot deletion cancelled.",
+                        ex
+                );
+            }
             // Delete ClusterFormData
             List<ClusterFormData> details =
                     clusterFormDataRepository.findByClusterMaster(cluster);
@@ -1637,7 +1650,6 @@ public class KeyPlots_Service {
         }
 
         TblBtrData btrData = keyPlot.getBtrData();
-
         // Delete KeyPlot
         keyPlotsRepository.delete(keyPlot);
 
@@ -1677,7 +1689,7 @@ public class KeyPlots_Service {
             request.setCceAvailablePlotId(dto.getCceAvailablePlotId());
             request.setRemarks(dto.getRejectionReason());
             request.setAddedBy(dto.getRejectedBy());
-System.out.println("response  "+request);
+
             ResponseEntity<String> response =
                     formEntryClient.deleteRandomCrop(request);
 

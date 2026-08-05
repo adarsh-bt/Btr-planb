@@ -2,6 +2,7 @@ package cdti.aidea.earas.controller;
 import cdti.aidea.earas.contract.ClusterCompletedProgressResponse;
 import cdti.aidea.earas.contract.ClusterCompletedProgressSubDetails;
 import cdti.aidea.earas.contract.Response.ClusterReportResponse;
+import cdti.aidea.earas.contract.WorkAllocationProgressResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
 import cdti.aidea.earas.service.ReportService;
 import lombok.RequiredArgsConstructor;
@@ -229,6 +230,61 @@ public class ReportController {
                         startMonth,
                         endMonth,
                         search));
+    }
+
+    //work allocation report district wise all kerala
+    @GetMapping("/work-allocation-progress")
+    public ResponseEntity<WorkAllocationProgressResponse>
+    getWorkAllocationProgress(
+            @RequestParam String agriYear) {
+
+        WorkAllocationProgressResponse response =
+                reportService
+                        .getWorkAllocationProgress(agriYear);
+
+        return ResponseEntity.ok(response);
+    }
+
+    //work allocation report taluk wise districtId
+    @GetMapping("/work-allocation-progress/{districtId}")
+    public ResponseEntity<WorkAllocationProgressResponse>
+    getWorkAllocationProgressByDistrict(
+            @PathVariable Integer districtId,
+            @RequestParam String agriYear) {
+
+        return ResponseEntity.ok(
+                reportService.getWorkAllocationProgressByDistrict(
+                        districtId,
+                        agriYear
+                )
+        );
+    }
+
+    //work allocation progress report zone wise details passing talukid
+    @GetMapping("/work-allocation-progress/taluk/{talukId}")
+    public ResponseEntity<?> getWorkAllocationProgressByTaluk(
+            @PathVariable Integer talukId,
+            @RequestParam String agriYear) {
+
+        try {
+
+            WorkAllocationProgressResponse response =
+                    reportService.getWorkAllocationProgressByTaluk(
+                            talukId,
+                            agriYear
+                    );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            "Error fetching work allocation progress: "
+                                    + e.getMessage()
+                    );
+        }
     }
     }
 

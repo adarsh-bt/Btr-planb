@@ -23,8 +23,10 @@ public class ZoneLocationResponse {
     private Integer localbodyId;
     private String localbodyName;
     private String lbCode;
+    private String landType;
 
     private String zoneName;
 
     private Double totalClusterEnumArea;
+
 }

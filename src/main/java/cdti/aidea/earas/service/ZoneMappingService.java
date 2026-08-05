@@ -52,7 +52,7 @@ public class ZoneMappingService {
     List<TblLocalBody> localbodies = localBodyRepo.findAllById(lbIds);
 
     boolean mal = "mal".equalsIgnoreCase(lang) || "ml".equalsIgnoreCase(lang);
-System.out.println("localbodires "+localbodies);
+
     return localbodies.stream()
         .filter(lb -> Boolean.TRUE.equals(lb.getIsActive()))
         .map(

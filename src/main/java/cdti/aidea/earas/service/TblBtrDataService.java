@@ -4,6 +4,7 @@ import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.Response.TblBtrDetailsResponse;
 import cdti.aidea.earas.contract.Response.ValidationResponse;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
+import cdti.aidea.earas.contract.ZoneLocationResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
@@ -36,113 +37,9 @@ public class TblBtrDataService {
     private final TblMasterVillageRepository tblMasterVillageRepository;
     private final TblMasterVillageRepository villageRepository;
     private final LocalBodyRepository localBodyRepository;
+    private final Zone_Service zoneService;
 
-    // ---------------- Single Save ----------------
-//
-//    @Transactional
-//    public Map<String, Object> saveData(TblBtrDataDTO dto) {
-//
-//        // 1️⃣ Validate required fields
-//        List<String> requiredErrors = validateRequiredFields(dto);
-//        if (!requiredErrors.isEmpty()) {
-//            throw new RuntimeException("Validation failed: " + String.join(", ", requiredErrors));
-//        }
-//
-//        // 2️⃣ Validate duplicates
-//        ValidationErrorResponse duplicateError = validateDuplicate(dto);
-//        if (duplicateError != null) {
-//            throw new RuntimeException("Duplicate entry detected: " + duplicateError.getMessage());
-//        }
-//
-//        // 3️⃣ Fetch zone FIRST
-//        TblMasterZone zone = tblMasterZoneRepository
-//                .findById(Math.toIntExact(dto.getZoneId()))
-//                .orElseThrow(() -> new RuntimeException("Zone not found"));
-//
-//        // 4️⃣ Calculate agri year
-//        LocalDate today = LocalDate.now();
-//
-//        LocalDate agriStart =
-//                (today.getMonthValue() >= 6)
-//                        ? LocalDate.of(today.getYear(), 6, 1)
-//                        : LocalDate.of(today.getYear() - 1, 6, 1);
-//
-//        LocalDate agriEnd =
-//                (today.getMonthValue() >= 6)
-//                        ? LocalDate.of(today.getYear() + 1, 7, 31)
-//                        : LocalDate.of(today.getYear(), 7, 31);
-//
-//
-//        // 5️⃣ COUNT FIRST — NOTHING SAVED YET
-//        long count = keyPlotsRepository.countKeyPlotsForUpdate(
-//                zone.getZoneId(),
-//                agriStart,
-//                agriEnd
-//        );
-//
-//        if (count >= 100) {
-//            throw new RuntimeException(
-//                    "KeyPlot limit (100) reached for this zone in current agricultural year"
-//            );
-//        }
-//
-//
-//        // ===============================
-//        // ✅ ONLY NOW START SAVING TABLES
-//        // ===============================
-//
-//        // 7️⃣ Save TblBtrData
-//        TblBtrData btrData = tblBtrDataRepository.save(mapToEntity(dto));
-//
-//        // 8️⃣ Save KeyPlots
-//        KeyPlots keyPlot = new KeyPlots();
-//        keyPlot.setBtrData(btrData);
-//        keyPlot.setZone(zone);
-//        keyPlot.setIntervals(1);
-//        keyPlot.setAgriStartYear(agriStart);
-//        keyPlot.setAgriEndYear(agriEnd);
-//        keyPlot.setIsRejected(false);
-//        keyPlot.setStatus(true);
-//        keyPlot.setLandType(btrData.getLtype());
-//        keyPlot.setCreated_by(UUID.randomUUID());
-//        keyPlotsRepository.save(keyPlot);
-//
-//        // 9️⃣ Cluster number
-//        Optional<Integer> maxClusterNumberOpt =
-//                clusterMasterRepository.findMaxClusterNumberByZoneAndDateRange(
-//                        zone.getZoneId(),
-//                        agriStart.atStartOfDay(),
-//                        agriEnd.atTime(23, 59, 59)
-//                );
-//
-//        int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
-//
-//        // 🔟 Save ClusterMaster
-//        ClusterMaster clusterMaster = new ClusterMaster();
-//        clusterMaster.setKeyPlot(keyPlot);
-//        clusterMaster.setClusterNumber(nextClusterNumber);
-//        clusterMaster.setZone(zone);
-//        clusterMaster.setStatus("Not Started");
-//        clusterMaster.setIsReject(false);
-//        clusterMaster.setIs_active(true);
-//        clusterMaster.setIs_editable(true);
-//        clusterMasterRepository.save(clusterMaster);
-//
-//        // 1️⃣1️⃣ Save ClusterFormData
-//        ClusterFormData clusterFormData = new ClusterFormData();
-//        clusterFormData.setClusterMaster(clusterMaster);
-//        clusterFormData.setPlot(btrData);
-//        clusterFormData.setPlotLabel("K");
-//        clusterFormData.setEnumeratedArea(btrData.getTotCent());
-//        clusterFormData.setCreatedBy(UUID.randomUUID());
-//        clusterFormData.setStatus(true);
-//        clusterFormDataRepository.save(clusterFormData);
-//
-//        // 1️⃣2️⃣ Response
-//        Map<String, Object> response = new HashMap<>();
-//        response.put("id", btrData.getId());
-//        return response;
-//    }
+
 
     // ---------------- Save All ----------------
     @Transactional
@@ -184,15 +81,6 @@ public class TblBtrDataService {
             TblMasterZone zone = tblMasterZoneRepository
                     .findById(Math.toIntExact(firstDto.getZoneId()))
                     .orElseThrow(() -> new RuntimeException("Zone not found"));
-
-            // Calculate agri year (same as in saveData)
-//            LocalDate today = LocalDate.now();
-//            LocalDate agriStart = (today.getMonthValue() >= 6)
-//                    ? LocalDate.of(today.getYear(), 6, 1)
-//                    : LocalDate.of(today.getYear() - 1, 6, 1);
-//            LocalDate agriEnd = (today.getMonthValue() >= 6)
-//                    ? LocalDate.of(today.getYear() + 1, 7, 31)
-//                    : LocalDate.of(today.getYear(), 7, 31);
 
 
             LocalDate startDate =
@@ -258,10 +146,7 @@ public class TblBtrDataService {
                         endDate
                 );
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
-//        System.out.println("next cluster ssss"+nextClusterNumber);
-//        if (nextClusterNumber >= 100){
-//            throw new RuntimeException("Current Year Keyplots limit 100 is Reach");
-//        }
+
         // Save KeyPlots
         KeyPlots keyPlot = new KeyPlots();
         keyPlot.setBtrData(btrData);
@@ -388,6 +273,7 @@ public class TblBtrDataService {
                         startDate,
                         endDate
                 );
+        System.out.println("dto   >>>>>>>>>>>>>   "+dto.getId());
         if (dto.getId() != null) {
             int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
 
@@ -472,25 +358,7 @@ public class TblBtrDataService {
         } else if (dto.getBtrtype() == 3) {
             System.out.println("CL List val" + 3);
 
-            // --------- Added resvno/resbdno check ----------
-//            boolean existsRes = false;
-//            if (dto.getResbdno() != null) {
-//                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-//                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
-//                        dto.getResvno(), dto.getResbdno());
-//            } else {
-//                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
-//                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
-//            }
-//
-//            if (existsRes) {
-//                return new ValidationErrorResponse(
-//                        dto.getResvno(), dto.getResbdno(),
-//                        dto.getWardno(), dto.getHouseno(),
-//                        dto.getTotCent(),
-//                        "Duplicate entry already exists for resvno=" + dto.getResvno()
-//                                + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
-//            }
+
             boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
                     dto.getDcode(), dto.getTcode(), dto.getLbcode(), dto.getVcode(),
                     dto.getBcode(), dto.getOwnername(), dto.getAddress(), dto.getTotCent());
@@ -507,26 +375,6 @@ public class TblBtrDataService {
 
         } else if (dto.getBtrtype() == 4) {
             System.out.println("TP List val " + 4);
-
-            // --------- Added resvno/resbdno check ----------
-//            boolean existsRes = false;
-//            if (dto.getResbdno() != null) {
-//                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-//                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
-//                        dto.getResvno(), dto.getResbdno());
-//            } else {
-//                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
-//                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
-//            }
-//
-//            if (existsRes) {
-//                return new ValidationErrorResponse(
-//                        dto.getResvno(), dto.getResbdno(),
-//                        dto.getWardno(), dto.getHouseno(),
-//                        dto.getTotCent(),
-//                        "Duplicate entry already exists for resvno=" + dto.getResvno()
-//                                + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
-//            }
 
             boolean exists;
             if (dto.getTbsubdivisionno() != null) {
@@ -551,25 +399,7 @@ public class TblBtrDataService {
         } else if (dto.getBtrtype() == 5) {
             System.out.println("Old survey " + 5);
 
-            // --------- Added resvno/resbdno check ----------
-//            boolean existsRes = false;
-//            if (dto.getResbdno() != null) {
-//                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-//                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
-//                        dto.getResvno(), dto.getResbdno());
-//            } else {
-//                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
-//                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
-//            }
-//
-//            if (existsRes) {
-//                return new ValidationErrorResponse(
-//                        dto.getResvno(), dto.getResbdno(),
-//                        dto.getWardno(), dto.getHouseno(),
-//                        dto.getTotCent(),
-//                        "Duplicate entry already exists for resvno=" + dto.getResvno()
-//                                + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
-//            }
+
 
             boolean exists;
             if (dto.getOldsubno() != null) {
@@ -973,6 +803,7 @@ public class TblBtrDataService {
 
 
     public TblBtrDetailsResponse getBtrDetails(Long btrId) {
+
         TblBtrData entity = tblBtrDataRepository.findById(btrId)
                 .orElseThrow(() ->
                         new RuntimeException("BTR record not found with ID: " + btrId));
@@ -984,6 +815,9 @@ public class TblBtrDataService {
         TblLocalBody localBody = localBodyRepository.findByCodeApi(entity.getLbcode())
                 .orElseThrow(() ->
                         new RuntimeException("Local body not found with code: " + entity.getLbcode()));
+
+        ZoneLocationResponse zoneLocation =
+                zoneService.getZoneLocationDetails(entity.getZone().intValue(), null);
 
         return new TblBtrDetailsResponse(
                 entity.getResvno(),
@@ -1000,10 +834,22 @@ public class TblBtrDataService {
                 entity.getTbsubdivisionno(),
                 entity.getBtrtype().getBTypeId(),
                 entity.getCl_no(),
+                entity.getLbcode(),
+                entity.getLtype(),
+
                 village.getVillageId(),
                 village.getVillageNameEn(),
+
                 localBody.getLocalbodyId(),
-                localBody.getLocalbodyNameEn()
+                localBody.getLocalbodyNameEn(),
+
+                zoneLocation.getDistrictId(),
+                zoneLocation.getDistrictName(),
+                zoneLocation.getTalukId(),
+                zoneLocation.getTalukName(),
+                zoneLocation.getBlockId(),
+                zoneLocation.getBlockName(),
+                zoneLocation.getZoneName()
         );
     }
 

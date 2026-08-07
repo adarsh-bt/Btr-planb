@@ -289,6 +289,30 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
             LocalDateTime endDate
     );
 
+    @Query("""
+    SELECT DISTINCT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    JOIN FETCH z.desTalukMaster dt
+
+    WHERE z.distId = :districtId
+
+      AND cm.createdAt >= :startDate
+      AND cm.createdAt <= :endDate
+""")
+    List<ClusterMaster> getTalukWiseDashboardDataByAgriYear(
+
+            @Param("districtId")
+            Integer districtId,
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
+
     //based on taluk id gets details of zone status
     @Query("""
                 SELECT DISTINCT cm
@@ -323,6 +347,31 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
             LocalDateTime endDate
     );
 
+
+    @Query("""
+    SELECT DISTINCT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    JOIN FETCH z.desTalukMaster dt
+
+    WHERE z.desTalukId = :talukId
+
+    AND cm.createdAt >= :startDate
+
+    AND cm.createdAt <= :endDate
+""")
+    List<ClusterMaster> getZoneWiseDashboardDataByAgriYear(
+
+            @Param("talukId")
+            Integer talukId,
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
     @Query("""
                 SELECT DISTINCT cm
                 FROM ClusterMaster cm

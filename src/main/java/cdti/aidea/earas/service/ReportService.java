@@ -1154,23 +1154,27 @@ public ClusterReportResponse getTalukWiseDashboardData(
     //Total cluster completed status needs to connect with form1
     public ClusterCompletedProgressResponse getCompletedClusters(
             String landType,
-            YearMonth startMonth,
-            YearMonth endMonth) {
+            String agriYear) {
 
-        if (startMonth == null) {
-            throw new RuntimeException("Start month is required");
+        if (agriYear == null || agriYear.isBlank()) {
+            throw new RuntimeException("Agricultural year is required");
         }
 
         if (landType != null) {
             landType = landType.trim().toUpperCase();
         }
 
-        LocalDateTime startDate = startMonth.atDay(1).atStartOfDay();
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        LocalDateTime startDate =
+                agriStart.atStartOfDay();
 
         LocalDateTime endDate =
-                endMonth == null
-                        ? startMonth.atEndOfMonth().atTime(23, 59, 59)
-                        : endMonth.atEndOfMonth().atTime(23, 59, 59);
+                agriEnd.atTime(23, 59, 59);
 
         List<ClusterMaster> clusters =
                 clusterMasterRepository.getDashboardData(
@@ -1264,27 +1268,30 @@ public ClusterReportResponse getTalukWiseDashboardData(
 
             Integer districtId,
             String landType,
-            YearMonth startMonth,
-            YearMonth endMonth) {
+            String agriYear) {
 
-        if (startMonth == null) {
-            throw new RuntimeException("Start month is required");
+        if (agriYear == null || agriYear.isBlank()) {
+            throw new RuntimeException("Agricultural year is required");
         }
 
         if (landType != null) {
             landType = landType.trim().toUpperCase();
         }
 
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
         LocalDateTime startDate =
-                startMonth.atDay(1).atStartOfDay();
+                agriStart.atStartOfDay();
 
         LocalDateTime endDate =
-                endMonth == null
-                        ? startMonth.atEndOfMonth().atTime(23, 59, 59)
-                        : endMonth.atEndOfMonth().atTime(23, 59, 59);
+                agriEnd.atTime(23, 59, 59);
 
         List<ClusterMaster> clusters =
-                clusterMasterRepository.getTalukWiseDashboardData(
+                clusterMasterRepository.getTalukWiseDashboardDataByAgriYear(
                         districtId,
                         startDate,
                         endDate);
@@ -1374,28 +1381,31 @@ public ClusterReportResponse getTalukWiseDashboardData(
 
             Integer talukId,
             String landType,
-            YearMonth startMonth,
-            YearMonth endMonth,
+            String agriYear,
             String search) {
 
-        if (startMonth == null) {
-            throw new RuntimeException("Start month is required");
+        if (agriYear == null || agriYear.isBlank()) {
+            throw new RuntimeException("Agricultural year is required");
         }
 
         if (landType != null) {
             landType = landType.trim().toUpperCase();
         }
 
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
         LocalDateTime startDate =
-                startMonth.atDay(1).atStartOfDay();
+                agriStart.atStartOfDay();
 
         LocalDateTime endDate =
-                endMonth == null
-                        ? startMonth.atEndOfMonth().atTime(23, 59, 59)
-                        : endMonth.atEndOfMonth().atTime(23, 59, 59);
+                agriEnd.atTime(23, 59, 59);
 
         List<ClusterMaster> clusters =
-                clusterMasterRepository.getZoneWiseDashboardData(
+                clusterMasterRepository.getZoneWiseDashboardDataByAgriYear(
                         talukId,
                         startDate,
                         endDate);
@@ -2322,66 +2332,84 @@ public ClusterReportResponse getTalukWiseDashboardData(
             Integer blockId = null;
             String blockName = null;
 
-            Optional<ZoneLocalbodyBlockMapping> mapping =
+//            Optional<ZoneLocalbodyBlockMapping> mapping =
+//
+//                    zoneLocalbodyBlockMappingRepository
+//                            .findByZoneAndIsValidTrue(zoneId);
+//
+//            if (mapping.isPresent()) {
+//
+//                ZoneLocalbodyBlockMapping zm =
+//                        mapping.get();
+//
+//                if (zm.getBlockPanchayatMunicipalArea() != null
+//                        && zm.getBlockDetails() != null) {
+//
+//                    // --------------------------------------------------
+//                    // 1 = BLOCK
+//                    // --------------------------------------------------
+//
+//                    if (zm.getBlockPanchayatMunicipalArea() == 1) {
+//
+//                        MasterBlock block =
+//                                tblMasterBlockRepository
+//                                        .findById(
+//                                                zm.getBlockDetails()
+//                                        )
+//                                        .orElse(null);
+//
+//                        if (block != null) {
+//
+//                            blockId =
+//                                    block.getBlockId();
+//
+//                            blockName =
+//                                    block.getBlockName();
+//                        }
+//                    }
+//
+//                    // --------------------------------------------------
+//                    // 2 = LOCAL BODY
+//                    // --------------------------------------------------
+//
+//                    else if (
+//                            zm.getBlockPanchayatMunicipalArea() == 2
+//                    ) {
+//
+//                        TblLocalBody localbody =
+//                                localBodyRepository
+//                                        .findById(
+//                                                zm.getBlockDetails()
+//                                        )
+//                                        .orElse(null);
+//
+//                        if (localbody != null) {
+//
+//                            blockId =
+//                                    localbody.getLocalbodyId();
+//
+//                            blockName =
+//                                    localbody.getLocalbodyNameEn();
+//                        }
+//                    }
+//                }
+//            }
+            String lbcode = zoneAllocations.get(0).getLbcode();
 
-                    zoneLocalbodyBlockMappingRepository
-                            .findByZoneAndIsValidTrue(zoneId);
+            if (lbcode != null && !lbcode.isBlank()) {
 
-            if (mapping.isPresent()) {
+                TblLocalBody localbody =
+                        localBodyRepository
+                                .findByCodeApiAndIsActiveTrue(lbcode)
+                                .orElse(null);
 
-                ZoneLocalbodyBlockMapping zm =
-                        mapping.get();
+                if (localbody != null) {
 
-                if (zm.getBlockPanchayatMunicipalArea() != null
-                        && zm.getBlockDetails() != null) {
+                    blockId =
+                            localbody.getLocalbodyId();
 
-                    // --------------------------------------------------
-                    // 1 = BLOCK
-                    // --------------------------------------------------
-
-                    if (zm.getBlockPanchayatMunicipalArea() == 1) {
-
-                        MasterBlock block =
-                                tblMasterBlockRepository
-                                        .findById(
-                                                zm.getBlockDetails()
-                                        )
-                                        .orElse(null);
-
-                        if (block != null) {
-
-                            blockId =
-                                    block.getBlockId();
-
-                            blockName =
-                                    block.getBlockName();
-                        }
-                    }
-
-                    // --------------------------------------------------
-                    // 2 = LOCAL BODY
-                    // --------------------------------------------------
-
-                    else if (
-                            zm.getBlockPanchayatMunicipalArea() == 2
-                    ) {
-
-                        TblLocalBody localbody =
-                                localBodyRepository
-                                        .findById(
-                                                zm.getBlockDetails()
-                                        )
-                                        .orElse(null);
-
-                        if (localbody != null) {
-
-                            blockId =
-                                    localbody.getLocalbodyId();
-
-                            blockName =
-                                    localbody.getLocalbodyNameEn();
-                        }
-                    }
+                    blockName =
+                            localbody.getLocalbodyNameEn();
                 }
             }
 

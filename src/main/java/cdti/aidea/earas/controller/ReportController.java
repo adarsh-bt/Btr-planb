@@ -166,19 +166,14 @@ public class ReportController {
     public ResponseEntity<ClusterCompletedProgressResponse> getCompletedClusters(
 
             @RequestParam(required = false) String landType,
+            @RequestParam String agriYear
 
-            @RequestParam @DateTimeFormat(pattern = "MM-yyyy")
-            YearMonth startMonth,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(pattern = "MM-yyyy")
-            YearMonth endMonth) {
+           ) {
 
         return ResponseEntity.ok(
                 reportService.getCompletedClusters(
                         landType,
-                        startMonth,
-                        endMonth));
+                        agriYear));
     }
 
     //Total cluster completed status needs to connect with form1 DId passing taluk wise
@@ -189,20 +184,13 @@ public class ReportController {
 
             @RequestParam(required = false) String landType,
 
-            @RequestParam
-            @DateTimeFormat(pattern = "MM-yyyy")
-            YearMonth startMonth,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(pattern = "MM-yyyy")
-            YearMonth endMonth) {
+            @RequestParam String agriYear) {
 
         return ResponseEntity.ok(
                 reportService.getTalukWiseCompletedClusters(
                         districtId,
                         landType,
-                        startMonth,
-                        endMonth));
+                        agriYear));
     }
 
     //total cluster status taluk-id zone wise details connect with form
@@ -213,13 +201,7 @@ public class ReportController {
 
             @RequestParam(required = false) String landType,
 
-            @RequestParam
-            @DateTimeFormat(pattern = "MM-yyyy")
-            YearMonth startMonth,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(pattern = "MM-yyyy")
-            YearMonth endMonth,
+            @RequestParam String agriYear,
 
             @RequestParam(required = false) String search) {
 
@@ -227,8 +209,7 @@ public class ReportController {
                 reportService.getZoneWiseCompletedClusters(
                         talukId,
                         landType,
-                        startMonth,
-                        endMonth,
+                        agriYear,
                         search));
     }
 

@@ -28,4 +28,5 @@ public interface LocalBodyRepository extends JpaRepository<TblLocalBody, Integer
           Short localbodyType,
           int distId
   );
+  Optional<TblLocalBody> findByCodeApiAndIsActiveTrue(String codeApi);
 }

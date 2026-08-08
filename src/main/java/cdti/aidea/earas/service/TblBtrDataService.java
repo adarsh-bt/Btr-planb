@@ -3,8 +3,8 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.contract.Response.TblBtrDetailsResponse;
 import cdti.aidea.earas.contract.Response.ValidationResponse;
+import cdti.aidea.earas.contract.Response.ZoneLocationResponse;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
-import cdti.aidea.earas.contract.ZoneLocationResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblLocalBody;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterVillage;
@@ -45,7 +45,7 @@ public class TblBtrDataService {
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
         List<ValidationErrorResponse> allErrors = new ArrayList<>();
-
+System.out.println("sto   "+dtoList);
         // Validate all DTOs first
         for (TblBtrDataDTO dto : dtoList) {
             // Required validation

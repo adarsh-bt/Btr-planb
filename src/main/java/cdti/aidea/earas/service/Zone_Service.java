@@ -5,7 +5,6 @@ import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.*;
-import cdti.aidea.earas.contract.ZoneLocationResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.repository.Btr_repo.*;
@@ -87,7 +86,7 @@ public class Zone_Service {
                                               zone.getZoneCode(),
                                               zone.getZoneNameEn(),
                                               zone.getZoneNameMal(), zone.getBtrType().getBtrType(),
-                                              0, 0, null, null, null))
+                                              0,0,null,null,null))
                       .collect(Collectors.toList());
 
       return zoneList;
@@ -135,7 +134,7 @@ public class Zone_Service {
     try {
       // 🔁 Convert Integer to Long
       Long zoneId = request.getZoneId().longValue();
-      System.out.println("request " + request);
+      System.out.println("request "+request);
       // 1. Fetch the current assignment to update
       Optional<UserZoneAssignment> existingAssignment =
               userZoneAssignmentRepositoty.findByUserIdAndTblMasterZone_ZoneIdAndIsActiveTrue(request.getUser_id(), zoneId);
@@ -345,7 +344,6 @@ public class Zone_Service {
             round(totalDryArea)
     );
   }
-
   private double round(double value) {
     return new BigDecimal(value)
             .setScale(2, RoundingMode.HALF_UP)
@@ -430,8 +428,7 @@ public class Zone_Service {
   //        Map<String, String> landTypeClassificationMap =
   // landTypeClassificationService.getLandTypeClassificationMap();
   //
-
-  /// / Total area components
+  //// Total area components
   //        double totalWetArea = 0;
   //        double totalDryArea = 0;
   //
@@ -505,6 +502,7 @@ public class Zone_Service {
   //                totalDryAreas
   //        );
   //    }
+
   public Object ZoneDetails(Integer zone_id) {
 
     // ✅ Validate zone
@@ -576,7 +574,7 @@ public class Zone_Service {
       Map<String, Object> data = new HashMap<>();
 
       data.put("p_name", localBodyNameMap.get(s.getLbcode()));
-      data.put("lbcode", s.getLbcode());
+      data.put("lbcode",s.getLbcode());
       data.put("Wet_area", s.getWet_area());
       data.put("Dry_area", s.getDry_area());
       data.put("Total_area", s.getTotal_area());
@@ -747,9 +745,9 @@ public class Zone_Service {
                     .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
                     .blockName((String) result[5])
                     .zoneName((String) result[6])
-                    .localbodyId(null)
-                    .localbodyName(null)
-                    .lbCode(null);
+                    .localbodyId(result[7] == null ? null : ((Number) result[7]).intValue())
+                    .localbodyName((String) result[8])
+                    .lbCode((String) result[9]);
 
     if (clusterId != null) {
       builder.totalClusterEnumArea(
@@ -773,4 +771,48 @@ public class Zone_Service {
   }
   return builder.build();
  }
+
+
+//  public ZoneLocationResponse getZoneLocationDetails(Integer zoneId, Long clusterId) {
+//
+//    List<Object[]> results = tblMasterZoneRepository.getZoneLocationDetails(zoneId);
+//
+//    if (results.isEmpty()) {
+//      throw new RuntimeException("Zone not found");
+//    }
+//
+//    Object[] result = results.get(0);
+//    ZoneLocationResponse.ZoneLocationResponseBuilder builder =
+//            ZoneLocationResponse.builder()
+//                    .districtId(result[0] == null ? null : ((Number) result[0]).intValue())
+//                    .districtName((String) result[1])
+//                    .talukId(result[2] == null ? null : ((Number) result[2]).intValue())
+//                    .talukName((String) result[3])
+//                    .blockId(result[4] == null ? null : ((Number) result[4]).intValue())
+//                    .blockName((String) result[5])
+//                    .zoneName((String) result[6])
+//                    .localbodyId(null)
+//                    .localbodyName(null)
+//                    .lbCode(null);
+//
+//    if (clusterId != null) {
+//      builder.totalClusterEnumArea(
+//              clusterFormDataRepository.getTotalClusterArea(clusterId));
+//
+//      List<Object[]> lbResults =
+//              clusterMasterRepository.getClusterLocalBodyDetails(clusterId);
+//
+//      if (!lbResults.isEmpty()) {
+//        Object[] lbResult = lbResults.get(0);
+//
+//        builder.localbodyId(
+//                lbResult[0] == null ? null : ((Number) lbResult[0]).intValue());
+//
+//        builder.localbodyName((String) lbResult[1]);
+//
+//        builder.lbCode((String) lbResult[2]);
+//      }
+//    }
+//    return builder.build();
+//  }
 }

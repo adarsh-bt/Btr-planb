@@ -4,20 +4,23 @@ import cdti.aidea.earas.contract.ClusterCompletedProgressSubDetails;
 import cdti.aidea.earas.contract.Response.BlockZoneWiseClusterStatusResponse;
 import cdti.aidea.earas.contract.Response.ClusterReportResponse;
 import cdti.aidea.earas.contract.Response.SubDetailsClusterStatusResponse;
+import cdti.aidea.earas.contract.WorkAllocationProgressResponse;
 import cdti.aidea.earas.model.Btr_models.ClusterMaster;
-import cdti.aidea.earas.model.Btr_models.Masters.MasterBlock;
-import cdti.aidea.earas.model.Btr_models.Masters.ZoneLocalbodyBlockMapping;
-import cdti.aidea.earas.repository.Btr_repo.ClusterMasterRepository;
-import cdti.aidea.earas.repository.Btr_repo.MasterBlockRepository;
-import cdti.aidea.earas.repository.Btr_repo.ZoneLocalbodyBlockMappingRepository;
+import cdti.aidea.earas.model.Btr_models.Masters.*;
+import cdti.aidea.earas.model.Btr_models.TblWorkAllocation;
+import cdti.aidea.earas.repository.Btr_repo.*;
+import cdti.aidea.earas.utils.AgriYearUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import java.util.LinkedHashMap;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.*;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.springframework.http.RequestEntity.put;
 
@@ -27,6 +30,14 @@ public class ReportService {
     private final ClusterMasterRepository clusterMasterRepository;
     private final ZoneLocalbodyBlockMappingRepository zoneLocalbodyBlockMappingRepository;
     private final MasterBlockRepository masterBlockRepository;
+    private final LocalBodyRepository tblLocalBodyRepository;
+    private final DistrictMasterRepository districtMasterRepository;
+    private final TblWorkAllocationRepository tblWorkAllocationRepository;
+    private final DesTalukRepository  desTalukRepository;
+    private final MasterBlockRepository  tblMasterBlockRepository;
+    private final LocalBodyRepository localBodyRepository;
+
+
 
     //State and allDistricts
 public ClusterReportResponse getDashboardData(
@@ -932,163 +943,198 @@ public ClusterReportResponse getTalukWiseDashboardData(
 
                     if (mapping.getBlockDetails() != null) {
 
-                        MasterBlock block =
-                                masterBlockRepository
-                                        .findById(
-                                                mapping.getBlockDetails()
-                                        )
-                                        .orElse(null);
+//                        MasterBlock block =
+//                                masterBlockRepository
+//                                        .findById(
+//                                                mapping.getBlockDetails()
+//                                        )
+//                                        .orElse(null);
+//
+//                        if (block != null) {
+//
+//                            blockId = block.getBlockId();
+//
+//                            blockName = block.getBlockName();
+//
+                        if (mapping.getBlockPanchayatMunicipalArea() == 1) {
 
-                        if (block != null) {
+                            MasterBlock block =
+                                    masterBlockRepository
+                                            .findById(
+                                                    mapping.getBlockDetails()
+                                            )
+                                            .orElse(null);
 
-                            blockId = block.getBlockId();
+                            if (block != null) {
 
-                            blockName = block.getBlockName();
+                                blockId =
+                                        block.getBlockId();
+
+                                blockName =
+                                        block.getBlockName();
+                            }
+
+                        } else if (mapping.getBlockPanchayatMunicipalArea() == 2) {
+
+                            TblLocalBody localBody =
+                                    tblLocalBodyRepository
+                                            .findById(
+                                                    mapping.getBlockDetails()
+                                            )
+                                            .orElse(null);
+
+                            if (localBody != null) {
+
+                                blockId =
+                                        localBody.getLocalbodyId();
+
+                                blockName =
+                                        localBody.getLocalbodyNameEn();
+                            }
                         }
                     }
                 }
-            }
 
-            zoneMap.putIfAbsent(
-                    zoneName,
-                    new BlockZoneWiseClusterStatusResponse(
-                            zoneId,
-                            blockId,
-                            blockName,
-                            0L,
-                            0L,
-                            0L,
-                            0L,
-                            0L,
-                            0L,
-                            0L,
-                            0L
-                    )
-            );
+                zoneMap.putIfAbsent(
+                        zoneName,
+                        new BlockZoneWiseClusterStatusResponse(
+                                zoneId,
+                                blockId,
+                                blockName,
+                                0L,
+                                0L,
+                                0L,
+                                0L,
+                                0L,
+                                0L,
+                                0L,
+                                0L
+                        )
+                );
 
-            BlockZoneWiseClusterStatusResponse zoneStats =
-                    zoneMap.get(zoneName);
+                BlockZoneWiseClusterStatusResponse zoneStats =
+                        zoneMap.get(zoneName);
 
-            if (status == null || clusterLandType == null) {
-                continue;
-            }
+                if (status == null || clusterLandType == null) {
+                    continue;
+                }
 
-            switch (status.trim().toLowerCase()) {
+                switch (status.trim().toLowerCase()) {
 
-                case "completed":
+                    case "completed":
 
-                    if (
-                            clusterLandType.equalsIgnoreCase("WET")
-                                    && includeWet
-                    ) {
+                        if (
+                                clusterLandType.equalsIgnoreCase("WET")
+                                        && includeWet
+                        ) {
 
-                        completed++;
+                            completed++;
 
-                        zoneStats.setWetCompleted(
-                                zoneStats.getWetCompleted() + 1
-                        );
-                    }
+                            zoneStats.setWetCompleted(
+                                    zoneStats.getWetCompleted() + 1
+                            );
+                        }
 
-                    if (
-                            clusterLandType.equalsIgnoreCase("DRY")
-                                    && includeDry
-                    ) {
+                        if (
+                                clusterLandType.equalsIgnoreCase("DRY")
+                                        && includeDry
+                        ) {
 
-                        completed++;
+                            completed++;
 
-                        zoneStats.setDryCompleted(
-                                zoneStats.getDryCompleted() + 1
-                        );
-                    }
+                            zoneStats.setDryCompleted(
+                                    zoneStats.getDryCompleted() + 1
+                            );
+                        }
 
-                    break;
+                        break;
 
-                case "on going":
+                    case "on going":
 
-                    if (
-                            clusterLandType.equalsIgnoreCase("WET")
-                                    && includeWet
-                    ) {
+                        if (
+                                clusterLandType.equalsIgnoreCase("WET")
+                                        && includeWet
+                        ) {
 
-                        ongoing++;
+                            ongoing++;
 
-                        zoneStats.setWetOngoing(
-                                zoneStats.getWetOngoing() + 1
-                        );
-                    }
+                            zoneStats.setWetOngoing(
+                                    zoneStats.getWetOngoing() + 1
+                            );
+                        }
 
-                    if (
-                            clusterLandType.equalsIgnoreCase("DRY")
-                                    && includeDry
-                    ) {
+                        if (
+                                clusterLandType.equalsIgnoreCase("DRY")
+                                        && includeDry
+                        ) {
 
-                        ongoing++;
+                            ongoing++;
 
-                        zoneStats.setDryOngoing(
-                                zoneStats.getDryOngoing() + 1
-                        );
-                    }
+                            zoneStats.setDryOngoing(
+                                    zoneStats.getDryOngoing() + 1
+                            );
+                        }
 
-                    break;
+                        break;
 
-                case "not started":
+                    case "not started":
 
-                    if (
-                            clusterLandType.equalsIgnoreCase("WET")
-                                    && includeWet
-                    ) {
+                        if (
+                                clusterLandType.equalsIgnoreCase("WET")
+                                        && includeWet
+                        ) {
 
-                        notStarted++;
+                            notStarted++;
 
-                        zoneStats.setWetNotStarted(
-                                zoneStats.getWetNotStarted() + 1
-                        );
-                    }
+                            zoneStats.setWetNotStarted(
+                                    zoneStats.getWetNotStarted() + 1
+                            );
+                        }
 
-                    if (
-                            clusterLandType.equalsIgnoreCase("DRY")
-                                    && includeDry
-                    ) {
+                        if (
+                                clusterLandType.equalsIgnoreCase("DRY")
+                                        && includeDry
+                        ) {
 
-                        notStarted++;
+                            notStarted++;
 
-                        zoneStats.setDryNotStarted(
-                                zoneStats.getDryNotStarted() + 1
-                        );
-                    }
+                            zoneStats.setDryNotStarted(
+                                    zoneStats.getDryNotStarted() + 1
+                            );
+                        }
 
-                    break;
+                        break;
 
-                case "under review":
+                    case "under review":
 
-                    if (
-                            clusterLandType.equalsIgnoreCase("WET")
-                                    && includeWet
-                    ) {
+                        if (
+                                clusterLandType.equalsIgnoreCase("WET")
+                                        && includeWet
+                        ) {
 
-                        underView++;
+                            underView++;
 
-                        zoneStats.setWetUnderView(
-                                zoneStats.getWetUnderView() + 1
-                        );
-                    }
+                            zoneStats.setWetUnderView(
+                                    zoneStats.getWetUnderView() + 1
+                            );
+                        }
 
-                    if (
-                            clusterLandType.equalsIgnoreCase("DRY")
-                                    && includeDry
-                    ) {
+                        if (
+                                clusterLandType.equalsIgnoreCase("DRY")
+                                        && includeDry
+                        ) {
 
-                        underView++;
+                            underView++;
 
-                        zoneStats.setDryUnderView(
-                                zoneStats.getDryUnderView() + 1
-                        );
-                    }
+                            zoneStats.setDryUnderView(
+                                    zoneStats.getDryUnderView() + 1
+                            );
+                        }
 
-                    break;
+                        break;
+                }
             }
         }
-
         response.setTotalCluster(
                 completed + ongoing + notStarted + underView
         );
@@ -1436,4 +1482,976 @@ public ClusterReportResponse getTalukWiseDashboardData(
                 .allSubDetails(zoneMap)
                 .build();
     }
+
+    //work allocation report district wise all kerala
+    public WorkAllocationProgressResponse getWorkAllocationProgress(
+            String agriYear) {
+
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        // ==========================================
+        // GET ALL ACTIVE WORK ALLOCATION RECORDS
+        // FOR THE GIVEN AGRI YEAR
+        // ==========================================
+
+        List<TblWorkAllocation> allocations =
+                tblWorkAllocationRepository
+                        .findByAgriStartAndAgriEndAndIsActiveTrue(
+                                agriStart,
+                                agriEnd
+                        );
+
+        // ==========================================
+        // GET ALL ACTIVE DISTRICTS
+        // ==========================================
+
+        List<DistrictMaster> districts =
+                districtMasterRepository.findByActiveTrue();
+
+        // ==========================================
+        // KERALA TOTALS
+        // ==========================================
+
+        BigDecimal totalPlotsWet = BigDecimal.ZERO;
+        BigDecimal totalPlotsDry = BigDecimal.ZERO;
+        BigDecimal totalPlots = BigDecimal.ZERO;
+
+        BigDecimal totalAreaWet = BigDecimal.ZERO;
+        BigDecimal totalAreaDry = BigDecimal.ZERO;
+        BigDecimal totalArea = BigDecimal.ZERO;
+
+        // ==========================================
+        // DISTRICT DETAILS
+        // ==========================================
+
+        List<WorkAllocationProgressResponse.LocationDetails>
+                locationDetails = new ArrayList<>();
+
+        for (DistrictMaster district : districts) {
+
+            // Get allocations belonging to this district
+            List<TblWorkAllocation> districtAllocations =
+                    allocations.stream()
+                            .filter(a ->
+                                    a.getZone() != null
+                                            && a.getZone().getDistId() != null
+                                            && a.getZone().getDistId()
+                                            .equals(district.getDist_id())
+                            )
+                            .toList();
+
+            // ======================================
+            // VILLAGE RECORDS
+            // ======================================
+
+            BigDecimal villageWet =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getVillageWetArea);
+
+            BigDecimal villageDry =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getVillageDryArea);
+
+            BigDecimal villageTotal =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getVillageTotalArea);
+
+            WorkAllocationProgressResponse.VillageRecords
+                    villageRecords =
+                    WorkAllocationProgressResponse.VillageRecords
+                            .builder()
+                            .wet(villageWet)
+                            .dry(villageDry)
+                            .total(villageTotal)
+                            .build();
+
+            // ======================================
+            // EXCLUDED AREA
+            // ======================================
+
+            BigDecimal forestArea =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getForestAreaA);
+
+            BigDecimal plantationArea =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getAreaUnderPlant);
+
+            BigDecimal waterBodies =
+                    sum(districtAllocations,
+                            TblWorkAllocation::
+                                    getForestExcludeUnclutivate);
+
+            BigDecimal others =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getKayalExcludeArea);
+
+            WorkAllocationProgressResponse.ExcludedArea
+                    excludedArea =
+                    WorkAllocationProgressResponse.ExcludedArea
+                            .builder()
+                            .forestArea(forestArea)
+                            .plantationArea(plantationArea)
+                            .areaOfWaterBodies(waterBodies)
+                            .others(others)
+                            .build();
+
+            // ======================================
+            // NUMBER OF PLOTS
+            // ======================================
+
+            BigDecimal plotsWet =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getNoOfPlotsWet);
+
+            BigDecimal plotsDry =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getNoOfPlotsDry);
+
+            BigDecimal plotsTotal =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getNoOfPlotsTotal);
+
+            WorkAllocationProgressResponse.EstimationPlots
+                    estimationPlots =
+                    WorkAllocationProgressResponse.EstimationPlots
+                            .builder()
+                            .wet(plotsWet)
+                            .dry(plotsDry)
+                            .total(plotsTotal)
+                            .build();
+
+            // ======================================
+            // AREA AVAILABLE FOR ESTIMATION
+            // ======================================
+
+            BigDecimal areaWet =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getTotalAreaWet);
+
+            BigDecimal areaDry =
+                    sum(districtAllocations,
+                            TblWorkAllocation::getTotalAreaDry);
+
+            BigDecimal areaTotal =
+                    sum(districtAllocations,
+                            TblWorkAllocation::
+                                    getTotalAreaForEstimation);
+
+            WorkAllocationProgressResponse.AreaAvailable
+                    areaAvailable =
+                    WorkAllocationProgressResponse.AreaAvailable
+                            .builder()
+                            .wet(areaWet)
+                            .dry(areaDry)
+                            .total(areaTotal)
+                            .build();
+
+            // ======================================
+            // DISTRICT ESTIMATION
+            // ======================================
+
+            WorkAllocationProgressResponse.DistrictEstimation
+                    districtEstimation =
+                    WorkAllocationProgressResponse.DistrictEstimation
+                            .builder()
+                            .noOfPlots(estimationPlots)
+                            .areaInCents(areaAvailable)
+                            .build();
+
+            // ======================================
+            // ADD DISTRICT
+            // ======================================
+
+            locationDetails.add(
+                    WorkAllocationProgressResponse.LocationDetails
+                            .builder()
+                            .id(district.getDist_id())
+                            .name(district.getDist_name_en())
+                            .villageRecords(villageRecords)
+                            .excludedArea(excludedArea)
+                            .areaAvailableForEstimation(
+                                    districtEstimation
+                            )
+                            .build()
+            );
+
+            // ======================================
+            // ADD TO KERALA TOTAL
+            // ======================================
+
+            totalPlotsWet =
+                    totalPlotsWet.add(plotsWet);
+
+            totalPlotsDry =
+                    totalPlotsDry.add(plotsDry);
+
+            totalPlots =
+                    totalPlots.add(plotsTotal);
+
+            totalAreaWet =
+                    totalAreaWet.add(areaWet);
+
+            totalAreaDry =
+                    totalAreaDry.add(areaDry);
+
+            totalArea =
+                    totalArea.add(areaTotal);
+        }
+
+        // ==========================================
+        // KERALA PLOT TOTAL
+        // ==========================================
+
+        WorkAllocationProgressResponse.EstimationPlots
+                keralaPlots =
+                WorkAllocationProgressResponse.EstimationPlots
+                        .builder()
+                        .wet(totalPlotsWet)
+                        .dry(totalPlotsDry)
+                        .total(totalPlots)
+                        .build();
+
+        // ==========================================
+        // KERALA AREA TOTAL
+        // ==========================================
+
+        WorkAllocationProgressResponse.AreaAvailable
+                keralaArea =
+                WorkAllocationProgressResponse.AreaAvailable
+                        .builder()
+                        .wet(totalAreaWet)
+                        .dry(totalAreaDry)
+                        .total(totalArea)
+                        .build();
+
+        // ==========================================
+        // FINAL RESPONSE
+        // ==========================================
+
+        return WorkAllocationProgressResponse.builder()
+                .noOfPlots(keralaPlots)
+                .areaAvailableForEstimation(keralaArea)
+                .locations(locationDetails)
+                .build();
+    }
+    // TALUK WISE WORK ALLOCATION PROGRESS PASSING  DISTRICTID
+// location = TALUKS
+// ==========================================================
+
+    public WorkAllocationProgressResponse getWorkAllocationProgressByDistrict(
+            Integer districtId,
+            String agriYear) {
+
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        // ======================================================
+        // CHECK DISTRICT
+        // ======================================================
+
+        DistrictMaster district =
+                districtMasterRepository.findById(Long.valueOf(districtId))
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "District not found for ID: "
+                                                + districtId));
+
+        // ======================================================
+        // GET WORK ALLOCATION RECORDS
+        // FOR THIS DISTRICT + AGRI YEAR
+        // ======================================================
+
+        List<TblWorkAllocation> allocations =
+                tblWorkAllocationRepository
+                        .findByAgriStartAndAgriEndAndIsActiveTrue(
+                                agriStart,
+                                agriEnd
+                        )
+                        .stream()
+                        .filter(a ->
+                                a.getZone() != null
+                                        && a.getZone().getDistId() != null
+                                        && a.getZone().getDistId()
+                                        .equals(districtId)
+                        )
+                        .toList();
+
+        // ======================================================
+        // DISTRICT TOTALS
+        // ======================================================
+
+        BigDecimal totalPlotsWet =
+                sum(allocations,
+                        TblWorkAllocation::getNoOfPlotsWet);
+
+        BigDecimal totalPlotsDry =
+                sum(allocations,
+                        TblWorkAllocation::getNoOfPlotsDry);
+
+        BigDecimal totalPlots =
+                sum(allocations,
+                        TblWorkAllocation::getNoOfPlotsTotal);
+
+        BigDecimal totalAreaWet =
+                sum(allocations,
+                        TblWorkAllocation::getTotalAreaWet);
+
+        BigDecimal totalAreaDry =
+                sum(allocations,
+                        TblWorkAllocation::getTotalAreaDry);
+
+        BigDecimal totalArea =
+                sum(allocations,
+                        TblWorkAllocation::getTotalAreaForEstimation);
+
+        // ======================================================
+        // GROUP BY TALUK
+        // ======================================================
+
+        Map<Integer, List<TblWorkAllocation>> talukWise =
+                allocations.stream()
+                        .filter(a ->
+                                a.getZone() != null
+                                        && a.getZone().getDesTalukId() != null
+                        )
+                        .collect(Collectors.groupingBy(
+                                a -> a.getZone().getDesTalukId()
+                        ));
+
+        List<WorkAllocationProgressResponse.LocationDetails>
+                locations = new ArrayList<>();
+
+        // ======================================================
+        // EACH TALUK
+        // ======================================================
+
+        for (Map.Entry<Integer, List<TblWorkAllocation>> entry
+                : talukWise.entrySet()) {
+
+            Integer talukId = entry.getKey();
+
+            List<TblWorkAllocation> talukAllocations =
+                    entry.getValue();
+
+            // ==================================================
+            // VILLAGE RECORDS
+            // ==================================================
+
+            BigDecimal villageWet =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getVillageWetArea
+                    );
+
+            BigDecimal villageDry =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getVillageDryArea
+                    );
+
+            BigDecimal villageTotal =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getVillageTotalArea
+                    );
+
+            WorkAllocationProgressResponse.VillageRecords
+                    villageRecords =
+                    WorkAllocationProgressResponse.VillageRecords
+                            .builder()
+                            .wet(villageWet)
+                            .dry(villageDry)
+                            .total(villageTotal)
+                            .build();
+
+            // ==================================================
+            // EXCLUDED AREA
+            // ==================================================
+
+            BigDecimal forestArea =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getForestAreaA
+                    );
+
+            BigDecimal plantationArea =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getAreaUnderPlant
+                    );
+
+            BigDecimal waterBodies =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getForestExcludeUnclutivate
+                    );
+
+            BigDecimal others =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getKayalExcludeArea
+                    );
+
+            WorkAllocationProgressResponse.ExcludedArea
+                    excludedArea =
+                    WorkAllocationProgressResponse.ExcludedArea
+                            .builder()
+                            .forestArea(forestArea)
+                            .plantationArea(plantationArea)
+                            .areaOfWaterBodies(waterBodies)
+                            .others(others)
+                            .build();
+
+            // ==================================================
+            // TALUK NO OF PLOTS
+            // ==================================================
+
+            BigDecimal plotsWet =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getNoOfPlotsWet
+                    );
+
+            BigDecimal plotsDry =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getNoOfPlotsDry
+                    );
+
+            BigDecimal plotsTotal =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getNoOfPlotsTotal
+                    );
+
+            WorkAllocationProgressResponse.EstimationPlots
+                    estimationPlots =
+                    WorkAllocationProgressResponse.EstimationPlots
+                            .builder()
+                            .wet(plotsWet)
+                            .dry(plotsDry)
+                            .total(plotsTotal)
+                            .build();
+
+            // ==================================================
+            // TALUK AREA AVAILABLE
+            // ==================================================
+
+            BigDecimal areaWet =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getTotalAreaWet
+                    );
+
+            BigDecimal areaDry =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getTotalAreaDry
+                    );
+
+            BigDecimal areaTotal =
+                    sum(
+                            talukAllocations,
+                            TblWorkAllocation::getTotalAreaForEstimation
+                    );
+
+            WorkAllocationProgressResponse.AreaAvailable
+                    areaAvailable =
+                    WorkAllocationProgressResponse.AreaAvailable
+                            .builder()
+                            .wet(areaWet)
+                            .dry(areaDry)
+                            .total(areaTotal)
+                            .build();
+
+            // ==================================================
+            // TALUK ESTIMATION
+            // ==================================================
+
+            WorkAllocationProgressResponse.DistrictEstimation
+                    estimation =
+                    WorkAllocationProgressResponse.DistrictEstimation
+                            .builder()
+                            .noOfPlots(estimationPlots)
+                            .areaInCents(areaAvailable)
+                            .build();
+
+            // ==================================================
+            // TALUK NAME
+            // ==================================================
+
+            String talukName =
+                    talukAllocations.get(0)
+                            .getZone()
+                            .getDesTalukMaster() != null
+                            ?
+                            talukAllocations.get(0)
+                                    .getZone()
+                                    .getDesTalukMaster()
+                                    .getDesTalukNameEn()
+                            :
+                            "Unknown";
+
+            // ==================================================
+            // ADD TALUK
+            // ==================================================
+
+            locations.add(
+                    WorkAllocationProgressResponse.LocationDetails
+                            .builder()
+                            .id(talukId)
+                            .name(talukName)
+                            .villageRecords(villageRecords)
+                            .excludedArea(excludedArea)
+                            .areaAvailableForEstimation(estimation)
+                            .build()
+            );
+        }
+
+        // ======================================================
+        // DISTRICT TOTAL PLOTS
+        // ======================================================
+
+        WorkAllocationProgressResponse.EstimationPlots
+                districtPlots =
+                WorkAllocationProgressResponse.EstimationPlots
+                        .builder()
+                        .wet(totalPlotsWet)
+                        .dry(totalPlotsDry)
+                        .total(totalPlots)
+                        .build();
+
+        // ======================================================
+        // DISTRICT TOTAL AREA
+        // ======================================================
+
+        WorkAllocationProgressResponse.AreaAvailable
+                districtArea =
+                WorkAllocationProgressResponse.AreaAvailable
+                        .builder()
+                        .wet(totalAreaWet)
+                        .dry(totalAreaDry)
+                        .total(totalArea)
+                        .build();
+
+        // ======================================================
+        // FINAL DISTRICT RESPONSE
+        // ======================================================
+
+        return WorkAllocationProgressResponse.builder()
+                .noOfPlots(districtPlots)
+                .areaAvailableForEstimation(districtArea)
+                .locations(locations)
+                .build();
+    }
+    //work allocation report progress zone and block details while passing  talukid
+    @Transactional(readOnly = true)
+
+    public WorkAllocationProgressResponse getWorkAllocationProgressByTaluk(
+            Integer talukId,
+            String agriYear) {
+
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        // ==========================================================
+        // CHECK TALUK
+        // ==========================================================
+
+        DesTaluk taluk =
+                desTalukRepository.findById(talukId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Taluk not found for ID: "
+                                                + talukId));
+
+        // ==========================================================
+        // GET WORK ALLOCATION RECORDS FOR AGRI YEAR
+        // ==========================================================
+
+        List<TblWorkAllocation> allocations =
+                tblWorkAllocationRepository
+                        .findByAgriStartAndAgriEndAndIsActiveTrue(
+                                agriStart,
+                                agriEnd
+                        )
+                        .stream()
+                        .filter(a ->
+                                a.getZone() != null
+                                        && a.getZone().getDesTalukId() != null
+                                        && a.getZone()
+                                        .getDesTalukId()
+                                        .equals(talukId)
+                        )
+                        .toList();
+        // ==========================================================
+// TALUK TOTALS
+// ==========================================================
+
+        BigDecimal totalPlotsWet =
+                sum(
+                        allocations,
+                        TblWorkAllocation::getNoOfPlotsWet
+                );
+
+        BigDecimal totalPlotsDry =
+                sum(
+                        allocations,
+                        TblWorkAllocation::getNoOfPlotsDry
+                );
+
+        BigDecimal totalPlots =
+                sum(
+                        allocations,
+                        TblWorkAllocation::getNoOfPlotsTotal
+                );
+
+        BigDecimal totalAreaWet =
+                sum(
+                        allocations,
+                        TblWorkAllocation::getTotalAreaWet
+                );
+
+        BigDecimal totalAreaDry =
+                sum(
+                        allocations,
+                        TblWorkAllocation::getTotalAreaDry
+                );
+
+        BigDecimal totalArea =
+                sum(
+                        allocations,
+                        TblWorkAllocation::getTotalAreaForEstimation
+                );
+
+// ==========================================================
+// GROUP BY ZONE
+// ==========================================================
+
+        Map<Integer, List<TblWorkAllocation>> zoneWise =
+                allocations.stream()
+                        .filter(a ->
+                                a.getZone() != null
+                                        && a.getZone().getZoneId() != null
+                        )
+                        .collect(
+                                Collectors.groupingBy(
+                                        a -> a.getZone().getZoneId()
+                                )
+                        );
+
+// ==========================================================
+// LOCATION / ZONE DETAILS
+// ==========================================================
+
+        List<WorkAllocationProgressResponse.LocationDetails>
+                locations = new ArrayList<>();
+
+        for (Map.Entry<Integer, List<TblWorkAllocation>> entry
+                : zoneWise.entrySet()) {
+
+            Integer zoneId = entry.getKey();
+
+            List<TblWorkAllocation> zoneAllocations =
+                    entry.getValue();
+
+            TblMasterZone zone =
+                    zoneAllocations
+                            .get(0)
+                            .getZone();
+            // ======================================================
+            // VILLAGE RECORDS
+            // ======================================================
+
+            BigDecimal villageWet =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getVillageWetArea
+                    );
+
+            BigDecimal villageDry =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getVillageDryArea
+                    );
+
+            BigDecimal villageTotal =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getVillageTotalArea
+                    );
+
+            WorkAllocationProgressResponse.VillageRecords
+                    villageRecords =
+                    WorkAllocationProgressResponse.VillageRecords
+                            .builder()
+                            .wet(villageWet)
+                            .dry(villageDry)
+                            .total(villageTotal)
+                            .build();
+
+            // ======================================================
+            // EXCLUDED AREA
+            // ======================================================
+
+            BigDecimal forestArea =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getForestAreaA
+                    );
+
+            BigDecimal plantationArea =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getAreaUnderPlant
+                    );
+
+            BigDecimal waterBodies =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::
+                                    getForestExcludeUnclutivate
+                    );
+
+            BigDecimal others =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getKayalExcludeArea
+                    );
+
+            WorkAllocationProgressResponse.ExcludedArea
+                    excludedArea =
+                    WorkAllocationProgressResponse.ExcludedArea
+                            .builder()
+                            .forestArea(forestArea)
+                            .plantationArea(plantationArea)
+                            .areaOfWaterBodies(waterBodies)
+                            .others(others)
+                            .build();
+
+            // ======================================================
+            // NUMBER OF PLOTS
+            // ======================================================
+
+            BigDecimal plotsWet =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getNoOfPlotsWet
+                    );
+
+            BigDecimal plotsDry =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getNoOfPlotsDry
+                    );
+
+            BigDecimal plotsTotal =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getNoOfPlotsTotal
+                    );
+
+            WorkAllocationProgressResponse.EstimationPlots
+                    estimationPlots =
+                    WorkAllocationProgressResponse.EstimationPlots
+                            .builder()
+                            .wet(plotsWet)
+                            .dry(plotsDry)
+                            .total(plotsTotal)
+                            .build();
+
+            // ======================================================
+            // AREA AVAILABLE FOR ESTIMATION
+            // ======================================================
+
+            BigDecimal areaWet =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getTotalAreaWet
+                    );
+
+            BigDecimal areaDry =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::getTotalAreaDry
+                    );
+
+            BigDecimal areaTotal =
+                    sum(
+                            zoneAllocations,
+                            TblWorkAllocation::
+                                    getTotalAreaForEstimation
+                    );
+
+            WorkAllocationProgressResponse.AreaAvailable
+                    areaAvailable =
+                    WorkAllocationProgressResponse.AreaAvailable
+                            .builder()
+                            .wet(areaWet)
+                            .dry(areaDry)
+                            .total(areaTotal)
+                            .build();
+
+            // ======================================================
+            // ESTIMATION
+            // ======================================================
+
+            WorkAllocationProgressResponse.DistrictEstimation
+                    estimation =
+                    WorkAllocationProgressResponse.DistrictEstimation
+                            .builder()
+                            .noOfPlots(estimationPlots)
+                            .areaInCents(areaAvailable)
+                            .build();
+
+            // ======================================================
+            // BLOCK / LOCALBODY
+            // ======================================================
+
+            Integer blockId = null;
+            String blockName = null;
+
+            Optional<ZoneLocalbodyBlockMapping> mapping =
+
+                    zoneLocalbodyBlockMappingRepository
+                            .findByZoneAndIsValidTrue(zoneId);
+
+            if (mapping.isPresent()) {
+
+                ZoneLocalbodyBlockMapping zm =
+                        mapping.get();
+
+                if (zm.getBlockPanchayatMunicipalArea() != null
+                        && zm.getBlockDetails() != null) {
+
+                    // --------------------------------------------------
+                    // 1 = BLOCK
+                    // --------------------------------------------------
+
+                    if (zm.getBlockPanchayatMunicipalArea() == 1) {
+
+                        MasterBlock block =
+                                tblMasterBlockRepository
+                                        .findById(
+                                                zm.getBlockDetails()
+                                        )
+                                        .orElse(null);
+
+                        if (block != null) {
+
+                            blockId =
+                                    block.getBlockId();
+
+                            blockName =
+                                    block.getBlockName();
+                        }
+                    }
+
+                    // --------------------------------------------------
+                    // 2 = LOCAL BODY
+                    // --------------------------------------------------
+
+                    else if (
+                            zm.getBlockPanchayatMunicipalArea() == 2
+                    ) {
+
+                        TblLocalBody localbody =
+                                localBodyRepository
+                                        .findById(
+                                                zm.getBlockDetails()
+                                        )
+                                        .orElse(null);
+
+                        if (localbody != null) {
+
+                            blockId =
+                                    localbody.getLocalbodyId();
+
+                            blockName =
+                                    localbody.getLocalbodyNameEn();
+                        }
+                    }
+                }
+            }
+
+            // ======================================================
+            // ADD ZONE
+            // ======================================================
+
+            locations.add(
+                    WorkAllocationProgressResponse.LocationDetails
+                            .builder()
+                            .id(zoneId)
+                            .name(zone.getZoneNameEn())
+                            .blockId(blockId)
+                            .blockName(blockName)
+                            .villageRecords(villageRecords)
+                            .excludedArea(excludedArea)
+                            .areaAvailableForEstimation(estimation)
+                            .build()
+            );
+        }
+
+        // ==========================================================
+        // TALUK TOTAL PLOTS
+        // ==========================================================
+
+        WorkAllocationProgressResponse.EstimationPlots
+                talukPlots =
+                WorkAllocationProgressResponse.EstimationPlots
+                        .builder()
+                        .wet(totalPlotsWet)
+                        .dry(totalPlotsDry)
+                        .total(totalPlots)
+                        .build();
+
+        // ==========================================================
+        // TALUK TOTAL AREA
+        // ==========================================================
+
+        WorkAllocationProgressResponse.AreaAvailable
+                talukArea =
+                WorkAllocationProgressResponse.AreaAvailable
+                        .builder()
+                        .wet(totalAreaWet)
+                        .dry(totalAreaDry)
+                        .total(totalArea)
+                        .build();
+
+        // ==========================================================
+        // FINAL RESPONSE
+        // ==========================================================
+
+        return WorkAllocationProgressResponse.builder()
+                .noOfPlots(talukPlots)
+                .areaAvailableForEstimation(talukArea)
+                .locations(locations)
+                .build();
+    }
+// ==========================================
+// COMMON SUM METHOD
+// ==========================================
+
+    private BigDecimal sum(
+            List<TblWorkAllocation> allocations,
+
+            Function<TblWorkAllocation, BigDecimal> getter) {
+
+        return allocations.stream()
+                .map(getter)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 }
+

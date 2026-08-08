@@ -5,7 +5,7 @@ import cdti.aidea.earas.contract.RequestsDTOs.ZoneAssignedRequset;
 import cdti.aidea.earas.contract.Response.LbCodeResponse;
 import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
-import cdti.aidea.earas.contract.ZoneLocationResponse;
+import cdti.aidea.earas.contract.Response.ZoneLocationResponse;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
 import cdti.aidea.earas.repository.Btr_repo.DesTalukRepository;
 import cdti.aidea.earas.repository.Btr_repo.DistrictMasterRepository;

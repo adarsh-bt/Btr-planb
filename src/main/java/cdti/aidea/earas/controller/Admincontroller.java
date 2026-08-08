@@ -441,42 +441,53 @@ public class Admincontroller {
   }
 
 
-  @GetMapping("/fetch-zones-cluster/{type}/{id}")
-  public ResponseEntity<Page<ZonesClusterApprovalResponse>> getZoneListForClusters(
-          @PathVariable("type") String type,
-          @PathVariable("id") String id,
-          @RequestParam String agriYear,
-
-          @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "10") int size
-  ) {
-
-    try {
-
-      Integer idValue = Integer.parseInt(id);
-
-      Page<ZonesClusterApprovalResponse> zoneList =
-              adminManage.getZoneListForClusters(
-                      type,
-                      idValue,
-                      agriYear,
-                      page,
-                      size
-              );
-
-      return new ResponseEntity<>(zoneList, HttpStatus.OK);
-
-    } catch (NumberFormatException e) {
-
-      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-
-    } catch (IllegalArgumentException e) {
-
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
-    } catch (Exception e) {
-
-      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
+//  @GetMapping("/fetch-zones-cluster/{type}/{id}")
+//  public ResponseEntity<Page<ZonesClusterApprovalResponse>> getZoneListForClusters(
+//          @PathVariable("type") String type,
+//          @PathVariable("id") String id,
+//          @RequestParam String agriYear,
+//          @RequestParam(defaultValue = "0") int page,
+//          @RequestParam(defaultValue = "10") int size
+//  ) {
+//
+//    System.out.println("agriYear = " + agriYear + ", type = " + type);
+//
+//    try {
+//
+//      Integer idValue = Integer.parseInt(id);
+//
+//      Page<ZonesClusterApprovalResponse> zoneList =
+//              adminManage.getZoneListForClusters(
+//                      type,
+//                      idValue,
+//                      agriYear,
+//                      page,
+//                      size
+//              );
+//
+//      System.out.println("BTR SERVICE RESPONSE CREATED");
+//      System.out.println("Total = " + zoneList.getTotalElements());
+//      System.out.println("Content size = " + zoneList.getContent().size());
+//
+//      return ResponseEntity.ok(zoneList);
+//
+//    } catch (NumberFormatException e) {
+//
+//      e.printStackTrace();
+//      return ResponseEntity.badRequest().build();
+//
+//    } catch (IllegalArgumentException e) {
+//
+//      e.printStackTrace();
+//      return ResponseEntity.notFound().build();
+//
+//    } catch (Exception e) {
+//
+//      System.err.println("========== BTR ERROR ==========");
+//      e.printStackTrace();
+//      System.err.println("================================");
+//
+//      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//    }
+//  }
 }

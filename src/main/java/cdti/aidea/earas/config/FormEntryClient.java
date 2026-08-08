@@ -42,17 +42,19 @@ public interface FormEntryClient {
           @RequestBody AvailableCcePlotRemoveRequest request
   );
 
-  @GetMapping("/earas-form1-entry/form1/fetch-zones/{type}/{id}")
-  ResponseEntity<Page<Form1EditLogResponse>> getEditStatusByZoneIds(@RequestParam List<Long> zoneIds,
-                                                                    @RequestParam(defaultValue = "0") int page,
-                                                                    @RequestParam(defaultValue = "10") int size);
+//  @GetMapping("/earas-form1-entry/form1/fetch-zones/{type}/{id}")
+//  ResponseEntity<Page<Form1EditLogResponse>> getEditStatusByZoneIds(@RequestParam List<Long> zoneIds,
+//                                                                    @RequestParam(defaultValue = "0") int page,
+//                                                                    @RequestParam(defaultValue = "10") int size);
 
-  @GetMapping("/earas-form1-entry/form1/fetch-edit-status")
-  ResponseEntity<Page<Form1EditLogResponse>> getEditStatusByZoneIds(
-          @RequestParam List<Long> zoneIds,
-          @RequestParam String agriYear,
-          @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "10") int size);
+//  @GetMapping("/earas-form1-entry/form1/fetch-edit-status")
+//  ResponseEntity<Page<Form1EditLogResponse>> getEditStatusByZoneIds(
+//          @RequestParam List<Long> zoneIds,
+//          @RequestParam String agriYear,
+//          @RequestParam(defaultValue = "0") int page,
+//          @RequestParam(defaultValue = "10") int size);
+
+
 
   @PostMapping("/earas-form1-entry/api/progress-report/delete-all-cluster-details/{clusterId}")
   ResponseEntity<Response> deleteAllClusterDetails(

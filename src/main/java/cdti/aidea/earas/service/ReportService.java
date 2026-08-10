@@ -2063,6 +2063,7 @@ public ClusterReportResponse getTalukWiseDashboardData(
                 .build();
     }
     //work allocation report progress zone and block details while passing  talukid
+//    work allocation taluk blovck and panchayath:
     @Transactional(readOnly = true)
 
     public WorkAllocationProgressResponse getWorkAllocationProgressByTaluk(
@@ -2105,9 +2106,10 @@ public ClusterReportResponse getTalukWiseDashboardData(
                                         .equals(talukId)
                         )
                         .toList();
+
         // ==========================================================
-// TALUK TOTALS
-// ==========================================================
+        // TALUK TOTALS
+        // ==========================================================
 
         BigDecimal totalPlotsWet =
                 sum(
@@ -2146,8 +2148,8 @@ public ClusterReportResponse getTalukWiseDashboardData(
                 );
 
 // ==========================================================
-// GROUP BY ZONE
-// ==========================================================
+        // GROUP BY ZONE
+        // ==========================================================
 
         Map<Integer, List<TblWorkAllocation>> zoneWise =
                 allocations.stream()
@@ -2161,9 +2163,9 @@ public ClusterReportResponse getTalukWiseDashboardData(
                                 )
                         );
 
-// ==========================================================
-// LOCATION / ZONE DETAILS
-// ==========================================================
+        // ==========================================================
+        // LOCATION / ZONE DETAILS
+        // ==========================================================
 
         List<WorkAllocationProgressResponse.LocationDetails>
                 locations = new ArrayList<>();
@@ -2180,6 +2182,7 @@ public ClusterReportResponse getTalukWiseDashboardData(
                     zoneAllocations
                             .get(0)
                             .getZone();
+
             // ======================================================
             // VILLAGE RECORDS
             // ======================================================
@@ -2332,68 +2335,75 @@ public ClusterReportResponse getTalukWiseDashboardData(
             Integer blockId = null;
             String blockName = null;
 
-//            Optional<ZoneLocalbodyBlockMapping> mapping =
-//
-//                    zoneLocalbodyBlockMappingRepository
-//                            .findByZoneAndIsValidTrue(zoneId);
-//
-//            if (mapping.isPresent()) {
-//
-//                ZoneLocalbodyBlockMapping zm =
-//                        mapping.get();
-//
-//                if (zm.getBlockPanchayatMunicipalArea() != null
-//                        && zm.getBlockDetails() != null) {
+            Optional<ZoneLocalbodyBlockMapping> mapping =
+
+                    zoneLocalbodyBlockMappingRepository
+                            .findByZoneAndIsValidTrue(zoneId);
+
+            if (mapping.isPresent()) {
+
+                ZoneLocalbodyBlockMapping zm =
+                        mapping.get();
+
+                if (zm.getBlockPanchayatMunicipalArea() != null
+                        && zm.getBlockDetails() != null) {
 //
 //                    // --------------------------------------------------
 //                    // 1 = BLOCK
 //                    // --------------------------------------------------
 //
-//                    if (zm.getBlockPanchayatMunicipalArea() == 1) {
-//
-//                        MasterBlock block =
-//                                tblMasterBlockRepository
-//                                        .findById(
-//                                                zm.getBlockDetails()
-//                                        )
-//                                        .orElse(null);
-//
-//                        if (block != null) {
-//
-//                            blockId =
-//                                    block.getBlockId();
-//
-//                            blockName =
-//                                    block.getBlockName();
-//                        }
-//                    }
-//
-//                    // --------------------------------------------------
-//                    // 2 = LOCAL BODY
-//                    // --------------------------------------------------
-//
-//                    else if (
-//                            zm.getBlockPanchayatMunicipalArea() == 2
-//                    ) {
-//
-//                        TblLocalBody localbody =
-//                                localBodyRepository
-//                                        .findById(
-//                                                zm.getBlockDetails()
-//                                        )
-//                                        .orElse(null);
-//
-//                        if (localbody != null) {
-//
-//                            blockId =
-//                                    localbody.getLocalbodyId();
-//
-//                            blockName =
-//                                    localbody.getLocalbodyNameEn();
-//                        }
-//                    }
-//                }
-//            }
+                    if (zm.getBlockPanchayatMunicipalArea() == 1) {
+
+                        MasterBlock block =
+                                tblMasterBlockRepository
+                                        .findById(
+                                                zm.getBlockDetails()
+                                        )
+                                        .orElse(null);
+
+                        if (block != null) {
+
+                            blockId =
+                                    block.getBlockId();
+
+                            blockName =
+                                    block.getBlockName();
+                        }
+                    }
+
+                    // --------------------------------------------------
+                    // 2 = LOCAL BODY
+                    // --------------------------------------------------
+
+                    else if (
+                            zm.getBlockPanchayatMunicipalArea() == 2
+                    ) {
+
+                        TblLocalBody localbody =
+                                localBodyRepository
+                                        .findById(
+                                                zm.getBlockDetails()
+                                        )
+                                        .orElse(null);
+
+                        if (localbody != null) {
+
+                            blockId =
+                                    localbody.getLocalbodyId();
+
+                            blockName =
+                                    localbody.getLocalbodyNameEn();
+                        }
+                    }
+                }
+            }
+            // ======================================================
+            // PANCHAYATH FROM LBCODE
+            // ======================================================
+
+            Integer panchayathId = null;
+            String panchayathName = null;
+
             String lbcode = zoneAllocations.get(0).getLbcode();
 
             if (lbcode != null && !lbcode.isBlank()) {
@@ -2405,13 +2415,14 @@ public ClusterReportResponse getTalukWiseDashboardData(
 
                 if (localbody != null) {
 
-                    blockId =
+                    panchayathId =
                             localbody.getLocalbodyId();
 
-                    blockName =
+                    panchayathName =
                             localbody.getLocalbodyNameEn();
                 }
             }
+
 
             // ======================================================
             // ADD ZONE
@@ -2424,6 +2435,8 @@ public ClusterReportResponse getTalukWiseDashboardData(
                             .name(zone.getZoneNameEn())
                             .blockId(blockId)
                             .blockName(blockName)
+                            .panchayathId(panchayathId)
+                            .panchayathName(panchayathName)
                             .villageRecords(villageRecords)
                             .excludedArea(excludedArea)
                             .areaAvailableForEstimation(estimation)

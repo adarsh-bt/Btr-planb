@@ -34,6 +34,10 @@ public class WorkAllocationProgressResponse {
 
         private String blockName;
 
+        private Integer panchayathId;
+
+        private String panchayathName;
+
         private VillageRecords villageRecords;
 
         private ExcludedArea excludedArea;

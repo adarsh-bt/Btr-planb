@@ -420,7 +420,32 @@ ORDER BY cm.clusterNumber
 
           @Param("endDate")
           LocalDateTime endDate
+
   );
+
+    @Query("""
+    SELECT DISTINCT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    JOIN FETCH z.desTalukMaster dt
+
+    WHERE z.distId = :districtId
+
+      AND cm.createdAt >= :startDate
+      AND cm.createdAt <= :endDate
+""")
+    List<ClusterMaster> getTalukWiseDashboardDataByAgriYear(
+
+            @Param("districtId")
+            Integer districtId,
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
 
   //based on taluk id gets details of zone status
   @Query("""
@@ -455,6 +480,32 @@ ORDER BY cm.clusterNumber
           @Param("endDate")
           LocalDateTime endDate
   );
+
+    // based on taluk id gets details of zone status
+    @Query("""
+    SELECT DISTINCT cm
+    FROM ClusterMaster cm
+    JOIN FETCH cm.keyPlot kp
+    JOIN FETCH cm.zone z
+    JOIN FETCH z.desTalukMaster dt
+
+    WHERE z.desTalukId = :talukId
+
+    AND cm.createdAt >= :startDate
+
+    AND cm.createdAt <= :endDate
+""")
+    List<ClusterMaster> getZoneWiseDashboardDataByAgriYear(
+
+            @Param("talukId")
+            Integer talukId,
+
+            @Param("startDate")
+            LocalDateTime startDate,
+
+            @Param("endDate")
+            LocalDateTime endDate
+    );
 
   @Query("""
     SELECT DISTINCT cm
@@ -513,23 +564,21 @@ ORDER BY cm.clusterNumber
   List<FormClusterDetailsResponse>findClusterLocalBodyDetails(
           @Param("clusterIds") List<Long> clusterIds
   );
-//  @Query("""
-//    SELECT new cdti.aidea.earas.contract.Response.FormClusterDetailsResponse(
-//        cm.cluMasterId,
-//        cm.clusterNumber,
-//        COALESCE(lb.localbodyNameEn, 'Unknown')
-//    )
-//    FROM ClusterMaster cm
-//    JOIN cm.keyPlot kp
-//    JOIN kp.btrData bd
-//    LEFT JOIN TblLocalBody lb
-//        ON lb.codeApi = bd.lbcode
-//    WHERE cm.cluMasterId IN :clusterIds
-//    ORDER BY cm.clusterNumber
-//""")
-//  List<FormClusterDetailsResponse> findClusterLocalBodyDetails(
-//          @Param("clusterIds") List<Long> clusterIds
-//  );
 
-
+    //to get lbcode,name and id connect with form
+@Query(value = """
+SELECT
+    lb.localbody_id,
+    lb.localbody_name_en,
+    lb.code_api
+FROM cluster_master cm
+JOIN keyplot_selections kp
+    ON cm.plot_id = kp.kp_id
+JOIN tbl_btr_data bd
+    ON kp.btr_id = bd.id
+JOIN tbl_master_localbody lb
+    ON lb.code_api = bd.lbcode
+WHERE cm.clu_master_id = :clusterId
+""", nativeQuery = true)
+List<Object[]> getClusterLocalBodyDetails(@Param("clusterId") Long clusterId);
 }

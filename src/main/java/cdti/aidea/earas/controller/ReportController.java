@@ -1,8 +1,11 @@
 package cdti.aidea.earas.controller;
+import cdti.aidea.earas.contract.ClusterCompletedProgressResponse;
 import cdti.aidea.earas.contract.Response.ClusterReportResponse;
+import cdti.aidea.earas.contract.WorkAllocationProgressResponse;
 import cdti.aidea.earas.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -151,5 +154,115 @@ public class ReportController {
                 search
         );
     }
+
+    //Total cluster completed status needs to connect with form1
+    @GetMapping("/completed-clusters")
+    public ResponseEntity<ClusterCompletedProgressResponse> getCompletedClusters(
+
+            @RequestParam(required = false) String landType,
+            @RequestParam String agriYear
+    ) {
+
+        return ResponseEntity.ok(
+                reportService.getCompletedClusters(
+                        landType,
+                        agriYear
+                       ));
+    }
+
+//Total cluster completed status needs to connect with form1 DId passing taluk wise
+@GetMapping("/dashboard/completed/taluk")
+public ResponseEntity<ClusterCompletedProgressResponse> getTalukCompletedClusters(
+
+        @RequestParam Integer districtId,
+
+        @RequestParam(required = false) String landType,
+        @RequestParam String agriYear        ) {
+
+    return ResponseEntity.ok(
+            reportService.getTalukWiseCompletedClusters(
+                    districtId,
+                    landType,
+                    agriYear
+                    ));
+}
+
+//total cluster status taluk-id zone wise details connect with form
+@GetMapping("/dashboard/completed/zone")
+public ResponseEntity<ClusterCompletedProgressResponse> getZoneCompletedClusters(
+
+        @RequestParam Integer talukId,
+
+        @RequestParam(required = false) String landType,
+
+        @RequestParam
+        String agriYear,
+
+
+
+        @RequestParam(required = false) String search) {
+
+    return ResponseEntity.ok(
+            reportService.getZoneWiseCompletedClusters(
+                    talukId,
+                    landType,
+                    agriYear,
+                    search));
+}
+
+//work allocation report district wise all kerala
+@GetMapping("/work-allocation-progress")
+public ResponseEntity<WorkAllocationProgressResponse>
+getWorkAllocationProgress(
+        @RequestParam String agriYear) {
+
+    WorkAllocationProgressResponse response =
+            reportService
+                    .getWorkAllocationProgress(agriYear);
+
+    return ResponseEntity.ok(response);
+}
+
+//work allocation report taluk wise districtId
+@GetMapping("/work-allocation-progress/{districtId}")
+public ResponseEntity<WorkAllocationProgressResponse>
+getWorkAllocationProgressByDistrict(
+        @PathVariable Integer districtId,
+        @RequestParam String agriYear) {
+
+    return ResponseEntity.ok(
+            reportService.getWorkAllocationProgressByDistrict(
+                    districtId,
+                    agriYear
+            )
+    );
+}
+
+//work allocation progress report zone wise details passing talukid
+@GetMapping("/work-allocation-progress/taluk/{talukId}")
+public ResponseEntity<?> getWorkAllocationProgressByTaluk(
+        @PathVariable Integer talukId,
+        @RequestParam String agriYear) {
+
+    try {
+
+        WorkAllocationProgressResponse response =
+                reportService.getWorkAllocationProgressByTaluk(
+                        talukId,
+                        agriYear
+                );
+
+        return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+
+        return ResponseEntity
+                .badRequest()
+                .body(
+                        "Error fetching work allocation progress: "
+                                + e.getMessage()
+                );
+    }
+}
     }
 

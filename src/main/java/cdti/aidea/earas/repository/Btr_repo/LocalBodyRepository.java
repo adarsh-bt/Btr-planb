@@ -33,5 +33,7 @@ public interface LocalBodyRepository extends JpaRepository<TblLocalBody, Integer
 
     Page<TblLocalBody> findByLocalbodyNameEnContainingIgnoreCaseOrLocalbodyCodeContainingIgnoreCase(
             String name, String code, Pageable pageable);
+    //work alloccation zone wise details passing taluk id
+    Optional<TblLocalBody> findByCodeApiAndIsActiveTrue(String codeApi);
 
 }

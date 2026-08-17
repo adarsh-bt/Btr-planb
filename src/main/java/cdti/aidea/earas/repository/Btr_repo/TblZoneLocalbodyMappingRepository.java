@@ -61,4 +61,6 @@ public interface TblZoneLocalbodyMappingRepository
 
   Optional<TblZoneLocalbodyMapping>
   findByZoneAndLocalbody(Integer zone, Integer localbody);
+
+
 }

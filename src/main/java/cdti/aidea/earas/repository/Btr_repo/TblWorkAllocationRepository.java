@@ -15,6 +15,7 @@ public interface TblWorkAllocationRepository extends JpaRepository<TblWorkAlloca
     List<TblWorkAllocation> findByZone_ZoneId(Integer zoneId);
     Optional<TblWorkAllocation> findByLbcodeAndZone_ZoneId(String lbcode, Integer zoneId);
 
+
     @Query("""
     SELECT t
     FROM TblWorkAllocation t
@@ -33,6 +34,11 @@ public interface TblWorkAllocationRepository extends JpaRepository<TblWorkAlloca
     findByLbcodeAndZone_ZoneIdAndAgriStartAndAgriEnd(
             String lbcode,
             Integer zoneId,
+            LocalDate agriStart,
+            LocalDate agriEnd
+    );
+    //work allocation report district wise all kerala
+    List<TblWorkAllocation> findByAgriStartAndAgriEndAndIsActiveTrue(
             LocalDate agriStart,
             LocalDate agriEnd
     );

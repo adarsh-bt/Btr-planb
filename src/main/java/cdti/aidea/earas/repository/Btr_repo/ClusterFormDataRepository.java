@@ -3,6 +3,7 @@ package cdti.aidea.earas.repository.Btr_repo;
 import cdti.aidea.earas.contract.Response.BtrClusterUsageResponse;
 import cdti.aidea.earas.model.Btr_models.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -136,4 +137,11 @@ AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
           LocalDate agriStart,
           LocalDate agriEnd
   );
+  //to receive cluster area connect with form service
+  @Query("""
+SELECT COALESCE(SUM(c.enumeratedArea),0)
+FROM ClusterFormData c
+WHERE c.clusterMaster.cluMasterId = :clusterId
+""")
+  BigDecimal getTotalClusterArea(@Param("clusterId") Long clusterId);
 }

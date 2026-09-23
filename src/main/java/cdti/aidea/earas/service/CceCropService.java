@@ -201,8 +201,6 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId,String agriYear) {
             masterZoneRepository.findByDistId(
                     distId.intValue());
 
-    System.out.println("Zones Count : " + zones.size());
-
     List<FetchTalukResponse> responseList =
             new ArrayList<>();
 
@@ -301,7 +299,6 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId,String agriYear) {
             localBodyId = id;
             localBodyName = localBody.get().getLocalbodyNameEn();
 
-            System.out.println("Localbody found : " + localBodyName);
 
           }
         }

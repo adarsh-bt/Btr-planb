@@ -18,11 +18,11 @@ import org.springframework.data.repository.query.Param;
 public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
   //  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndResvno(Integer dcode, Integer tcode, Integer
   // vcode, String bcode, Integer resvno);
-  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvnoAndResbdno(
-      Integer dcode, Integer tcode,String lbcode, Integer vcode, String bcode, Integer resvno, String resbdno);
+//  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvnoAndResbdno(
+//      Integer dcode, Integer tcode,String lbcode, Integer vcode, String bcode, Integer resvno, String resbdno);
 
-  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvno(
-          Integer dcode, Integer tcode, String lbcode, Integer vcode, String bcode, Integer resvno);
+//  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvno(
+//          Integer dcode, Integer tcode, String lbcode, Integer vcode, String bcode, Integer resvno);
   boolean existsByDcodeAndLbcodeAndWardnumberAndHouseno(
           Integer dcode,
           String lbcode,
@@ -58,41 +58,41 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
   List<TblBtrData> findByZone(Long zone);
 
   // Custom query to filter based on multiple fields
-  @Query(
-      "SELECT b FROM TblBtrData b WHERE b.lsgcode IN :lsgcodes AND "
-          + "(CAST(b.bcode AS string) LIKE %:filter% OR "
-          + "CAST(b.resvno AS string) LIKE %:filter% OR "
-          + "CAST(b.resbdno AS string) LIKE %:filter% OR "
-          + "b.ltype LIKE %:filter%)")
-  Page<TblBtrData> findByLsgcodeInAndFilter(
-      @Param("lsgcodes") List<Integer> lsgcodes, @Param("filter") String filter, Pageable pageable);
+//  @Query(
+//      "SELECT b FROM TblBtrData b WHERE b.lsgcode IN :lsgcodes AND "
+//          + "(CAST(b.bcode AS string) LIKE %:filter% OR "
+//          + "CAST(b.resvno AS string) LIKE %:filter% OR "
+//          + "CAST(b.resbdno AS string) LIKE %:filter% OR "
+//          + "b.ltype LIKE %:filter%)")
+//  Page<TblBtrData> findByLsgcodeInAndFilter(
+//      @Param("lsgcodes") List<Integer> lsgcodes, @Param("filter") String filter, Pageable pageable);
 
-  List<TblBtrData> findAllByLbcodeAndLtype(String lbcode, String ltype);
+//  List<TblBtrData> findAllByLbcodeAndLtype(String lbcode, String ltype);
 
-  List<TblBtrData> findAllByLbcode(String lbcode);
+//  List<TblBtrData> findAllByLbcode(String lbcode);
 
-  List<TblBtrData> findAllByLbcodeAndResvnoAndLtype(String lbcode, Integer resvno, String ltype);
+//  List<TblBtrData> findAllByLbcodeAndResvnoAndLtype(String lbcode, Integer resvno, String ltype);
 
-  List<TblBtrData> findAllByLbcodeAndResvno(String lbcode, Integer resvno);
+//  List<TblBtrData> findAllByLbcodeAndResvno(String lbcode, Integer resvno);
   //    Optional<TblBtrDataOld> findByLbcodeAndResvnoAndResbdno(String lbcode, Integer resvno,
   // Integer resbdno);
   Optional<TblBtrData> findByLbcodeAndResvnoAndResbdnoAndLtype(
       String lbcode, Integer resvno, String resbdno, String ltype);
 
-  Optional<TblBtrData> findByResvnoAndResbdno(Integer resvno, String resbdno);
+//  Optional<TblBtrData> findByResvnoAndResbdno(Integer resvno, String resbdno);
 
   List<TblBtrData> findByLsgcodeAndBcodeAndLtype(Integer lsgcode, String bcode, String ltype);
 
-  List<TblBtrData> findByLsgcodeAndBcode(Integer lsgcode, String bcode);
-
-  List<TblBtrData> findByLsgcodeAndBcodeAndLtypeAndResvno(
-      Integer lsgcode, String bcode, String ltype, Integer resvno);
+//  List<TblBtrData> findByLsgcodeAndBcode(Integer lsgcode, String bcode);
+//
+//  List<TblBtrData> findByLsgcodeAndBcodeAndLtypeAndResvno(
+//      Integer lsgcode, String bcode, String ltype, Integer resvno);
 
   List<TblBtrData> findByLsgcodeAndBcodeAndLtypeAndResvnoBetween(
       Integer lsgcode, String bcode, String ltype, Integer start, Integer end);
 
-  List<TblBtrData> findByLsgcodeAndBcodeAndResvnoBetween(
-      Integer lsgcode, String bcode, Integer start, Integer end);
+//  List<TblBtrData> findByLsgcodeAndBcodeAndResvnoBetween(
+//      Integer lsgcode, String bcode, Integer start, Integer end);
 
   @Query(
           "SELECT b FROM TblBtrData b "
@@ -108,18 +108,56 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
           @Param("zone") Long zone,
           Pageable pageable);
 
+//  @Query(
+//          "SELECT b FROM TblBtrData b "
+//                  + "JOIN TblMasterVillage v ON b.lsgcode = v.lsgCode "
+//                  + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
+//                  + "WHERE b.zone = :zone AND ("
+//                  + "LOWER(v.villageNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+//                  + "LOWER(lb.localbodyNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+//                  + "CAST(b.bcode AS string) LIKE CONCAT('%', :filter, '%') OR "
+//                  + "CAST(b.resvno AS string) LIKE CONCAT('%', :filter, '%') OR "
+//                  + "CAST(b.resbdno AS string) LIKE CONCAT('%', :filter, '%') OR "
+//                  + "LOWER(b.ltype) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+//                  + "CONCAT(CAST(b.resvno AS string), '/', CAST(b.resbdno AS string)) LIKE CONCAT('%', :filter, '%')"
+//                  + ") "
+//                  + "ORDER BY lb.localbodyNameEn ASC, "
+//                  + "v.villageNameEn ASC, "
+//                  + "b.bcode ASC, "
+//                  + "b.resvno ASC, "
+//                  + "b.resbdno ASC, "
+//                  + "b.ltype DESC")
+//  Page<TblBtrData> findByZoneWithNamesFilter(
+//          @Param("zone") Long zone,
+//          @Param("filter") String filter,
+//          Pageable pageable);
+
+
   @Query(
           "SELECT b FROM TblBtrData b "
                   + "JOIN TblMasterVillage v ON b.lsgcode = v.lsgCode "
                   + "JOIN TblLocalBody lb ON b.lbcode = lb.codeApi "
                   + "WHERE b.zone = :zone AND ("
+
+                  // Existing search fields
                   + "LOWER(v.villageNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
                   + "LOWER(lb.localbodyNameEn) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
                   + "CAST(b.bcode AS string) LIKE CONCAT('%', :filter, '%') OR "
                   + "CAST(b.resvno AS string) LIKE CONCAT('%', :filter, '%') OR "
                   + "CAST(b.resbdno AS string) LIKE CONCAT('%', :filter, '%') OR "
                   + "LOWER(b.ltype) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
-                  + "CONCAT(CAST(b.resvno AS string), '/', CAST(b.resbdno AS string)) LIKE CONCAT('%', :filter, '%')"
+                  + "CONCAT(CAST(b.resvno AS string), '/', CAST(b.resbdno AS string)) "
+                  + "LIKE CONCAT('%', :filter, '%') OR "
+
+                  // New search fields
+                  + "LOWER(b.ownername) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                  + "CAST(b.tpno AS string) LIKE CONCAT('%', :filter, '%') OR "
+                  + "LOWER(b.tbsubdivisionno) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                  + "LOWER(b.houseno) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                  + "CAST(b.oldsvno AS string) LIKE CONCAT('%', :filter, '%') OR "
+                  + "LOWER(b.oldsubno) LIKE LOWER(CONCAT('%', :filter, '%')) OR "
+                  + "CAST(b.wardnumber AS string) LIKE CONCAT('%', :filter, '%')"
+
                   + ") "
                   + "ORDER BY lb.localbodyNameEn ASC, "
                   + "v.villageNameEn ASC, "
@@ -143,8 +181,8 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
         Integer dcode, Integer tcode, Integer vcode, String bcode,String lbcode ,Integer resvno);
 
   // For BTR type 2 - House List
-  boolean existsByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
-          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, String houseno);
+//  boolean existsByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
+//          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, String houseno);
 
   // For BTR type 3 - Cultivators List
   boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno, String resbdno);

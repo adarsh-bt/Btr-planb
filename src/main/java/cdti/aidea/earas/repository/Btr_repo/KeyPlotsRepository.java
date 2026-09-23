@@ -127,6 +127,8 @@ AND (
   );
 
   Optional<KeyPlots> findByBtrData_Id(Long btrId);
+
+    boolean existsByBtrDataIdAndAgriStartYearAndAgriEndYear(Long id, LocalDate agriYearStart, LocalDate agriYearEnd);
 }
 
 

@@ -1,9 +1,6 @@
 package cdti.aidea.earas.controller;
 
-import cdti.aidea.earas.contract.FormEntryDto.AvailableCcePlotFetchRequest;
-import cdti.aidea.earas.contract.FormEntryDto.CropReplaceClusterRequest;
-import cdti.aidea.earas.contract.FormEntryDto.CropReplaceClusterResponse;
-import cdti.aidea.earas.contract.FormEntryDto.KeyPlotClusterDTO;
+import cdti.aidea.earas.contract.FormEntryDto.*;
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.contract.ValidationErrorResponse;
@@ -157,6 +154,13 @@ public class ClusterController {
   public CropReplaceClusterResponse getNextCluster(
       @Valid @RequestBody CropReplaceClusterRequest request) {
     return clusterService.getNextCluster(request);
+  }
+
+  @PostMapping("/manual-next-cluster")
+  public CropReplaceClusterResponse getManualNextCluster(
+          @Valid @RequestBody ManualCropReplaceClusterRequest request) {
+
+    return clusterService.getManualNextCluster(request);
   }
 
   @GetMapping("/{kpId}/plot-details")

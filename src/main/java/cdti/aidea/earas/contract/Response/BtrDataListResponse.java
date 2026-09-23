@@ -29,6 +29,9 @@ public class BtrDataListResponse {
   private Integer main_no;
   private String sub_main_no;
   private String totalCent;
+  private Integer btr_type_id;
+  private String btr_type_name;
+
   //    private Double nhect;
   //    private Double nare;
   //    private Double nsqm;

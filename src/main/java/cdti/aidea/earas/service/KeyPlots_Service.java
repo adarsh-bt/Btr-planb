@@ -2034,7 +2034,7 @@ System.out.println(zone.getZoneId());
         String lbcode = dto.getLbcode() != null ? dto.getLbcode() : getLbcodeFromZone(zone);
 
         Integer type = Math.toIntExact(dto.getBtrtype());
-        System.out.println("Validating Non-BTR Duplicate for Type: " + type);
+
 
         switch (type) {
             case 2:

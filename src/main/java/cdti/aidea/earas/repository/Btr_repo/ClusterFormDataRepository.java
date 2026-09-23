@@ -134,43 +134,43 @@ AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
             """)
   Double getTotalEnumeratedAreaByClusterId(@Param("clusterId") Long clusterId);
 
-  @Query("""
-SELECT COALESCE(SUM(c.enumeratedArea),0)
-FROM ClusterFormData c
-WHERE c.plot.id = :plotId
-AND c.clusterMaster.keyPlot.agriStartYear = :agriStart
-AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
-""")
-  Double getUsedAreaByAgriYear(
-          Long plotId,
-          LocalDate agriStart,
-          LocalDate agriEnd
-  );
+//  @Query("""
+//SELECT COALESCE(SUM(c.enumeratedArea),0)
+//FROM ClusterFormData c
+//WHERE c.plot.id = :plotId
+//AND c.clusterMaster.keyPlot.agriStartYear = :agriStart
+//AND c.clusterMaster.keyPlot.agriEndYear = :agriEnd
+//""")
+//  Double getUsedAreaByAgriYear(
+//          Long plotId,
+//          LocalDate agriStart,
+//          LocalDate agriEnd
+//  );
 
-  @Query("""
-SELECT
-cd.cluDetailId AS cluDetailId,
-p.id AS plotId,
-cd.plotLabel AS plotLabel,
-cd.enumeratedArea AS enumeratedArea,
-p.resvno AS resvno,
-p.resbdno AS resbdno,
-p.totCent AS totCent,
-p.wardnumber AS wardnumber,
-p.houseno AS houseno,
-p.ownername AS ownername,
-p.address AS address,
-p.tpno AS tpno,
-p.tbsubdivisionno AS tbsubdivisionno,
-p.oldsvno AS oldsvno,
-p.oldsubno AS oldsubno,
-p.nonBtrTypeId AS bTypeId
-FROM ClusterFormData cd
-JOIN cd.plot p
-WHERE cd.clusterMaster.cluMasterId = :clusterId
-ORDER BY cd.displayOrder
-""")
-  List<ClusterLabelProjection> findClusterLabels(Long clusterId);
+//  @Query("""
+//SELECT
+//cd.cluDetailId AS cluDetailId,
+//p.id AS plotId,
+//cd.plotLabel AS plotLabel,
+//cd.enumeratedArea AS enumeratedArea,
+//p.resvno AS resvno,
+//p.resbdno AS resbdno,
+//p.totCent AS totCent,
+//p.wardnumber AS wardnumber,
+//p.houseno AS houseno,
+//p.ownername AS ownername,
+//p.address AS address,
+//p.tpno AS tpno,
+//p.tbsubdivisionno AS tbsubdivisionno,
+//p.oldsvno AS oldsvno,
+//p.oldsubno AS oldsubno,
+//p.nonBtrTypeId AS bTypeId
+//FROM ClusterFormData cd
+//JOIN cd.plot p
+//WHERE cd.clusterMaster.cluMasterId = :clusterId
+//ORDER BY cd.displayOrder
+//""")
+//  List<ClusterLabelProjection> findClusterLabels(Long clusterId);
 
 
   @Query("""

@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +51,7 @@ public class ClusterService {
   private final ClusterApprovalRepository clusterApprovalRepository;
   private final TblMasterZoneRepository tblMasterZoneRepository;
   private final AgriYearUtil agriYearUtil;
+  private final Zone_Service zoneService;
 
   public List<ClusterFormResponseDTO> getFormDataByClusterId(Long clusterId) {
     ClusterMaster clusterMaster =
@@ -88,7 +91,7 @@ public class ClusterService {
                         agriStart,
                         agriEnd
                 );
-System.out.println("okee "+clusters.size());
+
         // ✅ 2. Get cluster IDs
         List<Long> clusterIds = clusters.stream()
                 .map(ClusterSummaryProjection::getClusterId)
@@ -1051,7 +1054,7 @@ System.out.println("okee "+clusters.size());
           String agriYear,
           List<SidePlotDTO> sidePlots
   ) {
-System.out.println("year  >>   "+agriYear);
+
       LocalDate agriStart =
               AgriYearUtil.getAgriYearStart(agriYear);
 
@@ -1083,6 +1086,7 @@ System.out.println("year  >>   "+agriYear);
                     .orElseGet(() -> {
                       ClusterMaster cm = new ClusterMaster();
                       cm.setKeyPlot(keyPlot);
+                      cm.setZone(keyPlot.getZone());
                       cm.setStatus("On Going");
                       cm.setIsReject(false);
                       cm.setIs_active(true);
@@ -1094,13 +1098,13 @@ System.out.println("year  >>   "+agriYear);
     // =====================================================
     // 4️⃣ CALCULATE TOTAL ENUMERATED AREA (BACKEND TRUTH)
     // =====================================================
-    double totalEnumeratedArea =
-            sidePlots.stream()
+    BigDecimal totalEnumeratedArea =
+            BigDecimal.valueOf(sidePlots.stream()
                     .flatMap(sp -> sp.getRows().stream())
                     .mapToDouble(r -> r.getActual() != null ? r.getActual() : 0.0)
-                    .sum();
+                    .sum());
 
-    BigDecimal total = BigDecimal.valueOf(totalEnumeratedArea);
+    BigDecimal total =totalEnumeratedArea;
 
     // =====================================================
     // 5️⃣ HARD BACKEND VALIDATION (FINAL AUTHORITY)
@@ -1274,9 +1278,69 @@ System.out.println("year  >>   "+agriYear);
     // 9️⃣ DELETE REMOVED PLOTS
     // =====================================================
     clusterFormDataRepository.deleteAll(existingMap.values());
+      if ("Completed".equalsIgnoreCase(requestedStatus)) {
+
+          ClusterAreaInfoRequest request =
+                  buildCompletedClusterAreaRequest(
+                          savedCluster,
+                          total,
+                          agriYear
+                  );
+
+          TransactionSynchronizationManager.registerSynchronization(
+                  new TransactionSynchronization() {
+
+                      @Override
+                      public void afterCommit() {
+
+                          formEntryClient.saveClusterArea(request);
+                      }
+                  }
+          );
+      }
   }
 
+    private ClusterAreaInfoRequest buildCompletedClusterAreaRequest(
+            ClusterMaster cluster,
+            BigDecimal totalArea,
+            String agriYear) {
 
+        KeyPlots keyPlot = cluster.getKeyPlot();
+
+        Integer zoneId = cluster.getZone().getZoneId();
+
+        ZoneLocationResponse location =
+                zoneService.getZoneLocationDetails(
+                        zoneId,
+                        cluster.getCluMasterId()
+                );
+
+        return ClusterAreaInfoRequest.builder()
+
+                .clusterId(cluster.getCluMasterId())
+
+                .clusterArea(totalArea)
+
+                .clusterNo(cluster.getClusterNumber())
+
+                .districtId(location.getDistrictId())
+                .districtName(location.getDistrictName())
+
+                .talukId(location.getTalukId())
+                .talukName(location.getTalukName())
+
+                .blockId(location.getBlockId())
+                .blockName(location.getBlockName())
+
+                .zoneId(zoneId)
+                .zoneName(location.getZoneName())
+
+                .landType(keyPlot.getLandType())
+
+                .agriYear(agriYear)
+
+                .build();
+    }
 
   @Transactional
   public void deleteClusterFormDataById(Long id) {
@@ -1392,6 +1456,110 @@ System.out.println("year  >>   "+agriYear);
     return new CropReplaceClusterResponse(
             nextCluster.getCluMasterId(), nextCluster.getKeyPlot().getId(), "Success");
   }
+
+    @Transactional
+    public CropReplaceClusterResponse getManualNextCluster(
+            ManualCropReplaceClusterRequest request) {
+
+        // 1. Get current cluster
+        ClusterMaster currentCluster =
+                clusterMasterRepository.findById(request.getClusterId())
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Current cluster not found: "
+                                                + request.getClusterId()));
+
+        // 2. Get USER SELECTED cluster
+        ClusterMaster selectedCluster =
+                clusterMasterRepository.findById(request.getNextClusterId())
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Selected cluster not found: "
+                                                + request.getNextClusterId()));
+
+        // 3. Find current assignment
+        Optional<CropAssignmentTrail> currentAssignmentOpt =
+                cropAssignmentTrailRepository
+                        .findByCropIdAndCluster_CluMasterIdAndIsCurrentAssignmentTrue(
+                                request.getCropId(),
+                                request.getClusterId());
+
+        if (currentAssignmentOpt.isEmpty()) {
+            throw new IllegalStateException(
+                    "No current assignment found for cluster "
+                            + request.getClusterId()
+                            + " and crop "
+                            + request.getCropId());
+        }
+
+        // 4. Reject CURRENT assignment
+        CropAssignmentTrail currentAssignment =
+                currentAssignmentOpt.get();
+
+        currentAssignment.setIsRejected(true);
+        currentAssignment.setIsCurrentAssignment(false);
+        currentAssignment.setRejectionReason(
+                "Rejected by user");
+        currentAssignment.setRejectedBy(
+                request.getUserId());
+        currentAssignment.setRejectedAt(
+                LocalDateTime.now());
+        currentAssignment.setIsLimitExceeded(false);
+
+        cropAssignmentTrailRepository.save(currentAssignment);
+
+        // 5. Check whether selected cluster already has assignment
+        Optional<CropAssignmentTrail> selectedAssignmentOpt =
+                cropAssignmentTrailRepository
+                        .findByCropIdAndCluster_CluMasterId(
+                                request.getCropId(),
+                                request.getNextClusterId());
+
+        CropAssignmentTrail selectedAssignment;
+
+        // 6. Reuse existing assignment if available
+        if (selectedAssignmentOpt.isPresent()) {
+
+            selectedAssignment = selectedAssignmentOpt.get();
+
+            selectedAssignment.setIsRejected(false);
+            selectedAssignment.setIsCurrentAssignment(true);
+            selectedAssignment.setIsLimitExceeded(false);
+
+            selectedAssignment.setRejectionReason(null);
+            selectedAssignment.setRejectedBy(null);
+            selectedAssignment.setRejectedAt(null);
+
+            selectedAssignment.setAssignedOn(
+                    LocalDateTime.now());
+
+            selectedAssignment.setCreatedAt(
+                    LocalDateTime.now());
+
+        } else {
+
+            // 7. Create assignment for selected cluster
+            selectedAssignment =
+                    CropAssignmentTrail.builder()
+                            .cropId(request.getCropId())
+                            .cluster(selectedCluster)
+                            .keyPlot(selectedCluster.getKeyPlot())
+                            .landType(request.getCropLandType())
+                            .zoneId(request.getZoneId())
+                            .isRejected(false)
+                            .isCurrentAssignment(true)
+                            .assignedOn(LocalDateTime.now())
+                            .build();
+        }
+
+        cropAssignmentTrailRepository.save(selectedAssignment);
+
+        // 8. Return selected cluster
+        return new CropReplaceClusterResponse(
+                selectedCluster.getCluMasterId(),
+                selectedCluster.getKeyPlot().getId(),
+                "Success");
+    }
 
   public List<KeyPlotClusterDTO> getClustersByZoneId(Integer zoneId) {
     // Fetch KeyPlots by zoneId

@@ -223,9 +223,7 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId,String agriYear) {
                       agriStartYear,
                       agriEndYear);
 
-      System.out.println(
-              "Zone : " + zoneId +
-                      " Clusters : " + clusters.size());
+
 
       for (ClusterMaster cluster : clusters) {
 

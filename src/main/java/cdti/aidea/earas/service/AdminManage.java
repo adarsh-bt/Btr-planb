@@ -789,7 +789,7 @@ public class AdminManage {
 
   @Transactional
   public void saveZoneMapping(AddZoneMappingRequest request) {
-    System.out.println("request " + request);
+
     Integer zoneId = Math.toIntExact(request.getZoneId());
     Optional<DesTaluk> des = desTalukRepository.findById(request.getTalukId());
     zoneRevenueTalukMappingRepository

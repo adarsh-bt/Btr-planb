@@ -50,7 +50,7 @@ public class TblBtrDataService {
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
         List<ValidationErrorResponse> allErrors = new ArrayList<>();
-        System.out.println("sto   "+dtoList);
+
         // Validate all DTOs first
         for (TblBtrDataDTO dto : dtoList) {
             // Required validation
@@ -191,56 +191,15 @@ public class TblBtrDataService {
 
     private ValidationErrorResponse validateDuplicate(TblBtrDataDTO dto) {
 
-        LocalDate startDate =
-                AgriYearUtil.getAgriYearStart(dto.getAgriYear());
+        LocalDate startDate = AgriYearUtil.getAgriYearStart(dto.getAgriYear());
+        LocalDate endDate = AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
 
-        LocalDate endDate =
-                AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
         Optional<Integer> maxClusterNumberOpt =
                 clusterMasterRepository.findMaxClusterNumberByAgriYear(
                         Math.toIntExact(dto.getZoneId()),
                         startDate,
                         endDate
                 );
-        System.out.println("dto   >>>>>>>>>>>>>   "+dto.getId());
-        if (dto.getId() != null) {
-            int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
-
-            if (nextClusterNumber > 100) {
-                return new ValidationErrorResponse(
-                        0,
-                        null,
-                        0,
-                        null,
-                        0.0,
-                        "Keyplots limit for current year is 100"
-                );
-            }
-            return null;
-        }
-        boolean existsRes = false;
-        if (dto.getResvno() != null ){
-            if (dto.getResbdno() != null && notEmpty(dto.getResbdno())) {
-
-                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
-                        dto.getResvno(), dto.getResbdno());
-            } else {
-
-                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
-                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
-            }
-            if (existsRes) {
-                return new ValidationErrorResponse(
-                        dto.getResvno(),
-                        dto.getResbdno(),
-                        dto.getWardno(),
-                        dto.getHouseno(),
-                        dto.getTotCent(),
-                        "Duplicate entry already exists for resvno=" + dto.getResvno()
-                                + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : ""));
-            }}
-
 
         int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
 
@@ -254,106 +213,136 @@ public class TblBtrDataService {
                     "Keyplots limit for current year is 100"
             );
         }
-        // ---------------- Type 1 ----------------
-        if (dto.getBtrtype() == 1) {
-            System.out.println("Btr List val" + 1);
-            boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
+
+        if (dto.getId() != null) {
+            return null;
+        }
+
+        // ---------------- General Resvno / Resbdno Check ----------------
+        if (dto.getResvno() != null) {
+            boolean existsRes;
+            if (dto.getResbdno() != null && notEmpty(dto.getResbdno())) {
+                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdnoAndAgreStartYearAndAgreEndYear(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
+                        dto.getResvno(), dto.getResbdno(), startDate, endDate);
+            } else {
+                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndAgreStartYearAndAgreEndYear(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
+                        dto.getResvno(), startDate, endDate);
+            }
+
+            if (existsRes) {
+                return new ValidationErrorResponse(
+                        dto.getResvno(),
+                        dto.getResbdno(),
+                        dto.getWardno(),
+                        dto.getHouseno(),
+                        dto.getTotCent(),
+                        "Duplicate entry already exists for resvno=" + dto.getResvno()
+                                + (dto.getResbdno() != null ? " and resbdno=" + dto.getResbdno() : "")
+                                + " for agricultural year " + dto.getAgriYear());
+            }
+        }
+
+        // ---------------- Type 1 (BTR) ----------------
+        if (dto.getBtrtype() != null && dto.getBtrtype() == 1) {
+            boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdnoAndAgreStartYearAndAgreEndYear(
                     dto.getDcode(), dto.getTcode(), dto.getVcode(),
-                    dto.getBcode(), dto.getLbcode(), dto.getResvno(), dto.getResbdno());
+                    dto.getBcode(), dto.getLbcode(), dto.getResvno(), dto.getResbdno(),
+                    startDate, endDate);
 
             if (exists) {
-                System.out.println("Btr List val" + 1);
                 return new ValidationErrorResponse(
                         dto.getResvno(), dto.getResbdno(),
                         dto.getWardno(), dto.getHouseno(),
                         dto.getTotCent(),
                         "Duplicate entry already exists for resvno=" + dto.getResvno()
-                                + " and resbdno=" + dto.getResbdno());
+                                + " and resbdno=" + dto.getResbdno()
+                                + " for agricultural year " + dto.getAgriYear());
             }
 
-        } else if (dto.getBtrtype() == 2) {
-            // --------- Added resvno/resbdno check ----------
-            boolean exists = tblBtrDataRepository.existsByDcodeAndLbcodeAndWardnumberAndHouseno(
-                    dto.getDcode(), dto.getLbcode(), dto.getWardno(), dto.getHouseno());
+            // ---------------- Type 2 (Ward / House No) ----------------
+        } else if (dto.getBtrtype() != null && dto.getBtrtype() == 2) {
+            boolean exists = tblBtrDataRepository.existsByDcodeAndLbcodeAndWardnumberAndHousenoAndAgreStartYearAndAgreEndYear(
+                    dto.getDcode(), dto.getLbcode(), dto.getWardno(), dto.getHouseno(),
+                    startDate, endDate);
+
             if (exists) {
                 return new ValidationErrorResponse(
                         dto.getResvno(), dto.getResbdno(),
                         dto.getWardno(), dto.getHouseno(),
                         dto.getTotCent(),
                         "Duplicate entry already exists for Ward Number=" + dto.getWardno()
-                                + " and House No=" + dto.getHouseno());
+                                + " and House No=" + dto.getHouseno()
+                                + " for agricultural year " + dto.getAgriYear());
             }
 
-        } else if (dto.getBtrtype() == 3) {
-            System.out.println("CL List val" + 3);
-
-
-            boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
+            // ---------------- Type 3 (Landowner / Address) ----------------
+        } else if (dto.getBtrtype() != null && dto.getBtrtype() == 3) {
+            boolean exists = tblBtrDataRepository.existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCentAndAgreStartYearAndAgreEndYear(
                     dto.getDcode(), dto.getTcode(), dto.getLbcode(), dto.getVcode(),
-                    dto.getBcode(), dto.getOwnername(), dto.getAddress(), dto.getTotCent());
+                    dto.getBcode(), dto.getOwnername(), dto.getAddress(), dto.getTotCent(),
+                    startDate, endDate);
 
             if (exists) {
-                System.out.println("CL List val" + 3);
                 return new ValidationErrorResponse(
                         dto.getResvno(), dto.getResbdno(),
                         dto.getWardno(), dto.getHouseno(),
                         dto.getTotCent(),
                         "Duplicate entry already exists for LandOwner name=" + dto.getOwnername()
-                                + " and landowner Address=" + dto.getAddress());
+                                + " and landowner Address=" + dto.getAddress()
+                                + " for agricultural year " + dto.getAgriYear());
             }
 
-        } else if (dto.getBtrtype() == 4) {
-            System.out.println("TP List val " + 4);
-
+            // ---------------- Type 4 (TP No / Subdivision) ----------------
+        } else if (dto.getBtrtype() != null && dto.getBtrtype() == 4) {
             boolean exists;
             if (dto.getTbsubdivisionno() != null) {
-                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionnoAndAgreStartYearAndAgreEndYear(
                         dto.getDcode(), dto.getTcode(), dto.getVcode(),
-                        dto.getBcode(), dto.getTpno(), dto.getTbsubdivisionno());
+                        dto.getBcode(), dto.getTpno(), dto.getTbsubdivisionno(),
+                        startDate, endDate);
             } else {
-                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
-                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getTpno());
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndAgreStartYearAndAgreEndYear(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(),
+                        dto.getBcode(), dto.getTpno(),
+                        startDate, endDate);
             }
 
             if (exists) {
-                System.out.println("TP List val " + 4);
                 return new ValidationErrorResponse(
                         dto.getResvno(), dto.getResbdno(),
                         dto.getWardno(), dto.getHouseno(),
                         dto.getTotCent(),
                         "Duplicate entry already exists for Tp No=" + dto.getTpno()
-                                + " and Tp Sub no=" + dto.getTbsubdivisionno());
+                                + " and Tp Sub no=" + dto.getTbsubdivisionno()
+                                + " for agricultural year " + dto.getAgriYear());
             }
 
-        } else if (dto.getBtrtype() == 5) {
-            System.out.println("Old survey " + 5);
-
-
-
+            // ---------------- Type 5 (Old Survey / Subdivision) ----------------
+        } else if (dto.getBtrtype() != null && dto.getBtrtype() == 5) {
             boolean exists;
             if (dto.getOldsubno() != null) {
-                System.out.println(dto.getDcode()+" " + dto.getTcode()+ " " +dto.getVcode()+" "+dto.getBcode()+
-                        " "+dto.getOldsvno()+" "+dto.getOldsubno());
-                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndOldsubno(
-                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(),dto.getLbcode(),
-                        dto.getOldsvno(), dto.getOldsubno());
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndOldsubnoAndAgreStartYearAndAgreEndYear(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
+                        dto.getOldsvno(), dto.getOldsubno(), startDate, endDate);
             } else {
-                System.out.println(dto.getDcode()+" " + dto.getTcode()+ " " +dto.getVcode()+" "+dto.getBcode()+
-                        " "+dto.getOldsvno()+" "+dto.getOldsubno());
-                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvno(
-                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),dto.getOldsvno());
+                exists = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndAgreStartYearAndAgreEndYear(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
+                        dto.getOldsvno(), startDate, endDate);
             }
 
             if (exists) {
-                System.out.println("Old Survey val " + 5);
                 return new ValidationErrorResponse(
                         dto.getResvno(), dto.getResbdno(),
                         dto.getWardno(), dto.getHouseno(),
                         dto.getTotCent(),
                         "Duplicate entry already exists for Old Survey Number=" + dto.getOldsvno()
-                                + " and Old Subdivision Number=" + dto.getOldsubno());
+                                + " and Old Subdivision Number=" + dto.getOldsubno()
+                                + " for agricultural year " + dto.getAgriYear());
             }
         }
+
         return null;
     }
     // ---------------- Required Fields Validation ----------------
@@ -374,40 +363,55 @@ public class TblBtrDataService {
     }
 
     public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
-        String cleanedResbdno = dto.getResbdno() != null ?
-                dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
 
-        List<TblBtrData> plots;
+
+        String cleanedResbdno = (dto.getResbdno() != null && !dto.getResbdno().trim().isEmpty())
+                ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "")
+                : null;
+
         TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
-        // Handle both cases: with and without subdivision
-        if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
-            System.out.println("ssss :  "+ dto.getResvno()+"  : "+cleanedResbdno);
-            System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
-                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno+ "  "+zone.getDistId());
+        TblMasterVillage village = tblMasterVillageRepository.findByVillageId(dto.getVcode())
+                .orElseThrow(() -> new RuntimeException("Village not found"));
+
+        Integer dcode = zone.getDistId();
+        Integer tcode = village.getRevTalukId();
+
+        // Derive date bounds from the requested agriYear (e.g., "2026-2027")
+        LocalDate startDate = AgriYearUtil.getAgriYearStart(dto.getAgriYear());
+        LocalDate endDate = AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
+
+        List<TblBtrData> plots;
+
+        if (cleanedResbdno != null) {
 
 
-            // Case 1: User provided both survey number AND subdivision
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-                    zone.getDistId(),
-                    village.get().getRevTalukId(),
+            // Case 1: User provided both survey number and subdivision
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdnoAndAgreStartYearAndAgreEndYear(
+                    dcode,
+                    tcode,
                     dto.getVcode(),
                     dto.getBcode(),
                     dto.getLbcode(),
                     dto.getResvno(),
-                    cleanedResbdno);
+                    cleanedResbdno,
+                    startDate,
+                    endDate
+            );
 
             if (plots.isEmpty()) {
-                // If exact match not found, check if survey number exists with any subdivision
-                List<TblBtrData> surveyOnlyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
-                        zone.getDistId(),
-                        zone.getDesTalukId(),
+                // Check if any subdivision exists under this survey number in the same agri-year
+                List<TblBtrData> surveyOnlyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndAgreStartYearAndAgreEndYear(
+                        dcode,
+                        tcode,
                         dto.getVcode(),
                         dto.getBcode(),
                         dto.getLbcode(),
-                        dto.getResvno());
+                        dto.getResvno(),
+                        startDate,
+                        endDate
+                );
 
                 if (!surveyOnlyPlots.isEmpty()) {
                     return createSurveyWithSubdivisionsResponse(surveyOnlyPlots, dto.getResvno());
@@ -415,30 +419,45 @@ public class TblBtrDataService {
                 return null; // No plot found at all
             }
         } else {
-            // Case 2: User provided only survey number (no subdivision)
-            System.out.println("only survey  :  "+ dto.getResvno()+"  : "+cleanedResbdno);
-            System.out.println(zone.getDistId()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
-                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-                    zone.getDistId(),
-                    village.get().getRevTalukId(),
+
+
+            // Case 2: User provided only survey number (check for empty/null subdivision)
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdnoAndAgreStartYearAndAgreEndYear(
+                    dcode,
+                    tcode,
                     dto.getVcode(),
                     dto.getBcode(),
                     dto.getLbcode(),
                     dto.getResvno(),
-                    "");
+                    "",
+                    startDate,
+                    endDate
+            );
 
             if (plots.isEmpty()) {
-                return null; // No plot found
+                // Check if multiple subdivisions exist under this survey number
+                List<TblBtrData> allSubdivisions = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndAgreStartYearAndAgreEndYear(
+                        dcode,
+                        tcode,
+                        dto.getVcode(),
+                        dto.getBcode(),
+                        dto.getLbcode(),
+                        dto.getResvno(),
+                        startDate,
+                        endDate
+                );
+
+                if (!allSubdivisions.isEmpty()) {
+                    return createSurveyWithSubdivisionsResponse(allSubdivisions, dto.getResvno());
+                }
+                return null;
             }
 
-            // If multiple subdivisions exist for this survey number, show options
             if (plots.size() > 1) {
                 return createSurveyWithSubdivisionsResponse(plots, dto.getResvno());
             }
         }
 
-        // Calculate remaining area for single plot case
         return calculateRemainingAreaForPlot(plots.get(0), dto.getResvno(), cleanedResbdno);
     }
 
@@ -448,77 +467,80 @@ public class TblBtrDataService {
 
         String lbcode = dto.getLbcode() != null ? dto.getLbcode() : getLbcodeFromZone(zone);
 
+        // Resolve agricultural year bounds
+        LocalDate startDate = AgriYearUtil.getAgriYearStart(dto.getAgriYear());
+        LocalDate endDate = AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
+
         Integer type = Math.toIntExact(dto.getBtrtype());
-        System.out.println("Validating Non-BTR Duplicate for Type: " + type);
+
 
         switch (type) {
             case 2:
-                return validateHouseListDuplicate(dto, zone, lbcode);
+                return validateHouseListDuplicate(dto, zone, lbcode, startDate, endDate);
             case 3:
-                return validateCultivatorsListDuplicate(dto, zone, lbcode);
+                return validateCultivatorsListDuplicate(dto, zone, lbcode, startDate, endDate);
             case 4:
-                return validateThandaperDuplicate(dto, zone, lbcode);
+                return validateThandaperDuplicate(dto, zone, lbcode, startDate, endDate);
             case 5:
-                return validateOldSurveyDuplicate(dto, zone, lbcode);
+                return validateOldSurveyDuplicate(dto, zone, lbcode, startDate, endDate);
             default:
                 throw new RuntimeException("Invalid Non-BTR Type: " + type);
         }
     }
 
-    private ValidationResponse validateHouseListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
-        System.out.println(zone.getDistId()+" " +lbcode +" " +dto.getWardno()+" " +dto.getHouseno()+" "+zone);
+    private ValidationResponse validateHouseListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode,
+                                                          LocalDate startDate, LocalDate endDate) {
+
         if (dto.getWardno() == null || dto.getHouseno() == null) {
             throw new RuntimeException("Ward number and House number are required for House List validation");
         }
-        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
-        // Use query method that returns actual data instead of existsBy
-        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
-                zone.getDistId(),  village.get().getRevTalukId(), lbcode, dto.getWardno(), dto.getHouseno());
+        TblMasterVillage village = tblMasterVillageRepository.findByVillageId(dto.getVcode())
+                .orElseThrow(() -> new RuntimeException("Village not found"));
+
+        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndLbcodeAndWardnumberAndHousenoAndAgreStartYearAndAgreEndYear(
+                zone.getDistId(), village.getRevTalukId(), lbcode, dto.getWardno(), dto.getHouseno(), startDate, endDate);
 
         if (!plots.isEmpty()) {
             TblBtrData plot = plots.get(0);
             return calculateRemainingAreaForPlot(plot, null, "House: Ward " + dto.getWardno() + ", House " + dto.getHouseno());
         }
 
-        // Optional: check survey number/subdivision (like in BTR)
-        return validateSurveyNumberIfProvided(dto, zone);
+        return validateSurveyNumberIfProvided(dto, zone, startDate, endDate);
     }
 
-    private ValidationResponse validateCultivatorsListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+    private ValidationResponse validateCultivatorsListDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode,
+                                                                LocalDate startDate, LocalDate endDate) {
         if (dto.getOwnername() == null || dto.getAddress() == null || dto.getTotCent() <= 0) {
             throw new RuntimeException("Owner name, address, and total area are required for Cultivators List validation");
         }
-        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
-        // Use query method that returns actual data instead of existsBy
-        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
-                zone.getDistId(), village.get().getRevTalukId(), lbcode, dto.getVcode(),
-                dto.getBcode(), dto.getOwnername(), dto.getAddress(), dto.getTotCent());
+        TblMasterVillage village = tblMasterVillageRepository.findByVillageId(dto.getVcode())
+                .orElseThrow(() -> new RuntimeException("Village not found"));
+
+        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCentAndAgreStartYearAndAgreEndYear(
+                zone.getDistId(), village.getRevTalukId(), lbcode, dto.getVcode(),
+                dto.getBcode(), dto.getOwnername(), dto.getAddress(), dto.getTotCent(),
+                startDate, endDate);
 
         if (!plots.isEmpty()) {
             TblBtrData plot = plots.get(0);
             return calculateRemainingAreaForPlot(plot, null, "Cultivator: " + dto.getOwnername());
         }
 
-        // Optional: also validate survey number if provided
-        return validateSurveyNumberIfProvided(dto, zone);
+        return validateSurveyNumberIfProvided(dto, zone, startDate, endDate);
     }
 
-    private ValidationResponse validateThandaperDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+    private ValidationResponse validateThandaperDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode,
+                                                          LocalDate startDate, LocalDate endDate) {
         if (dto.getTpno() == null) {
             throw new RuntimeException("Thandaper number is required for Thandaper validation");
         }
 
-        List<TblBtrData> plots;
-        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
-        if (dto.getTbsubdivisionno() != null) {
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
-                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
-                    dto.getTpno(), dto.getTbsubdivisionno());
-        } else {
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
-                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
-                    dto.getTpno(),null);
-        }
+        TblMasterVillage village = tblMasterVillageRepository.findByVillageId(dto.getVcode())
+                .orElseThrow(() -> new RuntimeException("Village not found"));
+
+        List<TblBtrData> plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionnoAndAgreStartYearAndAgreEndYear(
+                zone.getDistId(), village.getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                dto.getTpno(), dto.getTbsubdivisionno(), startDate, endDate);
 
         if (plots.isEmpty()) return null;
 
@@ -528,29 +550,32 @@ public class TblBtrDataService {
 
         TblBtrData plot = plots.get(0);
         return calculateRemainingAreaForPlot(plot, null,
-                dto.getTbsubdivisionno() != null ? dto.getTbsubdivisionno().toString() : null);
+                dto.getTbsubdivisionno() != null ? dto.getTbsubdivisionno() : null);
     }
 
-    private ValidationResponse validateOldSurveyDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode) {
+    private ValidationResponse validateOldSurveyDuplicate(TblBtrDataDTO dto, TblMasterZone zone, String lbcode,
+                                                          LocalDate startDate, LocalDate endDate) {
         if (dto.getOldsvno() == null) {
             throw new RuntimeException("Old survey number is required for Old Survey validation");
         }
 
+        TblMasterVillage village = tblMasterVillageRepository.findByVillageId(dto.getVcode())
+                .orElseThrow(() -> new RuntimeException("Village not found"));
+
         List<TblBtrData> plots;
-        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
-        if (dto.getOldsubno() != null && !dto.getOldsubno().isEmpty()) {
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubno(
-                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
-                    dto.getOldsvno(), dto.getOldsubno());
+        if (dto.getOldsubno() != null && !dto.getOldsubno().trim().isEmpty()) {
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubnoAndAgreStartYearAndAgreEndYear(
+                    zone.getDistId(), village.getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getOldsvno(), dto.getOldsubno().trim(), startDate, endDate);
         } else {
-            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
-                    zone.getDistId(), village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),
-                    dto.getOldsvno());
+            plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndAgreStartYearAndAgreEndYear(
+                    zone.getDistId(), village.getRevTalukId(), dto.getVcode(), dto.getBcode(),
+                    dto.getOldsvno(), startDate, endDate);
         }
 
         if (plots.isEmpty()) return null;
 
-        if (plots.size() > 1 && (dto.getOldsubno() == null || dto.getOldsubno().isEmpty())) {
+        if (plots.size() > 1 && (dto.getOldsubno() == null || dto.getOldsubno().trim().isEmpty())) {
             return createOldSurveySubdivisionsResponse(plots, dto.getOldsvno());
         }
 
@@ -558,29 +583,34 @@ public class TblBtrDataService {
         return calculateRemainingAreaForPlot(plot, dto.getOldsvno(), dto.getOldsubno());
     }
 
-    // Helper method to validate survey number if provided (common for all types)
-    private ValidationResponse validateSurveyNumberIfProvided(TblBtrDataDTO dto, TblMasterZone zone) {
+    // Helper method to validate survey number if provided (filtered by agri-year)
+    private ValidationResponse validateSurveyNumberIfProvided(TblBtrDataDTO dto, TblMasterZone zone,
+                                                              LocalDate startDate, LocalDate endDate) {
         if (dto.getResvno() == null) return null;
 
-        String cleanedResbdno = dto.getResbdno() != null ?
-                dto.getResbdno().trim().replaceFirst("^0+(?!$)", "") : null;
+        String cleanedResbdno = (dto.getResbdno() != null && !dto.getResbdno().trim().isEmpty())
+                ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "")
+                : null;
+
+        TblMasterVillage village = tblMasterVillageRepository.findByVillageId(dto.getVcode())
+                .orElseThrow(() -> new RuntimeException("Village not found"));
 
         List<TblBtrData> surveyPlots;
-        Optional<TblMasterVillage> village  = tblMasterVillageRepository.findByVillageId(dto.getVcode());
-        if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
-            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-                    zone.getDistId(),  village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
-                    dto.getResvno(), cleanedResbdno);
+        if (cleanedResbdno != null) {
+            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdnoAndAgreStartYearAndAgreEndYear(
+                    zone.getDistId(), village.getRevTalukId(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
+                    dto.getResvno(), cleanedResbdno, startDate, endDate);
         } else {
-            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
-                    zone.getDistId(),  village.get().getRevTalukId(), dto.getVcode(), dto.getBcode(),dto.getLbcode(), dto.getResvno());
+            surveyPlots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndAgreStartYearAndAgreEndYear(
+                    zone.getDistId(), village.getRevTalukId(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
+                    dto.getResvno(), startDate, endDate);
         }
 
         if (!surveyPlots.isEmpty()) {
-            if (surveyPlots.size() > 1 && (cleanedResbdno == null || cleanedResbdno.isEmpty())) {
+            if (surveyPlots.size() > 1 && cleanedResbdno == null) {
                 return createSurveyWithSubdivisionsResponse(surveyPlots, dto.getResvno());
             }
-            return calculateRemainingAreaForPlot(surveyPlots.get(0), Integer.valueOf(dto.getResvno().toString()), cleanedResbdno);
+            return calculateRemainingAreaForPlot(surveyPlots.get(0), dto.getResvno(), cleanedResbdno);
         }
 
         return null;
@@ -643,7 +673,7 @@ public class TblBtrDataService {
     private ValidationResponse calculateRemainingAreaForPlot(TblBtrData plot, Integer identifier, String subdivision) {
         int currentYear = java.time.LocalDate.now().getYear();
         int nextYear = currentYear + 1;
-        System.out.println("plots >>>  "+plot);
+
         double totalEnumerated = 0.0;
         double totalArea = plot.getTotCent() != null ? plot.getTotCent() : 0.0;
         LocalDate today = LocalDate.now();
@@ -669,10 +699,10 @@ public class TblBtrDataService {
         totalEnumerated += clusterDataList.stream()
                 .mapToDouble(cd -> cd.getEnumeratedArea() != null ? cd.getEnumeratedArea() : 0.0)
                 .sum();
-        System.out.println("total >>>  "+totalArea);
-        System.out.println("Emureted  >>> "+totalEnumerated);
+
+
         double remainingArea = totalArea - totalEnumerated;
-        System.out.println("ccccc >>  "+clusterDataList);
+
         System.out.println("remain "+remainingArea);
         // For non-survey cases, identifier might be null
         Integer resvno = (identifier != null) ? identifier : null;

@@ -493,7 +493,7 @@ public class WorkallocationService {
     @Transactional
     public void revokeWorkAllocation(Long approvalId, String remarks, UUID revokedBy) {
         // Find the approval
-        System.out.println("remarks   "+remarks);
+
         TblWorkAllocationApproval approval = tblWorkAllocationApprovalRepository
                 .findById(approvalId)
                 .orElseThrow(() -> new RuntimeException("Approval not found"));

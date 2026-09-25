@@ -40,7 +40,7 @@ public class BtrFetchService {
       List<Integer> villageIds = getVillageIdsByZone(zoneId);
 
       if (villageIds.isEmpty()) {
-        System.out.println("No villages found for zone: " + zoneId);
+
         return new ArrayList<>();
       }
 
@@ -61,7 +61,7 @@ public class BtrFetchService {
               + lsgcodes.size());
 
       if (lsgcodes.isEmpty()) {
-        System.out.println("No valid LSG codes found for zone: " + zoneId);
+
         return new ArrayList<>();
       }
 
@@ -88,7 +88,7 @@ public class BtrFetchService {
       return convertToResponseDTOs(allData, villageList, zoneId);
 
     } catch (Exception e) {
-      System.err.println("Error fetching BTR data for zone " + zoneId + ": " + e.getMessage());
+
       e.printStackTrace();
       return new ArrayList<>();
     }
@@ -109,7 +109,7 @@ public class BtrFetchService {
       Optional<TblBtrData> btrDataOpt = tblBtrDataRepository.findById(id);
 
       if (btrDataOpt.isEmpty()) {
-        System.out.println("No BTR record found with ID: " + id);
+
         return Optional.empty();
       }
 
@@ -149,7 +149,7 @@ public class BtrFetchService {
       return Optional.of(response);
 
     } catch (Exception e) {
-      System.err.println("Error fetching BTR data by ID " + id + ": " + e.getMessage());
+
       e.printStackTrace();
       return Optional.empty();
     }
@@ -182,7 +182,7 @@ public class BtrFetchService {
       List<TblBtrData> btrDataList = tblBtrDataRepository.findAllById(validIds);
 
       if (btrDataList.isEmpty()) {
-        System.out.println("No BTR records found for provided IDs");
+
         return new ArrayList<>();
       }
 
@@ -260,7 +260,6 @@ public class BtrFetchService {
           .collect(Collectors.toList());
 
     } catch (Exception e) {
-      System.err.println("Error fetching BTR data by IDs: " + e.getMessage());
       e.printStackTrace();
       return new ArrayList<>();
     }
@@ -291,7 +290,6 @@ public class BtrFetchService {
           zoneId, totalRecords, uniqueLocalBodies, uniqueVillages);
 
     } catch (Exception e) {
-      System.err.println("Error getting zone summary for zone " + zoneId + ": " + e.getMessage());
       return String.format("Zone %d: Error retrieving summary", zoneId);
     }
   }
@@ -316,7 +314,6 @@ public class BtrFetchService {
                   Collectors.counting()));
 
     } catch (Exception e) {
-      System.err.println("Error getting land types for zone " + zoneId + ": " + e.getMessage());
       return new HashMap<>();
     }
   }
@@ -340,7 +337,7 @@ public class BtrFetchService {
                   (existing, replacement) -> existing));
 
     } catch (Exception e) {
-      System.err.println("Error getting local bodies for zone " + zoneId + ": " + e.getMessage());
+
       return new HashMap<>();
     }
   }
@@ -364,7 +361,6 @@ public class BtrFetchService {
           .collect(Collectors.toList());
 
     } catch (Exception e) {
-      System.err.println("Error getting villages for zone " + zoneId + ": " + e.getMessage());
       return new ArrayList<>();
     }
   }
@@ -422,7 +418,7 @@ public class BtrFetchService {
                         TblLocalBody::getLocalbodyNameEn,
                         (existing, replacement) -> existing));
       } catch (Exception e) {
-        System.err.println("Error fetching local body names: " + e.getMessage());
+
         localBodyNameMap1 = new HashMap<>();
       }
     } else {

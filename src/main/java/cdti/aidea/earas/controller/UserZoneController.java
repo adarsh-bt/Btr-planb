@@ -214,7 +214,7 @@ public class UserZoneController {
             .map(d -> {
               Map<String, Object> district = new HashMap<>();
               district.put("distId", d.getDist_id());
-              district.put("distNameEn", d.getDist_name_en());
+              district.put("distNameEn", d.getDistNameEn());
               return district;
             })
             .collect(Collectors.toList());

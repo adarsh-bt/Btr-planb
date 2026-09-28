@@ -624,7 +624,7 @@ public class Zone_Service {
     Optional<DesTaluk> taluk =
             desTalukRepository.findById(zone.getDesTalukId());
 
-    String districtName = district.map(DistrictMaster::getDist_name_en).orElse("");
+    String districtName = district.map(DistrictMaster::getDistNameEn).orElse("");
     String talukName = taluk.map(DesTaluk::getDesTalukNameEn).orElse("");
 
     // ✅ Localbody label

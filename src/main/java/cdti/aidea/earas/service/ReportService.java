@@ -126,7 +126,7 @@ System.out.println("start year "+startMonth+"  "+endMonth);
             districtName =
                     cluster.getZone()
                             .getDistrictMaster()
-                            .getDist_name_en();
+                            .getDistNameEn();
 
             districtId =
                     cluster.getZone()
@@ -1220,7 +1220,7 @@ public ClusterReportResponse getTalukWiseDashboardData(
                 districtName =
                         cluster.getZone()
                                 .getDistrictMaster()
-                                .getDist_name_en();
+                                .getDistNameEn();
 
                 districtId =
                         cluster.getZone()
@@ -1681,7 +1681,7 @@ public ClusterReportResponse getTalukWiseDashboardData(
                     WorkAllocationProgressResponse.LocationDetails
                             .builder()
                             .id(district.getDist_id())
-                            .name(district.getDist_name_en())
+                            .name(district.getDistNameEn())
                             .villageRecords(villageRecords)
                             .excludedArea(excludedArea)
                             .areaAvailableForEstimation(

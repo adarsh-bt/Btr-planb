@@ -490,4 +490,47 @@ public class Admincontroller {
 //      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 //    }
 //  }
+
+    //saveorupdate new district
+    @PostMapping("/saveDistrict")
+    public ResponseEntity<String> saveDistrict(@RequestBody DistrictRequestDTO dto) {
+        return ResponseEntity.ok(adminManage.saveOrUpdateDistrict(dto));
+    }
+    //getAll Districts
+    @GetMapping("/districts")
+    public ResponseEntity<List<DistrictResponse>> getAllDistricts() {
+        return ResponseEntity.ok(adminManage.getAllDistricts());
+    }
+    //saveOrUpdate in DesTaluk
+    @PostMapping("/saveOrUpdate")
+    public String saveOrUpdate(@RequestBody DesTalukDTO dto) {
+        return adminManage.saveOrUpdate(dto);
+    }
+
+    //DesTalukMaster getAll
+    @GetMapping("/getAllTaluk")
+    public ResponseEntity<List<DesTalukResponse>> getAllDesTalukMaster() {
+
+        return ResponseEntity.ok(
+                adminManage.getAllDesTalukMaster()
+        );
+    }
+    //revenue taluk master saveorupdate controller
+    @PostMapping("/saveOrUpdateRev")
+    public ResponseEntity<String> saveOrUpdate(
+            @RequestBody RevTalukDTO dto) {
+
+        return ResponseEntity.ok(
+                adminManage.saveOrUpdateRev(dto)
+        );
+    }
+
+    //getAll details of revTalukMaster
+    @GetMapping("/getAllRev")
+    public ResponseEntity<List<RevTalukResponse>> getAllRevTalukMaster() {
+
+        return ResponseEntity.ok(
+                adminManage.getAllRevTalukMaster()
+        );
+    }
 }

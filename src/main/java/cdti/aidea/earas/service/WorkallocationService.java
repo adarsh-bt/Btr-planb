@@ -119,7 +119,7 @@ public class WorkallocationService {
 
         String districtName = districtMasterRepository
                 .findById(Long.valueOf(zone.getDistId()))
-                .map(DistrictMaster::getDist_name_en)
+                .map(DistrictMaster::getDistNameEn)
                 .orElse("");
 
         String talukName = desTalukRepository

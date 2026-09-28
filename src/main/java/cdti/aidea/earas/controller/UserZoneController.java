@@ -6,19 +6,15 @@ import cdti.aidea.earas.contract.Response.LbCodeResponse;
 import cdti.aidea.earas.contract.Response.ZoneIdNameResponse;
 import cdti.aidea.earas.contract.Response.ZoneListResponse;
 import cdti.aidea.earas.contract.Response.ZoneLocationResponse;
+import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.model.Btr_models.UserZoneAssignment;
-import cdti.aidea.earas.repository.Btr_repo.DesTalukRepository;
-import cdti.aidea.earas.repository.Btr_repo.DistrictMasterRepository;
-import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
+import cdti.aidea.earas.repository.Btr_repo.*;
 import cdti.aidea.earas.service.BtrExportService;
 import cdti.aidea.earas.service.Zone_Service;
 import jakarta.validation.Valid;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -42,6 +38,10 @@ public class UserZoneController {
   private final TblMasterZoneRepository tblMasterZoneRepository;
   private final DistrictMasterRepository districtMasterRepository;
   private final DesTalukRepository desTalukRepository;
+  private final ZoneLocalbodyBlockMappingRepository zoneLocalbodyBlockMappingRepository;
+  private final MasterBlockRepository masterBlockRepository;
+  private final LocalBodyRepository localBodyRepository;
+  private final LocalBodyTypeRepository localBodyTypeRepository;
   //    if array
 
   //    "roles": ["District Level Approver", "User"]
@@ -68,7 +68,6 @@ public class UserZoneController {
     // Construct filename
     String fileName = currentYear + "_" + nextYear + "_" + zoneName + "-(" + zone.getBtrType().getBtrType()+ ").xlsx";
 
-    System.out.println("Generated file name: " + fileName);
 
     ByteArrayResource excelFile = btrExportService.exportUserBtrDataToExcel(zoneId);
 
@@ -229,7 +228,7 @@ public class UserZoneController {
 
   @GetMapping("/taluks")
   public ResponseEntity<Map<String, Object>> getActiveTaluks(@RequestParam int distId) {
-System.out.println("distid  "+distId);
+
     List<Map<String, Object>> talukList = desTalukRepository
             .findByDistIdAndIsActiveTrue(distId)
             .stream()
@@ -250,22 +249,156 @@ System.out.println("distid  "+distId);
   }
 
   @GetMapping("/zones")
-  public ResponseEntity<Map<String, Object>> getZonesByTaluk(@RequestParam Integer desTalukId) {
+  public ResponseEntity<Map<String, Object>> getZonesByTaluk(
+          @RequestParam Integer desTalukId) {
 
-    List<Map<String, Object>> zoneList = tblMasterZoneRepository
-            .findByDesTalukId(desTalukId)
-            .stream()
-            .map(zone -> {
-              Map<String, Object> map = new HashMap<>();
-              map.put("zoneId", zone.getZoneId());
-              map.put("zoneNameEn", zone.getZoneNameEn());
-              return map;
-            })
-            .collect(Collectors.toList());
+    List<Map<String, Object>> zoneList =
+            tblMasterZoneRepository.findByDesTalukId(desTalukId)
+                    .stream()
+                    .map(zone -> {
+
+                      Map<String, Object> map = new HashMap<>();
+
+                      map.put("zoneId", zone.getZoneId());
+                      map.put("zoneNameEn", zone.getZoneNameEn());
+
+                      // Default values
+                      map.put("blockId", null);
+                      map.put("blockName", "");
+                      map.put("blockType", "");
+
+                      Optional<ZoneLocalbodyBlockMapping> mappingOpt =
+                              zoneLocalbodyBlockMappingRepository
+                                      .findByZoneAndIsValid(
+                                              zone.getZoneId(),
+                                              true
+                                      );
+
+                      if (mappingOpt.isPresent()) {
+
+                        ZoneLocalbodyBlockMapping mapping =
+                                mappingOpt.get();
+
+                        Integer blockDetails =
+                                mapping.getBlockDetails();
+
+                        /*
+                         * CONDITION 1
+                         * Block Panchayath
+                         */
+                        if (mapping.getBlockPanchayatMunicipalArea() == 1) {
+
+                          Optional<MasterBlock> blockOpt =
+                                  masterBlockRepository.findById(
+                                          blockDetails
+                                  );
+
+                          if (blockOpt.isPresent()) {
+
+                            MasterBlock block = blockOpt.get();
+
+                            map.put("blockId", block.getBlockId());
+                            map.put(
+                                    "blockName",
+                                    block.getBlockName()
+                            );
+                            map.put(
+                                    "blockType",
+                                    "Block Panchayath"
+                            );
+                          }
+                        }
+
+                        /*
+                         * CONDITION 2
+                         * Local Body / Municipality / Corporation
+                         */
+                        else if (
+                                mapping.getBlockPanchayatMunicipalArea() == 2
+                        ) {
+
+                          Optional<TblLocalBody> localBodyOpt =
+                                  localBodyRepository.findById(
+                                          blockDetails
+                                  );
+
+                          if (localBodyOpt.isPresent()) {
+
+                            TblLocalBody localBody =
+                                    localBodyOpt.get();
+
+                            String localBodyName =
+                                    localBody.getLocalbodyNameEn();
+
+                            String typeCode = "";
+
+                            /*
+                             * Get Local Body Type
+                             */
+                            if (localBody.getLocalbodyType() != null) {
+
+                              Optional<LocalBodyType> typeOpt =
+                                      localBodyTypeRepository.findById(
+                                              (long) localBody
+                                                      .getLocalbodyType()
+                                      );
+
+                              if (typeOpt.isPresent()) {
+
+                                LocalBodyType type =
+                                        typeOpt.get();
+
+                                typeCode = type.getCode();
+                              }
+                            }
+
+                            /*
+                             * Example:
+                             * Payyannur + M
+                             * = Payyannur (M)
+                             */
+                            String displayName = localBodyName;
+
+                            if (typeCode != null &&
+                                    !typeCode.isBlank()) {
+
+                              displayName =
+                                      localBodyName +
+                                              " (" +
+                                              typeCode +
+                                              ")";
+                            }
+
+                            map.put(
+                                    "blockId",
+                                    localBody.getLocalbodyId()
+                            );
+
+                            map.put(
+                                    "blockName",
+                                    displayName
+                            );
+
+                            map.put(
+                                    "blockType",
+                                    typeCode
+                            );
+                          }
+                        }
+                      }
+
+                      return map;
+
+                    })
+                    .collect(Collectors.toList());
 
     Map<String, Object> response = new HashMap<>();
+
     response.put("status", true);
-    response.put("message", "Zone list fetched successfully");
+    response.put(
+            "message",
+            "Zone list fetched successfully"
+    );
     response.put("data", zoneList);
 
     return ResponseEntity.ok(response);

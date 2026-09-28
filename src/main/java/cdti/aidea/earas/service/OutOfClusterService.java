@@ -94,9 +94,21 @@ public class OutOfClusterService {
         if (!mappings.isEmpty()) {
             entity.setTcode(mappings.get(0).getRevenueTaluk());
         }
-        entity.setDcode(zone.get().getDistId());
+        if (mappings.isEmpty()) {
+            throw new RuntimeException(
+                    "No valid revenue taluk mapping found for zone: " + dto.getZoneId()
+            );
+        }
+
+        if (mappings.size() > 1) {
+            throw new RuntimeException(
+                    "Multiple revenue taluk mappings found for zone: " + dto.getZoneId()
+            );
+        }
+
+        entity.setTcode(mappings.get(0).getRevenueTaluk());
+//        entity.setDcode(zone.get().getDistId());
 //        entity.setTcode(mappings.get(0).getRevenueTaluk());
-        entity.setTcode(dto.getTcode());
         entity.setVcode(dto.getVcode());
         entity.setBcode(dto.getBcode());
         entity.setLbcode(dto.getLbcode());

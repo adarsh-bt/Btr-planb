@@ -356,22 +356,16 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
     JOIN FETCH z.desTalukMaster dt
 
     WHERE z.desTalukId = :talukId
-
-    AND cm.createdAt >= :startDate
-
-    AND cm.createdAt <= :endDate
+      AND kp.agriStartYear = :agriStart
+      AND kp.agriEndYear = :agriEnd
 """)
     List<ClusterMaster> getZoneWiseDashboardDataByAgriYear(
-
-            @Param("talukId")
-            Integer talukId,
-
-            @Param("startDate")
-            LocalDateTime startDate,
-
-            @Param("endDate")
-            LocalDateTime endDate
+            @Param("talukId") Integer talukId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
     );
+
+    
     @Query("""
                 SELECT DISTINCT cm
                 FROM ClusterMaster cm
@@ -470,7 +464,8 @@ WHERE cm.clu_master_id IN (:clusterIds)
 SELECT
     lb.localbody_id,
     lb.localbody_name_en,
-    lb.code_api
+    lb.code_api,
+    kp.land_type
 FROM cluster_master cm
 JOIN keyplot_selections kp
     ON cm.plot_id = kp.kp_id
@@ -482,6 +477,22 @@ WHERE cm.clu_master_id = :clusterId
 """, nativeQuery = true)
     List<Object[]> getClusterLocalBodyDetails(@Param("clusterId") Long clusterId);
 
+
+    @Query("""
+    SELECT cm
+    FROM ClusterMaster cm
+    JOIN cm.keyPlot kp
+    WHERE cm.cluMasterId = :clusterId
+      AND cm.zone.zoneId = :zoneId
+      AND kp.landType = :landType
+      AND cm.is_active = true
+      AND cm.isReject = false
+""")
+    Optional<ClusterMaster> findValidClusterForManualSelection(
+            @Param("clusterId") Long clusterId,
+            @Param("zoneId") Integer zoneId,
+            @Param("landType") String landType
+    );
 //    @Query(value = """
 //SELECT
 //    lb.localbody_id,

@@ -46,7 +46,7 @@ public ClusterReportResponse getDashboardData(
         YearMonth startMonth,
         YearMonth endMonth
 ) {
-System.out.println("start year "+startMonth+"  "+endMonth);
+
     if (startMonth == null) {
         throw new RuntimeException("start month is required");
     }
@@ -1242,18 +1242,18 @@ public ClusterReportResponse getTalukWiseDashboardData(
 
             if ("WET".equalsIgnoreCase(clusterLandType) && includeWet) {
 
-                totalCompleted += 3;
+                totalCompleted += 1;
 
                 district.setWetCompleted(
-                        district.getWetCompleted() + 3);
+                        district.getWetCompleted() + 1);
             }
 
             if ("DRY".equalsIgnoreCase(clusterLandType) && includeDry) {
 
-                totalCompleted += 3;
+                totalCompleted += 1;
 
                 district.setDryCompleted(
-                        district.getDryCompleted() + 3);
+                        district.getDryCompleted() + 1);
             }
         }
 
@@ -1356,18 +1356,18 @@ public ClusterReportResponse getTalukWiseDashboardData(
 
             if ("WET".equalsIgnoreCase(clusterLandType) && includeWet) {
 
-                totalCompleted += 3;
+                totalCompleted += 1;
 
                 taluk.setWetCompleted(
-                        taluk.getWetCompleted() + 3);
+                        taluk.getWetCompleted() + 1);
             }
 
             if ("DRY".equalsIgnoreCase(clusterLandType) && includeDry) {
 
-                totalCompleted += 3;
+                totalCompleted += 1;
 
                 taluk.setDryCompleted(
-                        taluk.getDryCompleted() + 3);
+                        taluk.getDryCompleted() + 1);
             }
         }
 
@@ -1398,17 +1398,17 @@ public ClusterReportResponse getTalukWiseDashboardData(
         LocalDate agriEnd =
                 AgriYearUtil.getAgriYearEnd(agriYear);
 
-        LocalDateTime startDate =
-                agriStart.atStartOfDay();
+//        LocalDate startDate =
+//                agriStart.atStartOfDay();
 
-        LocalDateTime endDate =
-                agriEnd.atTime(23, 59, 59);
+//        LocalDateTime endDate =
+//                agriEnd.atTime(23, 59, 59);
 
         List<ClusterMaster> clusters =
                 clusterMasterRepository.getZoneWiseDashboardDataByAgriYear(
                         talukId,
-                        startDate,
-                        endDate);
+                        agriStart,
+                        agriEnd);
 
         Map<String, ClusterCompletedProgressSubDetails> zoneMap =
                 new LinkedHashMap<>();
@@ -1472,18 +1472,18 @@ public ClusterReportResponse getTalukWiseDashboardData(
 
             if ("WET".equalsIgnoreCase(clusterLandType) && includeWet) {
 
-                totalCompleted += 3;
+                totalCompleted++;
 
                 zone.setWetCompleted(
-                        zone.getWetCompleted() + 3);
+                        zone.getWetCompleted() + 1);
             }
 
             if ("DRY".equalsIgnoreCase(clusterLandType) && includeDry) {
 
-                totalCompleted += 3;
+                totalCompleted++;
 
                 zone.setDryCompleted(
-                        zone.getDryCompleted() + 3);
+                        zone.getDryCompleted() + 1);
             }
         }
 

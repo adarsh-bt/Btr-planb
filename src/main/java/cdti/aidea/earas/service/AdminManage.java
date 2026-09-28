@@ -198,7 +198,7 @@ public class AdminManage {
 
     Page<ClusterApprovalLog> approvalLogs;
 
-    System.out.println("type " + type + " : " + idValue);
+
 
     if ("Taluk".equalsIgnoreCase(type)) {
 
@@ -1244,17 +1244,18 @@ public class AdminManage {
     return masterBlockRepository.findByDistrictAndIsValidTrue(zone.get().getDistId());
   }
 
-  public List<TblLocalBody> getLocalBodies(Short typeId, int zonetId) {
+  public List<TblLocalBody> getLocalBodies(Short typeId, int zoneId) {
 
     if (typeId == null) {
       throw new RuntimeException("Type and Zone are required");
     }
-  Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zonetId);
+  Optional<TblMasterZone> zone = tblMasterZoneRepository.findById(zoneId);
     if (zone.isEmpty()){
       throw new IllegalArgumentException("Zone Id not Match");
     }
+
     return localBodyRepository
-            .findByLocalbodyTypeAndDistIdAndIsActiveTrue(typeId, zone.get().getDesDistId());
+            .findByLocalbodyTypeAndDistIdAndIsActiveTrue(typeId, zone.get().getDistId());
   }
   @Transactional
   public void softDeleteBlockMapping(Long id) {

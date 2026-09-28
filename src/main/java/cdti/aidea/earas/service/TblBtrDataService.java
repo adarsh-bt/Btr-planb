@@ -20,6 +20,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.sl.draw.geom.GuideIf;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class TblBtrDataService {
+
+    // Constraint name enforced at the DB level on KeyPlots (btr_id, agri_start_year, agri_end_year).
+    // Kept as a constant so the "is this a KeyPlot duplicate?" check has a single source of truth.
+    private static final String KEYPLOT_BTR_YEAR_CONSTRAINT = "uq_keyplot_btr_year";
 
     private final TblBtrDataRepository tblBtrDataRepository;
     private final KeyPlotsRepository keyPlotsRepository;
@@ -38,14 +43,14 @@ public class TblBtrDataService {
     private final TblMasterVillageRepository villageRepository;
     private final LocalBodyRepository localBodyRepository;
     private final Zone_Service zoneService;
+    private final cdti.aidea.earas.service.TblBtrDataMapper tblBtrDataMapper;
+    private final KeyPlotTransactionService keyPlotTransactionService;
 
 
-
-    // ---------------- Save All ----------------
     @Transactional
     public Map<String, Object> saveAllData(List<TblBtrDataDTO> dtoList) {
         List<ValidationErrorResponse> allErrors = new ArrayList<>();
-System.out.println("sto   "+dtoList);
+        System.out.println("sto   "+dtoList);
         // Validate all DTOs first
         for (TblBtrDataDTO dto : dtoList) {
             // Required validation
@@ -93,169 +98,93 @@ System.out.println("sto   "+dtoList);
             long currentCount = keyPlotsRepository.countKeyPlotsForUpdate(
                     zone.getZoneId(), startDate, endDate);
 
-            // Check if we can save all requested records
-            if (currentCount + dtoList.size() > 100) {
+            // ✅ Do NOT assume every submitted DTO consumes a new slot.
+            // A DTO that reuses an existing BTR (dto.getId() != null) which already has a
+            // KeyPlot for this exact agricultural year is a duplicate and will be skipped
+            // later — it must not count against the 100-KeyPlot capacity here.
+            long alreadyKeyPlottedCount = dtoList.stream()
+                    .filter(d -> d.getId() != null)
+                    .filter(d -> keyPlotsRepository.existsByBtrDataIdAndAgriStartYearAndAgriEndYear(
+                            d.getId(),
+                            AgriYearUtil.getAgriYearStart(d.getAgriYear()),
+                            AgriYearUtil.getAgriYearEnd(d.getAgriYear())))
+                    .count();
+
+            long genuinelyNewCount = dtoList.size() - alreadyKeyPlottedCount;
+
+            // Check if we can save all genuinely-new requested records
+            if (currentCount + genuinelyNewCount > 100) {
                 int availableSlots = (int) (100 - currentCount);
                 throw new RuntimeException(
-                        "Cannot save " + dtoList.size() + " records. " +
+                        "Cannot save " + genuinelyNewCount + " new records. " +
                                 "Only " + availableSlots + " slots available for this zone in current agricultural year."
                 );
             }
         }
 
-        // ✅ Save all records
+        // ✅ Save each record independently. Every plot gets its own REQUIRES_NEW
+        // transaction via KeyPlotTransactionService, so a duplicate BTR+agri-year
+        // KeyPlot for one plot cannot roll back the plots that already committed.
         List<Long> savedIds = new ArrayList<>();
+        List<Long> duplicateIds = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
         for (TblBtrDataDTO dto : dtoList) {
-            // Call saveData without the limit check (since we already checked)
-            Long savedId = saveSingleRecordWithoutLimitCheck(dto);
-            savedIds.add(savedId);
-        }
-
-        Map<String, Object> successResponse = new HashMap<>();
-        successResponse.put("status", "Success");
-        successResponse.put("message", "All records saved successfully");
-        successResponse.put("ids", savedIds);
-        return successResponse;
-    }
-
-    private Long saveSingleRecordWithoutLimitCheck(TblBtrDataDTO dto) {
-        // This is the same as saveData() but without the limit check
-        // Fetch zone
-        TblMasterZone zone = tblMasterZoneRepository
-                .findById(Math.toIntExact(dto.getZoneId()))
-                .orElseThrow(() -> new RuntimeException("Zone not found"));
-
-        LocalDate startDate =
-                AgriYearUtil.getAgriYearStart(dto.getAgriYear());
-
-        LocalDate endDate =
-                AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
-
-        TblBtrData btrData;
-        if (dto.getId() != null) {
-            btrData = tblBtrDataRepository.findById(dto.getId())
-                    .orElseThrow(() -> new RuntimeException("Existing BTR Plot not found for ID: " + dto.getId()));
-        } else {
-            btrData = tblBtrDataRepository.save(mapToEntity(dto));
-        }
-
-        Optional<Integer> maxClusterNumberOpt =
-                clusterMasterRepository.findMaxClusterNumberByAgriYear(
-                        zone.getZoneId(),
-                        startDate,
-                        endDate
-                );
-        int nextClusterNumber = maxClusterNumberOpt.orElse(0) + 1;
-
-        // Save KeyPlots
-        KeyPlots keyPlot = new KeyPlots();
-        keyPlot.setBtrData(btrData);
-        keyPlot.setZone(zone);
-        keyPlot.setIntervals(1);
-        keyPlot.setAgriStartYear(startDate);
-        keyPlot.setAgriEndYear(endDate);
-        keyPlot.setIsRejected(false);
-        keyPlot.setStatus(true);
-        keyPlot.setLandType(btrData.getLtype());
-        keyPlot.setCreated_by(dto.getUser_id());
-        keyPlotsRepository.save(keyPlot);
-        // Get next cluster number
-        // Save ClusterMaster
-        ClusterMaster clusterMaster = new ClusterMaster();
-        clusterMaster.setKeyPlot(keyPlot);
-        clusterMaster.setClusterNumber(nextClusterNumber);
-        clusterMaster.setZone(zone);
-        clusterMaster.setStatus("Not Started");
-        clusterMaster.setIsReject(false);
-        clusterMaster.setIs_active(true);
-        clusterMaster.setIs_editable(true);
-        clusterMasterRepository.save(clusterMaster);
-
-        // Save ClusterFormData
-        ClusterFormData clusterFormData = new ClusterFormData();
-        clusterFormData.setClusterMaster(clusterMaster);
-        clusterFormData.setPlot(btrData);
-        clusterFormData.setPlotLabel("K");
-        clusterFormData.setEnumeratedArea(btrData.getTotCent());
-        clusterFormData.setCreatedBy(dto.getUser_id());
-        clusterFormData.setStatus(true);
-        clusterFormDataRepository.save(clusterFormData);
-
-        return btrData.getId();
-    }
-
-    // ---------------- DTO -> Entity Mapper ----------------
-    private TblBtrData mapToEntity(TblBtrDataDTO dto) {
-        TblBtrData entity = new TblBtrData();
-        entity.setDcode(dto.getDcode());
-        entity.setTcode(dto.getTcode());
-        entity.setVcode(dto.getVcode());
-        entity.setBcode(dto.getBcode());
-        entity.setLbcode(dto.getLbcode());
-        entity.setLtype(dto.getLtype());
-        entity.setLsgcode(dto.getLsgcode());
-        entity.setTotCent(dto.getTotCent());
-        entity.setResvno(dto.getResvno());
-        entity.setResbdno(dto.getResbdno());
-        entity.setCreated_by(dto.getUser_id());
-        entity.setUpdated_by(dto.getUser_id());
-        entity.setInsertionTime(LocalDateTime.now());
-        entity.setUpdationTime(LocalDateTime.now());
-        entity.setZone(Long.valueOf(dto.getZoneId()));
-// 🧩 Determine type-based mapping
-        if (dto.getBtrtype() != null) {
-            long typeId = dto.getBtrtype();
-            Optional<TblNonBtr> nonBtr = tblNonBtrRepository.findById(dto.getBtrtype());
-            // Type 1 → dcode to resbdno
-            if (typeId == 1) {
-                entity.setBtrtype(nonBtr.get());
-            }
-            // Type 2 → dcode to totcent + ownername, address, houseno
-            else if (typeId == 2) {
-                entity.setOwnername(dto.getOwnername());
-                entity.setAddress(dto.getAddress());
-                entity.setHouseno(dto.getHouseno());
-                entity.setWardnumber(dto.getWardno());
-                entity.setBtrtype(nonBtr.get());
-            }
-            // Type 3 → dcode to totcent + ownername, address
-            // but not resvno/resbdno
-            else if (typeId == 3) {
-                entity.setOwnername(dto.getOwnername());
-                entity.setAddress(dto.getAddress());
-                entity.setBtrtype(nonBtr.get());
-            }
-            // Type 4 → dcode to totcent + ownername, address, tpno, tpsubdno
-            // (mapped to mainno and subno)
-            else if (typeId == 4) {
-                System.out.println("tp no sub "+dto.getTbsubdivisionno()+"   >>  "+dto.getTpno());
-                entity.setOwnername(dto.getOwnername());
-                entity.setAddress(dto.getAddress());
-                entity.setTpno(dto.getTpno());
-                entity.setTbsubdivisionno(dto.getTbsubdivisionno());
-                entity.setBtrtype(nonBtr.get());
-            }
-            // Type 5 → dcode to totcent + ownername, address, mainno, subno
-            // but not resvno/resbdno
-            else if (typeId == 5) {
-                entity.setOwnername(dto.getOwnername());
-                entity.setOldsvno(dto.getOldsvno());
-                entity.setOldsubno(dto.getOldsubno());
-                entity.setBtrtype(nonBtr.get());
+            try {
+                Long savedId = keyPlotTransactionService.saveSinglePlot(dto);
+                savedIds.add(savedId);
+            } catch (DataIntegrityViolationException ex) {
+                if (isKeyPlotBtrYearDuplicate(ex)) {
+                    // Genuine uq_keyplot_btr_year violation -> this specific plot is a
+                    // duplicate for this agri year. Skip it, keep processing the rest.
+                    log.warn("Duplicate KeyPlot skipped for BTR id={}, agriYear={}",
+                            dto.getId(), dto.getAgriYear());
+                    duplicateIds.add(dto.getId());
+                } else {
+                    // Some other DB constraint failed — do not hide it as a duplicate.
+                    log.error("Unexpected data integrity violation for BTR id={}", dto.getId(), ex);
+                    errors.add("BTR id " + dto.getId() + ": " + rootCauseMessage(ex));
+                }
+            } catch (Exception ex) {
+                log.error("Unexpected error saving plot for BTR id={}", dto.getId(), ex);
+                errors.add("BTR id " + dto.getId() + ": " + ex.getMessage());
             }
         }
-        // ✅ NEW BLOCK — add this
-        LocalDate now = LocalDate.now();
-        entity.setInsertionTime(LocalDateTime.now());
-        entity.setUpdationTime(LocalDateTime.now());
 
-        // Agreement year logic
-        LocalDate agreStart = LocalDate.of(now.getYear(), 7, 1); // July 1 of current year
-        LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
-        entity.setAgreStartYear(agreStart);
-        entity.setAgreEndYear(agreEnd);
-        return entity;
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "COMPLETED");
+        response.put("message", savedIds.size() + " plot(s) saved successfully, "
+                + duplicateIds.size() + " duplicate plot(s) skipped, "
+                + errors.size() + " plot(s) failed.");
+        response.put("savedCount", savedIds.size());
+        response.put("duplicateCount", duplicateIds.size());
+        response.put("errorCount", errors.size());
+        response.put("savedIds", savedIds);
+        response.put("duplicateIds", duplicateIds);
+        response.put("errors", errors);
+        return response;
     }
+
+    private boolean isKeyPlotBtrYearDuplicate(DataIntegrityViolationException ex) {
+        Throwable cause = ex;
+        while (cause != null) {
+            String message = cause.getMessage();
+            if (message != null && message.contains(KEYPLOT_BTR_YEAR_CONSTRAINT)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    private String rootCauseMessage(Throwable ex) {
+        Throwable cause = ex;
+        while (cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause.getMessage();
+    }
+
     private boolean notEmpty(String s) {
         return s != null && !s.trim().isEmpty();
     }
@@ -291,16 +220,16 @@ System.out.println("sto   "+dtoList);
         }
         boolean existsRes = false;
         if (dto.getResvno() != null ){
-        if (dto.getResbdno() != null && notEmpty(dto.getResbdno())) {
+            if (dto.getResbdno() != null && notEmpty(dto.getResbdno())) {
 
-            existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
-                    dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
-                    dto.getResvno(), dto.getResbdno());
-        } else {
+                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(),
+                        dto.getResvno(), dto.getResbdno());
+            } else {
 
-            existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
-                    dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
-        }
+                existsRes = tblBtrDataRepository.existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
+                        dto.getDcode(), dto.getTcode(), dto.getVcode(), dto.getBcode(), dto.getLbcode(), dto.getResvno());
+            }
             if (existsRes) {
                 return new ValidationErrorResponse(
                         dto.getResvno(),
@@ -457,7 +386,7 @@ System.out.println("sto   "+dtoList);
         if (cleanedResbdno != null && !cleanedResbdno.isEmpty()) {
             System.out.println("ssss :  "+ dto.getResvno()+"  : "+cleanedResbdno);
             System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
-                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
+                    +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno+ "  "+zone.getDistId());
 
 
             // Case 1: User provided both survey number AND subdivision
@@ -488,16 +417,16 @@ System.out.println("sto   "+dtoList);
         } else {
             // Case 2: User provided only survey number (no subdivision)
             System.out.println("only survey  :  "+ dto.getResvno()+"  : "+cleanedResbdno);
-            System.out.println(dto.getDcode()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
+            System.out.println(zone.getDistId()+" "+village.get().getRevTalukId()+" "+dto.getVcode()+" "
                     +dto.getBcode()+" "+dto.getLbcode()+" "+dto.getResvno()+" "+cleanedResbdno);
             plots = tblBtrDataRepository.findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
                     zone.getDistId(),
-                    zone.getDesTalukId(),
+                    village.get().getRevTalukId(),
                     dto.getVcode(),
                     dto.getBcode(),
                     dto.getLbcode(),
                     dto.getResvno(),
-                    null);
+                    "");
 
             if (plots.isEmpty()) {
                 return null; // No plot found
@@ -516,7 +445,7 @@ System.out.println("sto   "+dtoList);
     public ValidationResponse validateDuplicateForNonBtrCluster(TblBtrDataDTO dto) {
         TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
-        System.out.println(">>>>   "+dto);
+
         String lbcode = dto.getLbcode() != null ? dto.getLbcode() : getLbcodeFromZone(zone);
 
         Integer type = Math.toIntExact(dto.getBtrtype());
@@ -877,5 +806,5 @@ System.out.println("sto   "+dtoList);
 
         return "totCent updated successfully. No cluster entries deleted.";
     }
-    
+
 }

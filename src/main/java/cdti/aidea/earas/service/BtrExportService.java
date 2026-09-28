@@ -100,9 +100,13 @@ public class BtrExportService {
                                             data.getHouseno(),
                                             data.getOldsvno(),
                                             data.getOldsubno(),
+
                                             //                            BigDecimal.valueOf(totalCent).setScale(2,
                                             // RoundingMode.HALF_UP).doubleValue()
-                                            formatted);
+                                            formatted,
+                                            data.getNonBtrTypeId(),
+                                            data.getBtrtype().getBTypeName()
+                                            );
                                 })
                         .sorted(
                                 Comparator.comparing(

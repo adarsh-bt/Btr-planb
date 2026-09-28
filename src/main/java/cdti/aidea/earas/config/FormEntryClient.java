@@ -42,6 +42,7 @@ public interface FormEntryClient {
           @RequestBody AvailableCcePlotRemoveRequest request
   );
 
+
 //  @GetMapping("/earas-form1-entry/form1/fetch-zones/{type}/{id}")
 //  ResponseEntity<Page<Form1EditLogResponse>> getEditStatusByZoneIds(@RequestParam List<Long> zoneIds,
 //                                                                    @RequestParam(defaultValue = "0") int page,
@@ -59,5 +60,10 @@ public interface FormEntryClient {
   @PostMapping("/earas-form1-entry/api/progress-report/delete-all-cluster-details/{clusterId}")
   ResponseEntity<Response> deleteAllClusterDetails(
           @PathVariable Long clusterId);
+
+  @PostMapping("/earas-form1-entry/common-api/cluster-area-save")
+  ResponseEntity<Map<String, Object>> saveClusterArea(
+          @RequestBody ClusterAreaInfoRequest request
+  );
 
 }

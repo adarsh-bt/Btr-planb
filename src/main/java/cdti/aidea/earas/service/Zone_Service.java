@@ -328,7 +328,9 @@ public class Zone_Service {
                               data.getHouseno(),
                               data.getOldsvno(),
                               data.getOldsubno(),
-                              bd.toPlainString()
+                              bd.toPlainString(),
+                              data.getNonBtrTypeId(),
+                              data.getBtrtype().getBTypeName()
                       );
                     })
                     .toList();

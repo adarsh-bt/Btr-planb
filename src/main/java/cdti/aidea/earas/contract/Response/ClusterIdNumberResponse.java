@@ -12,4 +12,7 @@ public class ClusterIdNumberResponse {
     private Long clusterId;
     private Integer clusterNumber;
     private String landType;
+//    private String localbodyname;
+//    private String lbcode;
+//    private Integer lbid;
 }

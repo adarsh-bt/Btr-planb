@@ -11,5 +11,7 @@ import lombok.NoArgsConstructor;
 public class CropReplaceClusterResponse {
   private Long nextClusterId;
   private UUID plotId;
+  private String lbcode;
+  private Long btrId;
   private String message;
 }

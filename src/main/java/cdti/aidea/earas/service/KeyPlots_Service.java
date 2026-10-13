@@ -1845,7 +1845,7 @@ public class KeyPlots_Service {
 //    }
 
     public ValidationResponse validateDuplicateForCluster(TblBtrDataDTO dto) {
-        System.out.println("dto "+dto);
+
         String cleanedResbdno = (dto.getResbdno() != null && !dto.getResbdno().trim().isEmpty())
                 ? dto.getResbdno().trim().replaceFirst("^0+(?!$)", "")
                 : null;

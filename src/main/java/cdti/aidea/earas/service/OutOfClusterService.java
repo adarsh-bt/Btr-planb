@@ -10,11 +10,13 @@ import cdti.aidea.earas.repository.Btr_repo.TblBtrDataRepository;
 import cdti.aidea.earas.repository.Btr_repo.TblMasterZoneRepository;
 import cdti.aidea.earas.repository.Btr_repo.TblNonBtrRepository;
 import cdti.aidea.earas.repository.Btr_repo.ZoneRevenueTalukMappingRepository;
+import cdti.aidea.earas.utils.AgriYearUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -90,7 +92,8 @@ public class OutOfClusterService {
                 zoneRevenueTalukMappingRepository.findByZoneAndIsValidTrue(dto.getZoneId());
 
         entity.setDcode(zone.get().getDistId());
-
+        LocalDate AgriStart = AgriYearUtil.getAgriYearStart(dto.getAgriYear());
+        LocalDate AgriEnd = AgriYearUtil.getAgriYearEnd(dto.getAgriYear());
         if (!mappings.isEmpty()) {
             entity.setTcode(mappings.get(0).getRevenueTaluk());
         }
@@ -122,6 +125,8 @@ public class OutOfClusterService {
         entity.setInsertionTime(LocalDateTime.now());
         entity.setUpdationTime(LocalDateTime.now());
         entity.setZone(Long.valueOf(dto.getZoneId()));
+        entity.setAgreStartYear(AgriStart);
+        entity.setAgreEndYear(AgriEnd);
 // 🧩 Determine type-based mapping
         if (dto.getBtrtype() != null) {
             long typeId = dto.getBtrtype();

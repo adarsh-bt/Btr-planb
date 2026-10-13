@@ -44,6 +44,12 @@ public class Admincontroller {
     return adminManage.getAllKeyplots();
   }
 
+  @GetMapping("/Cluster-limits")
+  public ResponseEntity<Long>  getClusterLimts() {
+      Long keyplotsLimit =  adminManage.getActiveKeyplotsLimit();
+      return ResponseEntity.ok(keyplotsLimit);
+
+  }
   @PostMapping("/save-keyplot-limits")
   public ResponseEntity<KeyplotsLimitLog> createKeyplotsLimit(
       @RequestBody KeyplotsLimitLogRequest request) {

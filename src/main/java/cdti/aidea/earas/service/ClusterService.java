@@ -1088,6 +1088,7 @@ public class ClusterService {
                       cm.setKeyPlot(keyPlot);
                       cm.setZone(keyPlot.getZone());
                       cm.setStatus("On Going");
+                      cm.setIs_editable(true);
                       cm.setIsReject(false);
                       cm.setIs_active(true);
                       cm.setCreatedAt(LocalDateTime.now());

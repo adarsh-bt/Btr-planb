@@ -57,6 +57,7 @@ public class AdminManage {
   private final LocalBodyTypeRepository localBodyTypeRepository;
   private final TblWorkAllocationRepository tblWorkAllocationRepository;
   private final TblWorkAllocationApprovalRepository tblWorkAllocationApprovalRepository;
+  private final KeyplotsLimitLogRepository keyplotsLimitLogRepository;
   private AgriYearUtil agriYearUtil;
   private final FormEntryClient formEntryClient;
 
@@ -78,6 +79,13 @@ public class AdminManage {
             ))
             .collect(Collectors.toList());
   }
+
+    public Long getActiveKeyplotsLimit() {
+      return keyplotsLimitLogRepository
+              .findFirstByIsActiveTrueOrderByIdDesc()
+              .map(KeyplotsLimitLog::getKeyplotsLimit)
+              .orElse(0L);
+    }
 
   public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
 
@@ -1118,7 +1126,7 @@ public class AdminManage {
     ClusterEditAllowed saved = editAllowedRepository.save(entity);
 
     cluster.setIs_editable(true);
-    cluster.setStatus("On Going"); // match your DB value exactly
+    cluster.setStatus("On Going");
     cluster.setUpdatedAt(LocalDateTime.now());
     clusterMasterRepository.save(cluster);
     return saved;

@@ -191,19 +191,23 @@ public class WorkallocationService {
         );
     }
 
-    public List<TblWorkAllocationDTO> getWorkAllocationsByZoneId(Integer zoneId,String agriYear) {
+    public List<TblWorkAllocationDTO> getWorkAllocationsByZoneId(
+            Integer zoneId,
+            String agriYear) {
 
         LocalDate agriStart =
                 AgriYearUtil.getAgriYearStart(agriYear);
 
         LocalDate agriEnd =
                 AgriYearUtil.getAgriYearEnd(agriYear);
+
         List<TblWorkAllocation> allocations =
                 tblWorkAllocationRepository.findByZoneAndAgriYear(
                         zoneId,
                         agriStart,
                         agriEnd
                 );
+
         return allocations.stream()
                 .map(a -> {
 
@@ -218,78 +222,157 @@ public class WorkallocationService {
                                     .orElse(null);
 
                     String approvalStatus =
-                            approval != null ? approval.getStatus() : "N/A";
+                            approval != null
+                                    ? approval.getStatus()
+                                    : "N/A";
 
                     String adminRemarks =
-                            approval != null ? approval.getRemark() : "";
+                            approval != null
+                                    ? approval.getRemark()
+                                    : "";
 
                     String verifiedStatus =
-                            verification != null ? verification.getStatus() : "PENDING";
+                            verification != null
+                                    ? verification.getStatus()
+                                    : "PENDING";
 
                     LocalDate verifiedDate =
-                            verification != null && verification.getVerifiedAt() != null
+                            verification != null &&
+                                    verification.getVerifiedAt() != null
                                     ? verification.getVerifiedAt().toLocalDate()
                                     : null;
 
                     String verifiedBy =
-                            verification != null && verification.getVerifiedBy() != null
+                            verification != null &&
+                                    verification.getVerifiedBy() != null
                                     ? verification.getVerifiedBy().toString()
                                     : null;
+
                     String verifiedRemarks =
-                            verification != null && verification.getRemarks() != null
+                            verification != null &&
+                                    verification.getRemarks() != null
                                     ? verification.getRemarks().toString()
                                     : null;
 
+
                     return new TblWorkAllocationDTO(
 
+                            // ==============================
+                            // BASIC DETAILS
+                            // ==============================
                             a.getId(),
                             a.getZone().getZoneId(),
                             a.getLbcode(),
 
+
+                            // ==============================
+                            // VILLAGE AREA
+                            // ==============================
                             a.getVillageWetArea(),
                             a.getVillageDryArea(),
                             a.getVillageTotalArea(),
 
+
+                            // ==============================
+                            // FOREST AREA
+                            // Dry -> forestAreaA
+                            // Wet -> forestAreaB
+                            // ==============================
                             a.getForestAreaA(),
                             a.getForestAreaB(),
-                            a.getForestAreaC(),
 
+
+                            // ==============================
+                            // PLANTATION AREA
+                            // Wet -> forestAreaC
+                            // Dry -> areaUnderPlant
+                            // ==============================
+                            a.getForestAreaC(),
                             a.getAreaUnderPlant(),
+
+
+                            // ==============================
+                            // OTHER AREAS
+                            // Dry -> forestExcludeUnclutivate
+                            // Wet -> forestExcludeNotUnclutivate
+                            // ==============================
                             a.getForestExcludeUnclutivate(),
                             a.getForestExcludeNotUnclutivate(),
+
+
+                            // ==============================
+                            // WATER BODIES
+                            // Dry -> kayalExcludeArea
+                            // Wet -> otherExcludeFWet
+                            // ==============================
                             a.getKayalExcludeArea(),
-
                             a.getOtherExcludeFWet(),
-                            a.getOtherExcludedFDry(),
-                            a.getOtherExcludeFTotal(),
 
+
+                            // ==============================
+                            // CLUSTER
+                            // ==============================
+                            a.getTotalWetCluster(),
+                            a.getTotalDryCluster(),
+
+
+                            // ==============================
+                            // TOTAL EARAS
+                            // ==============================
+                            a.getOtherExcludeFWet(),
+
+
+                            // ==============================
+                            // PLOTS
+                            // ==============================
                             a.getNoOfPlotsWet(),
                             a.getNoOfPlotsDry(),
                             a.getNoOfPlotsTotal(),
 
+
+                            // ==============================
+                            // ESTIMATED AREA
+                            // ==============================
                             a.getTotalAreaWet(),
                             a.getTotalAreaDry(),
                             a.getTotalAreaForEstimation(),
 
+
+                            // ==============================
+                            // REMARKS
+                            // ==============================
                             a.getRemarks(),
                             adminRemarks,
 
+
+                            // ==============================
+                            // USER / DATES
+                            // ==============================
                             a.getUserId(),
                             a.getCreated(),
                             a.getUpdated(),
                             a.getIsActive(),
 
+
+                            // ==============================
+                            // AGRI YEAR
+                            // ==============================
                             a.getAgriStart(),
                             a.getAgriEnd(),
-
                             a.getIsEdit(),
 
-                            null, // agriYear
+                            agriYear,
 
+                            // ==============================
+                            // APPROVAL
+                            // ==============================
                             a.getApprovalId(),
-
                             approvalStatus,
 
+
+                            // ==============================
+                            // VERIFICATION
+                            // ==============================
                             verifiedStatus,
                             verifiedDate,
                             verifiedBy,
@@ -298,8 +381,6 @@ public class WorkallocationService {
                 })
                 .collect(Collectors.toList());
     }
-
-
     @Transactional
     public List<TblWorkAllocationDTO> saveOrSubmitWorkAllocations(
             List<TblWorkAllocationDTO> dtos,
@@ -318,56 +399,69 @@ public class WorkallocationService {
         LocalDate agriEnd = AgriYearUtil.getAgriYearEnd(agriYear);
 
         TblMasterZone zone = tblMasterZoneRepository.findById(currentZoneId)
-                .orElseThrow(() -> new RuntimeException("Zone not found for ID: " + currentZoneId));
+                .orElseThrow(() ->
+                        new RuntimeException("Zone not found for ID: " + currentZoneId)
+                );
 
         /*
          * ============================================
          * FIND OR CREATE APPROVAL FOR THIS YEAR
          * ============================================
          */
-        TblWorkAllocationApproval approval = tblWorkAllocationApprovalRepository
-                .findByZoneIdAndAgriStartAndAgriEnd(currentZoneId, agriStart, agriEnd)
-                .orElseGet(() -> {
-                    TblWorkAllocationApproval newApproval = new TblWorkAllocationApproval();
-                    newApproval.setZoneId(currentZoneId);
-                    newApproval.setCreatedAt(LocalDateTime.now());
-                    newApproval.setAgriStart(agriStart);
-                    newApproval.setAgriEnd(agriEnd);
-                    newApproval.setIsActive(true);
-                    return newApproval;
-                });
+        TblWorkAllocationApproval approval =
+                tblWorkAllocationApprovalRepository
+                        .findByZoneIdAndAgriStartAndAgriEnd(
+                                currentZoneId,
+                                agriStart,
+                                agriEnd
+                        )
+                        .orElseGet(() -> {
+
+                            TblWorkAllocationApproval newApproval =
+                                    new TblWorkAllocationApproval();
+
+                            newApproval.setZoneId(currentZoneId);
+                            newApproval.setCreatedAt(LocalDateTime.now());
+                            newApproval.setAgriStart(agriStart);
+                            newApproval.setAgriEnd(agriEnd);
+                            newApproval.setIsActive(true);
+
+                            return newApproval;
+                        });
 
         approval.setRequestedBy(currentUserId);
         approval.setIsActive(true);
 
         if (isSubmit) {
+
             approval.setStatus("SUBMITTED");
+
         } else {
-            if (approval.getStatus() == null || "RETURNED".equals(approval.getStatus())) {
+
+            if (approval.getStatus() == null ||
+                    "RETURNED".equals(approval.getStatus())) {
+
                 approval.setStatus("DRAFT");
             }
         }
 
         approval.setAgriStart(agriStart);
         approval.setAgriEnd(agriEnd);
+
         approval = tblWorkAllocationApprovalRepository.save(approval);
 
         Long approvalId = approval.getId();
 
-        /*
-         * ============================================
-         * SAVE WORK ALLOCATION ROWS
-         * ============================================
-         */
-        /*
-         * ============================================
-         * CREATE / UPDATE VERIFICATION
-         * ============================================
-         */
 
+        /*
+         * ============================================
+         * CREATE / RESET VERIFICATION
+         * ============================================
+         */
         if (isSubmit) {
 
             TblWorkAllocationApproval finalApproval = approval;
+
             TblWorkAllocationVerification verification =
                     tblWorkAllocationVerificationRepository
                             .findByApproval_Id(approvalId)
@@ -394,76 +488,248 @@ public class WorkallocationService {
 
             tblWorkAllocationVerificationRepository.save(verification);
         }
+
+
+        /*
+         * ============================================
+         * SAVE WORK ALLOCATION ROWS
+         * ============================================
+         */
         for (TblWorkAllocationDTO dto : dtos) {
-            TblWorkAllocation allocation = tblWorkAllocationRepository
-                    .findByLbcodeAndZone_ZoneIdAndAgriStartAndAgriEnd(
-                            dto.getLbcode(),
-                            dto.getZoneId(),
-                            agriStart,
-                            agriEnd
-                    )
-                    .orElse(new TblWorkAllocation());
+
+            TblWorkAllocation allocation =
+                    tblWorkAllocationRepository
+                            .findByLbcodeAndZone_ZoneIdAndAgriStartAndAgriEnd(
+                                    dto.getLbcode(),
+                                    dto.getZoneId(),
+                                    agriStart,
+                                    agriEnd
+                            )
+                            .orElse(new TblWorkAllocation());
+
 
             if (allocation.getId() == null) {
                 allocation.setCreated(LocalDate.now());
             }
 
+
+            /*
+             * ============================================
+             * BASIC DETAILS
+             * ============================================
+             */
             allocation.setApprovalId(approvalId);
             allocation.setZone(zone);
             allocation.setLbcode(dto.getLbcode());
 
-            // ===== AREA DETAILS (Tab 1) =====
-            allocation.setVillageWetArea(dto.getVillageWetArea());
-            allocation.setVillageDryArea(dto.getVillageDryArea());
-            allocation.setVillageTotalArea(dto.getVillageTotalArea());
 
-            // ===== EXCLUDED AREAS (Tab 2 - Forest Areas, Plantation Area, Water Bodies, Other Areas) =====
-            // Forest Areas - using forestAreaA as the single forest area field
-            allocation.setForestAreaA(dto.getForestAreaA());
-            // Set forestAreaB and forestAreaC to null or 0 since they're not in UI
-            allocation.setForestAreaB(BigDecimal.ZERO);
-            allocation.setForestAreaC(BigDecimal.ZERO);
+            /*
+             * ============================================
+             * AREA DETAILS - TAB 1
+             * ============================================
+             */
+            allocation.setVillageWetArea(
+                    dto.getVillageWetArea()
+            );
 
-            // Plantation Area - using areaUnderPlant
-            allocation.setAreaUnderPlant(dto.getAreaUnderPlant());
+            allocation.setVillageDryArea(
+                    dto.getVillageDryArea()
+            );
 
-            // Area of Water Bodies - using kayalExcludeArea
-            allocation.setKayalExcludeArea(dto.getKayalExcludeArea());
+            allocation.setVillageTotalArea(
+                    dto.getVillageTotalArea()
+            );
 
-            // Other Areas (Military Barracks, SEZ, Airport etc.) - using plantation_under
-            allocation.setForestExcludeUnclutivate(dto.getForestExcludeUnclutivate());
-            // Set plantation_not_under to null or 0 since not in UI
-            allocation.setForestExcludeNotUnclutivate(BigDecimal.ZERO);
 
-            // ===== TOTAL EARAS AREA AND ESTIMATED AREA (Tab 3) =====
-            // EARAS Area
-            allocation.setOtherExcludeFWet(dto.getOtherExcludeFWet());      // Wet EARAS
-            allocation.setOtherExcludedFDry(dto.getOtherExcludedFDry());    // Dry EARAS
-            allocation.setOtherExcludeFTotal(dto.getOtherExcludeFTotal());  // Total EARAS
+            /*
+             * ============================================
+             * EXCLUDED AREAS - TAB 2
+             *
+             * Forest Area
+             * --------------------------------------------
+             * Dry -> forestAreaA
+             * Wet -> forestAreaB
+             *
+             * Plantation Area
+             * --------------------------------------------
+             * Wet -> forestAreaC
+             * Dry -> areaUnderPlant
+             *
+             * Water Bodies
+             * --------------------------------------------
+             * Wet -> otherExcludeFWet
+             * Dry -> kayalExcludeArea
+             *
+             * Other Areas
+             * --------------------------------------------
+             * Wet -> forestExcludeNotUnclutivate
+             * Dry -> forestExcludeUnclutivate
+             * ============================================
+             */
 
-            // Estimated Area
-            allocation.setTotalAreaWet(dto.getTotalAreaWet());              // Wet Estimated
-            allocation.setTotalAreaDry(dto.getTotalAreaDry());              // Dry Estimated
-            allocation.setTotalAreaForEstimation(dto.getTotalAreaForEstimation()); // Total Estimated
 
-            // Plots fields - not in UI, set to 0 or null
-            allocation.setNoOfPlotsWet(dto.getNoOfPlotsWet());
-            allocation.setNoOfPlotsDry(dto.getNoOfPlotsDry());
-            allocation.setNoOfPlotsTotal(dto.getNoOfPlotsTotal());
+            // --------------------------------------------
+            // FOREST AREA
+            // --------------------------------------------
 
-            // Remarks
-            allocation.setRemarks(dto.getRemarks());
+            // Forest Area - Dry
+            allocation.setForestAreaA(
+                    dto.getForestAreaA()
+            );
 
-            allocation.setUserId(dto.getUserId());
-            allocation.setUpdated(LocalDate.now());
-            allocation.setAgriStart(agriStart);
-            allocation.setAgriEnd(agriEnd);
+            // Forest Area - Wet
+            allocation.setForestAreaB(
+                    dto.getForestAreaB()
+            );
+
+
+            // --------------------------------------------
+            // PLANTATION AREA
+            // --------------------------------------------
+
+            // Plantation Area - Wet
+            allocation.setForestAreaC(
+                    dto.getForestAreaC()
+            );
+
+            // Plantation Area - Dry
+            allocation.setAreaUnderPlant(
+                    dto.getAreaUnderPlant()
+            );
+
+
+            // --------------------------------------------
+            // AREA OF WATER BODIES
+            // --------------------------------------------
+
+            // Water Bodies - Wet
+            allocation.setOtherExcludeFWet(
+                    dto.getOtherExcludeFWet()
+            );
+
+            // Water Bodies - Dry
+            allocation.setKayalExcludeArea(
+                    dto.getKayalExcludeArea()
+            );
+
+
+            // --------------------------------------------
+            // OTHER AREAS
+            // --------------------------------------------
+
+            // Other Areas - Wet
+            allocation.setForestExcludeNotUnclutivate(
+                    dto.getForestExcludeNotUnclutivate()
+            );
+
+            // Other Areas - Dry
+            allocation.setForestExcludeUnclutivate(
+                    dto.getForestExcludeUnclutivate()
+            );
+
+
+            /*
+             * ============================================
+             * TOTAL EARAS AREA - TAB 3
+             * ============================================
+             */
+            allocation.setTotalWetCluster(
+                    dto.getTotalWetCluster()
+            );
+
+            allocation.setTotalDryCluster(
+                    dto.getTotalDryCluster()
+            );
+
+
+            /*
+             * ============================================
+             * ESTIMATED AREA - TAB 3
+             * ============================================
+             */
+            allocation.setTotalAreaWet(
+                    dto.getTotalAreaWet()
+            );
+
+            allocation.setTotalAreaDry(
+                    dto.getTotalAreaDry()
+            );
+
+            allocation.setTotalAreaForEstimation(
+                    dto.getTotalAreaForEstimation()
+            );
+
+
+            /*
+             * ============================================
+             * PLOTS
+             * ============================================
+             */
+            allocation.setNoOfPlotsWet(
+                    dto.getNoOfPlotsWet()
+            );
+
+            allocation.setNoOfPlotsDry(
+                    dto.getNoOfPlotsDry()
+            );
+
+            allocation.setNoOfPlotsTotal(
+                    dto.getNoOfPlotsTotal()
+            );
+
+
+            /*
+             * ============================================
+             * REMARKS
+             * ============================================
+             */
+            allocation.setRemarks(
+                    dto.getRemarks()
+            );
+
+
+            /*
+             * ============================================
+             * USER / STATUS / AGRI YEAR
+             * ============================================
+             */
+            allocation.setUserId(
+                    dto.getUserId()
+            );
+
+            allocation.setUpdated(
+                    LocalDate.now()
+            );
+
+            allocation.setAgriStart(
+                    agriStart
+            );
+
+            allocation.setAgriEnd(
+                    agriEnd
+            );
+
             allocation.setIsActive(true);
-            allocation.setIsEdit(!isSubmit);
 
+            allocation.setIsEdit(
+                    !isSubmit
+            );
+
+
+            /*
+             * ============================================
+             * SAVE
+             * ============================================
+             */
             tblWorkAllocationRepository.save(allocation);
         }
 
+
+        /*
+         * ============================================
+         * RETURN
+         * ============================================
+         */
         return dtos;
     }
 

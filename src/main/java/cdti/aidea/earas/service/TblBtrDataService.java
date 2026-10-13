@@ -703,7 +703,7 @@ public class TblBtrDataService {
 
         double remainingArea = totalArea - totalEnumerated;
 
-        System.out.println("remain "+remainingArea);
+
         // For non-survey cases, identifier might be null
         Integer resvno = (identifier != null) ? identifier : null;
         String resbdno = subdivision;

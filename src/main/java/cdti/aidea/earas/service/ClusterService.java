@@ -2064,4 +2064,18 @@ public class ClusterService {
                 agriEnd
         );
     }
+
+    @Transactional
+    public void setClusterOngoing(Long clusterId) {
+
+        ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
+                .orElseThrow(() ->
+                        new RuntimeException("Cluster not found: " + clusterId));
+
+        cluster.setStatus("On Going");
+        cluster.setIs_editable(true);
+        cluster.setUpdatedAt(LocalDateTime.now());
+
+        clusterMasterRepository.save(cluster);
+    }
 }

@@ -283,4 +283,13 @@ public class ClusterController {
     );
   }
 
+  @PutMapping("/{clusterId}/status/ongoing")
+  public ResponseEntity<String> setClusterOngoing(
+          @PathVariable Long clusterId) {
+
+    clusterService.setClusterOngoing(clusterId);
+
+    return ResponseEntity.ok("Cluster status updated to On Going");
+  }
+
 }

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import cdti.aidea.earas.service.KeyplotDeletionService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class Admincontroller {
   private final TblZoneVillageBlockMappingRepository tblZoneVillageBlockMappingRepository;
   private final TblZoneRevenueVillageMappingRepository tblZoneRevenueVillageMappingRepository;
   private final ZoneRevenueTalukMappingRepository zoneRevenueTalukMappingRepository;
+  private final KeyplotDeletionService keyplotDeletionService;
 
   @GetMapping("/keyplot-limits")
   public List<KeyplotsLimitLogResponse> getAllKeyplotLimits() {
@@ -446,6 +448,32 @@ public class Admincontroller {
     }
   }
 
+  @GetMapping("/zones_keyplot_deletion/{type}/{id}")
+  public ResponseEntity<Page<KeyplotDeletionTableDTO>> listDeletionRequests(
+          @PathVariable("type") String type,
+          @PathVariable("id") String id,
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size,
+          @RequestParam String agriYear
+  ) {
+    try {
+      Integer idValue = Integer.parseInt(id);
+      Page<KeyplotDeletionTableDTO> list = keyplotDeletionService.listDeletionRequests(
+              type,
+              idValue,
+              page,
+              size,
+              agriYear
+      );
+      return ResponseEntity.ok(list);
+    } catch (NumberFormatException e) {
+      return ResponseEntity.badRequest().build();
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
 
 //  @GetMapping("/fetch-zones-cluster/{type}/{id}")
 //  public ResponseEntity<Page<ZonesClusterApprovalResponse>> getZoneListForClusters(

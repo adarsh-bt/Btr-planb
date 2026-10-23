@@ -84,7 +84,7 @@ public class TblBtrData {
   //
   //    private String reson;
   //    private String localboy;
-  //
+  //system
   //    @Column(columnDefinition = "jsonb")
   //    private String addonNotes;
   //

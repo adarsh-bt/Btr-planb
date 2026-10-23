@@ -26,24 +26,20 @@ public class ReportController {
 
     @GetMapping("/clusters/AllDistricts")
     public ClusterReportResponse getClusterDashboard(
-
-            @RequestParam(required = false)
-            String landType,
-
+            @RequestParam(required = false) String landType,
             @RequestParam(required = false)
             @DateTimeFormat(pattern = "yyyy-MM")
             YearMonth startMonth,
-
             @RequestParam(required = false)
             @DateTimeFormat(pattern = "yyyy-MM")
-            YearMonth endMonth
+            YearMonth endMonth,
+            @RequestParam String agriYear
     ) {
-
         return reportService.getDashboardData(
                 landType,
                 startMonth,
-                endMonth
-
+                endMonth,
+                agriYear
         );
     }
 
@@ -63,14 +59,16 @@ public class ReportController {
 
             @RequestParam(required = false)
             @DateTimeFormat(pattern = "yyyy-MM")
-            YearMonth endMonth
+            YearMonth endMonth,
+             @RequestParam String agriYear
     ) {
 
         return reportService.getTalukWiseDashboardData(
                 districtId,
                 landType,
                 startMonth,
-                endMonth
+                endMonth,
+                agriYear
         );
     }
     //based on talukId gets the details of zone status
@@ -113,51 +111,43 @@ public class ReportController {
 //        );
 //    }
 
-    //added pagination and search based on zoneName
     @GetMapping("/clusters/taluk/{talukId}/zones")
     public ClusterReportResponse getZoneWiseDashboard(
-
             @PathVariable Integer talukId,
-
             @RequestParam(required = false)
             String landType,
-
             @RequestParam
             @DateTimeFormat(pattern = "yyyy-MM")
             YearMonth startMonth,
-
             @RequestParam(required = false)
             @DateTimeFormat(pattern = "yyyy-MM")
             YearMonth endMonth,
-
             @RequestParam("page")
             int page,
-
             @RequestParam("size")
             int size,
-
             @RequestParam(required = false)
-            String search
-    ) {
+            String search,
 
+            @RequestParam String agriYear
+    ) {
         if (page < 0) {
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Page number must be greater than or equal to 0"
             );
         }
-
         if (size <= 0 || size > 100) {
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Page size must be between 1 and 100"
             );
         }
-
         return reportService.getZoneWiseDashboardData(
                 talukId,
                 landType,
                 startMonth,
                 endMonth,
-                search
+                search,
+                agriYear
         );
     }
 

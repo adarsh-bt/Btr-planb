@@ -31,9 +31,7 @@ import java.util.stream.Collectors;
 public class AdminManage {
 
   private final KeyplotsLimitLogRepository repository;
-
   private final ClusterLimitLogRepository clusterLimitLogRepository;
-
   private final TblMasterZoneRepository tblMasterZoneRepository;
   private final DesTalukRepository desTalukRepository;
   private final DistrictMasterRepository districtMasterRepository;
@@ -864,7 +862,6 @@ public class AdminManage {
 
       return;
     }
-
     /* USER SELECTED BLOCKS */
 
     for (String blockId : request.getBlockCodes()) {
@@ -1344,131 +1341,4 @@ public class AdminManage {
             )
             .collect(Collectors.toList());
   }
-
-//  public Page<ZonesClusterApprovalResponse> getZoneListForClusters(
-//          String type,
-//          Integer idValue,
-//          String agriYear,
-//          int page,
-//          int size) {
-//
-//    Pageable pageable = PageRequest.of(page, size);
-//
-//    List<Long> zoneIds;
-//
-//    if ("Taluk".equalsIgnoreCase(type)) {
-//
-//      zoneIds = tblMasterZoneRepository.findByDesTalukId(idValue)
-//              .stream()
-//              .map(TblMasterZone::getZoneId)
-//              .map(Long::valueOf)
-//              .toList();
-//
-//    } else if ("District".equalsIgnoreCase(type)) {
-//
-//      zoneIds = tblMasterZoneRepository.findByDistId(idValue)
-//              .stream()
-//              .map(TblMasterZone::getZoneId)
-//              .map(Long::valueOf)
-//              .toList();
-//
-//    } else if ("Directorate".equalsIgnoreCase(type)) {
-//
-//      zoneIds = tblMasterZoneRepository.findAll()
-//              .stream()
-//              .map(TblMasterZone::getZoneId)
-//              .map(Long::valueOf)
-//              .toList();
-//
-//    } else {
-//
-//      throw new IllegalArgumentException(
-//              "Invalid type. Use 'Taluk', 'District', or 'Directorate'");
-//    }
-//
-//    // Fetch data from Form1 service
-//    System.out.println("zones "+zoneIds+"  agri  "+agriYear +" page: "+page + " s:  "+size);
-//    Page<Form1EditLogResponse> editLogs =
-//            formEntryClient
-//                    .getEditStatusByZoneIds(zoneIds, agriYear, page, size)
-//                    .getBody();
-//    System.out.println("FORM RESPONSE RECEIVED");
-//    System.out.println("TOTAL ELEMENTS: " + editLogs.getTotalElements());
-//    // Prepare response objects
-//    List<ZonesClusterApprovalResponse> responses =
-//            editLogs.getContent()
-//                    .stream()
-//                    .map(editLog -> {
-//
-//                      TblMasterZone zone = tblMasterZoneRepository
-//                              .findById(editLog.getZoneId().intValue())
-//                              .orElse(null);
-//
-//                      ZonesClusterApprovalResponse response =
-//                              new ZonesClusterApprovalResponse();
-//
-//                      if (zone != null) {
-//
-//                        response.setZoneId(zone.getZoneId());
-//                        response.setZoneName(zone.getZoneNameEn());
-//
-//                        DesTaluk taluk = zone.getDesTalukMaster();
-//
-//                        if (taluk != null) {
-//                          response.setTalukId(
-//                                  Math.toIntExact(taluk.getDesTalukId()));
-//                          response.setTalukName(
-//                                  taluk.getDesTalukNameEn());
-//                        }
-//
-//                        DistrictMaster district =
-//                                districtMasterRepository
-//                                        .findById(
-//                                                Long.valueOf(zone.getDistId()))
-//                                        .orElse(null);
-//
-//                        if (district != null) {
-//                          response.setDistrictId(district.getDist_id());
-//                          response.setDistrictName(
-//                                  district.getDist_name_en());
-//                        }
-//                      }
-//
-//                      return response;
-//
-//                    })
-//                    .toList();
-//
-//    // Attach Form1 edit logs
-//    enrichForm1EditLogs(responses, editLogs.getContent());
-//
-//    return new PageImpl<>(
-//            responses,
-//            pageable,
-//            editLogs.getTotalElements()
-//    );
-//  }
-
-//  private void enrichForm1EditLogs(
-//          List<ZonesClusterApprovalResponse> responses,
-//          List<Form1EditLogResponse> editLogs) {
-//
-//    Map<Long, Form1EditLogResponse> form1Map =
-//            editLogs.stream()
-//                    .collect(Collectors.toMap(
-//                            Form1EditLogResponse::getZoneId,
-//                            Function.identity(),
-//                            (first, second) -> second
-//                    ));
-//
-//    responses.forEach(response -> {
-//
-//      if (response.getZoneId() != null) {
-//
-//        response.setForm1EditLogResponse(
-//                form1Map.get(Long.valueOf(response.getZoneId()))
-//        );
-//      }
-//    });
-//  }
 }

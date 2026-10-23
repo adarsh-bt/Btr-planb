@@ -19,7 +19,6 @@ public class ClusterReportResponse {
     private Long notStarted ;
 
     private Long underView ;
-
    // private Map<String, SubDetailsClusterStatusResponse> allSubDetails;
     private Map<String, ?> allSubDetails;
 }

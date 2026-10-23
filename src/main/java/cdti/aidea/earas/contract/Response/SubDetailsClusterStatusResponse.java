@@ -10,20 +10,13 @@ import lombok.NoArgsConstructor;
 public class SubDetailsClusterStatusResponse {
 
     private Long id;
-
-    private Long dryCompleted ;
-
-    private Long dryOngoing ;
-
-    private Long dryNotStarted ;
-
-    private Long dryUnderView ;
-
-    private Long wetCompleted ;
-
-    private Long wetOngoing ;
-
-    private Long wetNotStarted ;
-
-    private Long wetUnderView ;
+    private Long dryCompleted;
+    private Long dryOngoing;
+    private Long dryNotStarted;
+    private Long dryUnderView;
+    private Long wetCompleted;
+    private Long wetOngoing;
+    private Long wetNotStarted;
+    private Long wetUnderView;
+    private Long totalCluster;
 }

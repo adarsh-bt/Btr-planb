@@ -176,13 +176,7 @@ public class Zone_Service {
   }
 
   public UserZoneAssignment ZoneAssignedService(ZoneAssignedRequset request) {
-    System.out.println(
-            "ZoneAssignedService "
-                    + request.getAssigner_id()
-                    + " "
-                    + request.getZoneId()
-                    + " "
-                    + request.getUser_id());
+
 
     try {
       // 1. Validate zone exists

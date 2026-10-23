@@ -194,9 +194,6 @@ public CcePlotResult getAssignedCcePlotsByZoneId(Long zoneId,String agriYear) {
     LocalDate agriEndYear =
             AgriYearUtil.getAgriYearEnd(agriYear);
 
-    System.out.println(agriStartYear);
-    System.out.println(agriEndYear);
-
     List<TblMasterZone> zones =
             masterZoneRepository.findByDistId(
                     distId.intValue());

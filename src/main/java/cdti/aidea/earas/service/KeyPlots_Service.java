@@ -1527,7 +1527,7 @@ public class KeyPlots_Service {
 
         if (activeLimit != null) {
             System.out.println("system " + keyplotsLimitLogRepository.findByIsInActiveTrueAndIsActiveFalse());
-            System.out.println(">>> Keyplots Limit = " + activeLimit.getKeyplotsLimit());
+
         }
 
         if (activeLimit == null) {
@@ -2046,7 +2046,7 @@ public class KeyPlots_Service {
 //    non btr keyplots
 
     public ValidationResponse validateDuplicateForNonBtrCluster(TblBtrDataDTO dto) {
-        System.out.println("non btr dto "+dto);
+
         TblMasterZone zone = tblMasterZoneRepository.findById(Math.toIntExact(dto.getZoneId()))
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
 
@@ -2332,9 +2332,6 @@ public class KeyPlots_Service {
         // This might involve another repository call or mapping
         return "default_lbcode"; // Replace with actual implementation
     }
-
-
-
 
     private String getPlotType(TblBtrData plot) {
         if (plot.getResvno() != null) return "survey plot";

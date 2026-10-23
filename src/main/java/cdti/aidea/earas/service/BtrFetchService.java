@@ -52,13 +52,6 @@ public class BtrFetchService {
               .filter(Objects::nonNull)
               .collect(Collectors.toList());
 
-      System.out.println(
-          "Zone ID: "
-              + zoneId
-              + ", Villages: "
-              + villageIds.size()
-              + ", LSG Codes: "
-              + lsgcodes.size());
 
       if (lsgcodes.isEmpty()) {
 
@@ -77,12 +70,6 @@ public class BtrFetchService {
                 .collect(Collectors.toList());
       }
 
-      System.out.println(
-          "Found "
-              + allData.size()
-              + " BTR records for zone "
-              + zoneId
-              + (filter != null ? " with filter: " + filter : ""));
 
       // Convert to response DTOs with additional information
       return convertToResponseDTOs(allData, villageList, zoneId);
@@ -499,7 +486,7 @@ public class BtrFetchService {
 
       return mappings.isEmpty() ? null : mappings.get(0).getZone();
     } catch (Exception e) {
-      System.err.println("Error finding zone for village " + villageId + ": " + e.getMessage());
+
       return null;
     }
   }

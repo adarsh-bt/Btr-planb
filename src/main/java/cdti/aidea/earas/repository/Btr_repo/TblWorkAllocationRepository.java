@@ -41,4 +41,48 @@ public interface TblWorkAllocationRepository extends JpaRepository<TblWorkAlloca
             LocalDate agriStart,
             LocalDate agriEnd
     );
+
+    @Query("""
+        SELECT wa
+        FROM TblWorkAllocation wa
+        JOIN FETCH wa.zone z
+        LEFT JOIN FETCH z.districtMaster d
+        WHERE wa.isActive = true
+          AND wa.agriStart = :agriStart
+          AND wa.agriEnd = :agriEnd
+    """)
+    List<TblWorkAllocation> findDashboardAllocations(
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
+
+    @Query("""
+    SELECT wa
+    FROM TblWorkAllocation wa
+    JOIN FETCH wa.zone z
+    WHERE z.desTalukId = :talukId
+      AND wa.isActive = true
+      AND wa.agriStart = :agriStart
+      AND wa.agriEnd = :agriEnd
+""")
+    List<TblWorkAllocation> findZoneDashboardAllocations(
+            @Param("talukId") Integer talukId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
+
+    @Query("""
+    SELECT wa
+    FROM TblWorkAllocation wa
+    JOIN FETCH wa.zone z
+    WHERE z.districtMaster.dist_id = :districtId
+      AND wa.isActive = true
+      AND wa.agriStart = :agriStart
+      AND wa.agriEnd = :agriEnd
+""")
+    List<TblWorkAllocation> findTalukDashboardAllocations(
+            @Param("districtId") Integer districtId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
 }

@@ -348,6 +348,8 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
     );
 
 
+
+
     @Query("""
     SELECT DISTINCT cm
     FROM ClusterMaster cm
@@ -409,20 +411,25 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
             @Param("agriEndYear") LocalDate agriEndYear);
 
     @Query("""
-SELECT new cdti.aidea.earas.contract.Response.ClusterIdNumberResponse(
-    cm.cluMasterId,
-    cm.clusterNumber,
-    kp.landType
-)
-FROM ClusterMaster cm
-JOIN cm.keyPlot kp
-WHERE cm.zone.zoneId = :zoneId
-AND kp.agriStartYear = :agriStart
-AND kp.agriEndYear = :agriEnd
-AND cm.is_active = true
-AND cm.isReject = false
-ORDER BY cm.clusterNumber
-""")
+    SELECT new cdti.aidea.earas.contract.Response.ClusterIdNumberResponse(
+        cm.cluMasterId,
+        cm.clusterNumber,
+        kp.landType,
+        lb.localbodyNameEn,
+        btr.lbcode,
+        lb.localbodyId
+    )
+    FROM ClusterMaster cm
+    JOIN cm.keyPlot kp
+    JOIN kp.btrData btr
+    LEFT JOIN TblLocalBody lb ON lb.codeApi = btr.lbcode
+    WHERE cm.zone.zoneId = :zoneId
+      AND kp.agriStartYear = :agriStart
+      AND kp.agriEndYear = :agriEnd
+      AND cm.is_active = true
+      AND cm.isReject = false
+    ORDER BY cm.clusterNumber
+    """)
     List<ClusterIdNumberResponse> findClusterIdAndNumber(
             @Param("zoneId") Integer zoneId,
             @Param("agriStart") LocalDate agriStart,

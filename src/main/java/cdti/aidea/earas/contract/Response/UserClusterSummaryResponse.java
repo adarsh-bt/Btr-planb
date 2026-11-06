@@ -14,6 +14,7 @@ public class UserClusterSummaryResponse {
   private int ongoing;
   private int notStarted;
   private int underreview;
+  private int deleteRequested;
   private String cceMessage;
   private List<ClusterStatusResponse> payload;
 }

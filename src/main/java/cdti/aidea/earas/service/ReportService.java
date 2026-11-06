@@ -1348,16 +1348,26 @@ public class ReportService {
         return response;
     }
     //Total cluster completed status needs to connect with form1
+    @Transactional(readOnly = true)
     public ClusterCompletedProgressResponse getCompletedClusters(
             String landType,
             String agriYear) {
 
         if (agriYear == null || agriYear.isBlank()) {
-            throw new RuntimeException("Agricultural year is required");
+            throw new IllegalArgumentException(
+                    "Agricultural year is required");
         }
 
         if (landType != null) {
-            landType = landType.trim().toUpperCase();
+            landType = landType.trim().toUpperCase(Locale.ROOT);
+
+            if (!landType.isBlank()
+                    && !landType.equals("ALL")
+                    && !landType.equals("WET")
+                    && !landType.equals("DRY")) {
+                throw new IllegalArgumentException(
+                        "landType must be WET, DRY or ALL");
+            }
         }
 
         LocalDate agriStart =
@@ -1366,69 +1376,59 @@ public class ReportService {
         LocalDate agriEnd =
                 AgriYearUtil.getAgriYearEnd(agriYear);
 
-        LocalDateTime startDate =
-                agriStart.atStartOfDay();
+        boolean includeWet =
+                landType == null || landType.isBlank()
+                        || "ALL".equals(landType)
+                        || "WET".equals(landType);
 
-        LocalDateTime endDate =
-                agriEnd.atTime(23, 59, 59);
+        boolean includeDry =
+                landType == null || landType.isBlank()
+                        || "ALL".equals(landType)
+                        || "DRY".equals(landType);
 
-        List<ClusterMaster> clusters =
-                clusterMasterRepository.getDashboardData(
-                        startDate,
-                        endDate);
+        List<TblWorkAllocation> allocations =
+                tblWorkAllocationRepository.findActiveAllocationsByAgriYear(
+                        agriStart, agriEnd);
 
         Map<String, ClusterCompletedProgressSubDetails> districtMap =
                 new LinkedHashMap<>();
 
-        long totalCompleted = 0;
+        long totalCluster = 0L;
 
-        boolean includeWet =
-                landType == null
-                        || "WET".equalsIgnoreCase(landType);
+        for (TblWorkAllocation allocation : allocations) {
 
-        boolean includeDry =
-                landType == null
-                        || "DRY".equalsIgnoreCase(landType);
-
-        for (ClusterMaster cluster : clusters) {
-
-            if (!"completed".equalsIgnoreCase(cluster.getStatus())) {
+            if (allocation.getZone() == null
+                    || allocation.getZone().getDistrictMaster() == null) {
                 continue;
             }
 
-            String clusterLandType = null;
+            var districtMaster =
+                    allocation.getZone().getDistrictMaster();
 
-            if (cluster.getKeyPlot() != null) {
-                clusterLandType =
-                        cluster.getKeyPlot().getLandType();
-            }
+            String districtName = districtMaster.getDist_name_en();
+            Long districtId = districtMaster.getDist_id().longValue();
 
-            if (clusterLandType == null) {
-                continue;
-            }
+            long wetCount = includeWet
+                    ? (allocation.getTotalWetCluster() == null
+                    ? 0L
+                    : allocation.getTotalWetCluster().longValue())
+                    : 0L;
 
-            String districtName = "UNKNOWN";
-            Long districtId = null;
+            long dryCount = includeDry
+                    ? (allocation.getTotalDryCluster() == null
+                    ? 0L
+                    : allocation.getTotalDryCluster().longValue())
+                    : 0L;
 
-            if (cluster.getZone() != null &&
-                    cluster.getZone().getDistrictMaster() != null) {
+            long allocationTotal = wetCount + dryCount;
 
-                districtName =
-                        cluster.getZone()
-                                .getDistrictMaster()
-                                .getDist_name_en();
-
-                districtId =
-                        cluster.getZone()
-                                .getDistrictMaster()
-                                .getDist_id()
-                                .longValue();
-            }
+            totalCluster += allocationTotal;
 
             districtMap.putIfAbsent(
                     districtName,
                     ClusterCompletedProgressSubDetails.builder()
                             .id(districtId)
+                            .totalCluster(0L)
                             .wetCompleted(0L)
                             .dryCompleted(0L)
                             .build());
@@ -1436,255 +1436,185 @@ public class ReportService {
             ClusterCompletedProgressSubDetails district =
                     districtMap.get(districtName);
 
-            if ("WET".equalsIgnoreCase(clusterLandType) && includeWet) {
-
-                totalCompleted += 1;
-
-                district.setWetCompleted(
-                        district.getWetCompleted() + 1);
-            }
-
-            if ("DRY".equalsIgnoreCase(clusterLandType) && includeDry) {
-
-                totalCompleted += 1;
-
-                district.setDryCompleted(
-                        district.getDryCompleted() + 1);
-            }
+            district.setTotalCluster(
+                    district.getTotalCluster() + allocationTotal);
         }
 
         return ClusterCompletedProgressResponse.builder()
-                .totalClusterCompleted(totalCompleted)
+                .totalCluster(totalCluster)
+                .totalClusterCompleted(0L)
                 .allSubDetails(districtMap)
                 .build();
     }
-
     //Total cluster completed status needs to connect with form1 passing dId taluk wise
+    @Transactional(readOnly = true)
     public ClusterCompletedProgressResponse getTalukWiseCompletedClusters(
-
             Integer districtId,
             String landType,
             String agriYear) {
 
         if (agriYear == null || agriYear.isBlank()) {
-            throw new RuntimeException("Agricultural year is required");
+            throw new IllegalArgumentException(
+                    "Agricultural year is required");
         }
 
-        if (landType != null) {
-            landType = landType.trim().toUpperCase();
+        landType = landType == null
+                ? "ALL"
+                : landType.trim().toUpperCase(Locale.ROOT);
+
+        if (!landType.equals("ALL")
+                && !landType.equals("WET")
+                && !landType.equals("DRY")) {
+            throw new IllegalArgumentException(
+                    "landType must be WET, DRY or ALL");
         }
 
-        LocalDate agriStart =
-                AgriYearUtil.getAgriYearStart(agriYear);
+        LocalDate agriStart = AgriYearUtil.getAgriYearStart(agriYear);
+        LocalDate agriEnd = AgriYearUtil.getAgriYearEnd(agriYear);
 
-        LocalDate agriEnd =
-                AgriYearUtil.getAgriYearEnd(agriYear);
-
-        LocalDateTime startDate =
-                agriStart.atStartOfDay();
-
-        LocalDateTime endDate =
-                agriEnd.atTime(23, 59, 59);
-
-        List<ClusterMaster> clusters =
-                clusterMasterRepository.getTalukWiseDashboardDataByAgriYear(
-                        districtId,
-                        startDate,
-                        endDate);
+        List<TblWorkAllocation> allocations =
+                tblWorkAllocationRepository.findAllocationsByDistrictAndAgriYear(
+                        districtId, agriStart, agriEnd);
 
         Map<String, ClusterCompletedProgressSubDetails> talukMap =
                 new LinkedHashMap<>();
 
-        long totalCompleted = 0;
+        long totalCluster = 0L;
 
-        boolean includeWet =
-                landType == null
-                        || "WET".equalsIgnoreCase(landType);
+        for (TblWorkAllocation allocation : allocations) {
 
-        boolean includeDry =
-                landType == null
-                        || "DRY".equalsIgnoreCase(landType);
-
-        for (ClusterMaster cluster : clusters) {
-
-            if (!"completed".equalsIgnoreCase(cluster.getStatus())) {
+            if (allocation.getZone() == null
+                    || allocation.getZone().getDesTalukMaster() == null) {
                 continue;
             }
 
-            if (cluster.getKeyPlot() == null) {
-                continue;
-            }
+            var taluk = allocation.getZone().getDesTalukMaster();
 
-            String clusterLandType = cluster.getKeyPlot().getLandType();
+            Long talukId = (long) taluk.getDesTalukId();
+            String talukName = taluk.getDesTalukNameEn();
 
-            if (clusterLandType == null) {
-                continue;
-            }
+            long wetCount = !landType.equals("DRY")
+                    && allocation.getTotalWetCluster() != null
+                    ? allocation.getTotalWetCluster().longValue()
+                    : 0L;
 
-            String talukName = "UNKNOWN";
-            Long talukId = null;
+            long dryCount = !landType.equals("WET")
+                    && allocation.getTotalDryCluster() != null
+                    ? allocation.getTotalDryCluster().longValue()
+                    : 0L;
 
-            if (cluster.getZone() != null &&
-                    cluster.getZone().getDesTalukMaster() != null) {
-
-                talukName =
-                        cluster.getZone()
-                                .getDesTalukMaster()
-                                .getDesTalukNameEn();
-
-                talukId =
-                        (long) cluster.getZone()
-                                .getDesTalukMaster()
-                                .getDesTalukId();
-
-            }
+            long allocationTotal = wetCount + dryCount;
+            totalCluster += allocationTotal;
 
             talukMap.putIfAbsent(
                     talukName,
                     ClusterCompletedProgressSubDetails.builder()
                             .id(talukId)
+                            .totalCluster(0L)
                             .wetCompleted(0L)
                             .dryCompleted(0L)
                             .build());
 
-            ClusterCompletedProgressSubDetails taluk =
+            ClusterCompletedProgressSubDetails detail =
                     talukMap.get(talukName);
 
-            if ("WET".equalsIgnoreCase(clusterLandType) && includeWet) {
-
-                totalCompleted += 1;
-
-                taluk.setWetCompleted(
-                        taluk.getWetCompleted() + 1);
-            }
-
-            if ("DRY".equalsIgnoreCase(clusterLandType) && includeDry) {
-
-                totalCompleted += 1;
-
-                taluk.setDryCompleted(
-                        taluk.getDryCompleted() + 1);
-            }
+            detail.setTotalCluster(
+                    detail.getTotalCluster() + allocationTotal);
         }
 
         return ClusterCompletedProgressResponse.builder()
-                .totalClusterCompleted(totalCompleted)
+                .totalCluster(totalCluster)
+                .totalClusterCompleted(0L)
                 .allSubDetails(talukMap)
                 .build();
     }
     //zone wise details while passing taluk-id needs to connect with form
+    @Transactional(readOnly = true)
     public ClusterCompletedProgressResponse getZoneWiseCompletedClusters(
-
             Integer talukId,
             String landType,
             String agriYear,
             String search) {
 
         if (agriYear == null || agriYear.isBlank()) {
-            throw new RuntimeException("Agricultural year is required");
+            throw new IllegalArgumentException(
+                    "Agricultural year is required");
         }
 
-        if (landType != null) {
-            landType = landType.trim().toUpperCase();
+        landType = landType == null
+                ? "ALL"
+                : landType.trim().toUpperCase(Locale.ROOT);
+
+        if (!landType.equals("ALL")
+                && !landType.equals("WET")
+                && !landType.equals("DRY")) {
+            throw new IllegalArgumentException(
+                    "landType must be WET, DRY or ALL");
         }
 
-        LocalDate agriStart =
-                AgriYearUtil.getAgriYearStart(agriYear);
+        LocalDate agriStart = AgriYearUtil.getAgriYearStart(agriYear);
+        LocalDate agriEnd = AgriYearUtil.getAgriYearEnd(agriYear);
 
-        LocalDate agriEnd =
-                AgriYearUtil.getAgriYearEnd(agriYear);
-
-//        LocalDate startDate =
-//                agriStart.atStartOfDay();
-
-//        LocalDateTime endDate =
-//                agriEnd.atTime(23, 59, 59);
-
-        List<ClusterMaster> clusters =
-                clusterMasterRepository.getZoneWiseDashboardDataByAgriYear(
-                        talukId,
-                        agriStart,
-                        agriEnd);
+        List<TblWorkAllocation> allocations =
+                tblWorkAllocationRepository.findAllocationsByTalukAndAgriYear(
+                        talukId, agriStart, agriEnd);
 
         Map<String, ClusterCompletedProgressSubDetails> zoneMap =
                 new LinkedHashMap<>();
 
-        long totalCompleted = 0;
+        long totalCluster = 0L;
 
-        boolean includeWet =
-                landType == null
-                        || "WET".equalsIgnoreCase(landType);
+        for (TblWorkAllocation allocation : allocations) {
 
-        boolean includeDry =
-                landType == null
-                        || "DRY".equalsIgnoreCase(landType);
-
-        for (ClusterMaster cluster : clusters) {
-
-            if (!"completed".equalsIgnoreCase(cluster.getStatus())) {
+            if (allocation.getZone() == null) {
                 continue;
             }
 
-            if (cluster.getKeyPlot() == null) {
+            var zone = allocation.getZone();
+
+            String zoneName = zone.getZoneNameEn();
+
+            if (search != null && !search.isBlank()
+                    && (zoneName == null
+                    || !zoneName.toLowerCase(Locale.ROOT)
+                    .contains(search.trim().toLowerCase(Locale.ROOT)))) {
                 continue;
             }
 
-            String clusterLandType =
-                    cluster.getKeyPlot().getLandType();
+            Long zoneId = zone.getZoneId().longValue();
 
-            if (clusterLandType == null) {
-                continue;
-            }
+            long wetCount = !landType.equals("DRY")
+                    && allocation.getTotalWetCluster() != null
+                    ? allocation.getTotalWetCluster().longValue()
+                    : 0L;
 
-            String zoneName = "UNKNOWN";
-            Long zoneId = null;
+            long dryCount = !landType.equals("WET")
+                    && allocation.getTotalDryCluster() != null
+                    ? allocation.getTotalDryCluster().longValue()
+                    : 0L;
 
-            if (cluster.getZone() != null) {
-
-                zoneName =
-                        cluster.getZone().getZoneNameEn();
-
-                zoneId =
-                        cluster.getZone().getZoneId().longValue();
-            }
-
-            // Search
-            if (search != null &&
-                    !search.trim().isEmpty() &&
-                    !zoneName.toLowerCase().contains(search.toLowerCase())) {
-                continue;
-            }
+            long allocationTotal = wetCount + dryCount;
+            totalCluster += allocationTotal;
 
             zoneMap.putIfAbsent(
                     zoneName,
                     ClusterCompletedProgressSubDetails.builder()
                             .id(zoneId)
+                            .totalCluster(0L)
                             .wetCompleted(0L)
                             .dryCompleted(0L)
                             .build());
 
-            ClusterCompletedProgressSubDetails zone =
+            ClusterCompletedProgressSubDetails detail =
                     zoneMap.get(zoneName);
 
-            if ("WET".equalsIgnoreCase(clusterLandType) && includeWet) {
-
-                totalCompleted++;
-
-                zone.setWetCompleted(
-                        zone.getWetCompleted() + 1);
-            }
-
-            if ("DRY".equalsIgnoreCase(clusterLandType) && includeDry) {
-
-                totalCompleted++;
-
-                zone.setDryCompleted(
-                        zone.getDryCompleted() + 1);
-            }
+            detail.setTotalCluster(
+                    detail.getTotalCluster() + allocationTotal);
         }
 
         return ClusterCompletedProgressResponse.builder()
-                .totalClusterCompleted(totalCompleted)
+                .totalCluster(totalCluster)
+                .totalClusterCompleted(0L)
                 .allSubDetails(zoneMap)
                 .build();
     }

@@ -44,12 +44,13 @@ public class ClusterController {
       return ResponseEntity.status(HttpStatus.NOT_FOUND)
           .body(
               new UserClusterSummaryResponse(
-                  e.getMessage(), 0, 0, 0, 0, "CCe Not Available", Collections.emptyList()));
+                  e.getMessage(), 0, 0, 0, 0, 0,"CCe Not Available", Collections.emptyList()));
     } catch (Exception e) {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body(
               new UserClusterSummaryResponse(
                   "An internal error occurred",
+                  0,
                   0,
                   0,
                   0,

@@ -12,6 +12,6 @@ import java.util.Map;
 @AllArgsConstructor
 public class ClusterCompletedProgressResponse {
     private Long totalClusterCompleted;
-
+    private Long totalCluster;
     private Map<String, ClusterCompletedProgressSubDetails> allSubDetails;
 }

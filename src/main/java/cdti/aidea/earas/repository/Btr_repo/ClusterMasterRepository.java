@@ -237,13 +237,13 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
                 WHERE
                 (
                     CAST(:startDate AS timestamp) IS NULL
-                    OR cm.createdAt >= :startDate
+                    OR cm.updatedAt >= :startDate
                 )
             
                 AND
                 (
                     CAST(:endDate AS timestamp) IS NULL
-                    OR cm.createdAt <= :endDate
+                    OR cm.updatedAt <= :endDate
                 )
             """)
     List<ClusterMaster> getDashboardData(
@@ -268,13 +268,13 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
                 AND
                 (
                     CAST(:startDate AS timestamp) IS NULL
-                    OR cm.createdAt >= :startDate
+                    OR cm.updatedAt >= :startDate
                 )
             
                 AND
                 (
                     CAST(:endDate AS timestamp) IS NULL
-                    OR cm.createdAt <= :endDate
+                    OR cm.updatedAt <= :endDate
                 )
             """)
     List<ClusterMaster> getTalukWiseDashboardData(
@@ -326,13 +326,13 @@ public interface ClusterMasterRepository extends JpaRepository<ClusterMaster, Lo
                 AND
                 (
                     CAST(:startDate AS timestamp) IS NULL
-                    OR cm.createdAt >= :startDate
+                    OR cm.updatedAt >= :startDate
                 )
             
                 AND
                 (
                     CAST(:endDate AS timestamp) IS NULL
-                    OR cm.createdAt <= :endDate
+                    OR cm.updatedAt <= :endDate
                 )
             """)
     List<ClusterMaster> getZoneWiseDashboardData(

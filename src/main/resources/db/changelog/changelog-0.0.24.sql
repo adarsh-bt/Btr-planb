@@ -81,3 +81,6 @@ CREATE UNIQUE INDEX uq_active_keyplot_deletion_request
 
     ALTER TABLE keyplot_deletion_request
     ADD COLUMN cluster_number INTEGER;
+
+    ALTER TABLE keyplot_deletion_request
+    ADD COLUMN btr_id BIGINT NOT NULL;

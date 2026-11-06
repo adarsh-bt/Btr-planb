@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ClusterCompletedProgressSubDetails {
     private Long id;
-
+    private Long totalCluster;
     private Long wetCompleted;
 
     private Long dryCompleted;

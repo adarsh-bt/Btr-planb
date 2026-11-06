@@ -128,7 +128,8 @@ public class ClusterService {
             }
         }
         // ✅ 5. Build response (NO DB CALLS)
-        int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
+        int completed = 0, ongoing = 0, notStarted = 0,
+                underreview = 0, deleteRequested = 0;
         List<ClusterStatusResponse> payload = new ArrayList<>();
 
         for (ClusterSummaryProjection c : clusters) {
@@ -138,6 +139,7 @@ public class ClusterService {
                 case "Not Started" -> notStarted++;
                 case "On Going" -> ongoing++;
                 case "Under Review" -> underreview++;
+                case "Deletion Requested" -> deleteRequested++;
                 default -> completed++;
             }
 
@@ -169,6 +171,7 @@ public class ClusterService {
                 ongoing,
                 notStarted,
                 underreview,
+                deleteRequested,
                 cceMessage,
                 payload
         );
@@ -251,7 +254,8 @@ public class ClusterService {
         }
 
         // ✅ 5. LOOP (NO DB CALLS INSIDE)
-        int completed = 0, ongoing = 0, notStarted = 0, underreview = 0;
+        int completed = 0, ongoing = 0, notStarted = 0,
+                underreview = 0, deleteRequested = 0;
 
         List<ClusterStatusResponse> payload = new ArrayList<>();
 
@@ -315,6 +319,7 @@ public class ClusterService {
                 ongoing,
                 notStarted,
                 underreview,
+                deleteRequested,
                 cceResult.isFallbackUsed() ? "CCE data not available currently." : null,
                 payload
         );

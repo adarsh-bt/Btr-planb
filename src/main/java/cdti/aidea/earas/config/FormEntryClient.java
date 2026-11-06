@@ -42,6 +42,11 @@ public interface FormEntryClient {
           @RequestBody AvailableCcePlotRemoveRequest request
   );
 
+//  @GetMapping("/earas-form1-entry/common-api/cluster-log/{clusterId}")
+//  ResponseEntity<Response<ClusterLogResponse>> getClusterLog(
+//          @PathVariable("clusterId") Long clusterId
+//  );
+
 
 //  @GetMapping("/earas-form1-entry/form1/fetch-zones/{type}/{id}")
 //  ResponseEntity<Page<Form1EditLogResponse>> getEditStatusByZoneIds(@RequestParam List<Long> zoneIds,

@@ -86,6 +86,54 @@ public interface TblWorkAllocationRepository extends JpaRepository<TblWorkAlloca
             @Param("agriEnd") LocalDate agriEnd
     );
 
+    @Query("""
+    SELECT wa
+    FROM TblWorkAllocation wa
+    JOIN FETCH wa.zone z
+    JOIN FETCH z.districtMaster d
+    WHERE wa.isActive = true
+      AND wa.agriStart = :agriStart
+      AND wa.agriEnd = :agriEnd
+""")
+    List<TblWorkAllocation> findActiveAllocationsByAgriYear(
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
+
+    @Query("""
+    SELECT wa
+    FROM TblWorkAllocation wa
+    JOIN FETCH wa.zone z
+    JOIN FETCH z.districtMaster d
+    LEFT JOIN FETCH z.desTalukMaster t
+    WHERE wa.isActive = true
+      AND wa.agriStart = :agriStart
+      AND wa.agriEnd = :agriEnd
+      AND d.dist_id = :districtId
+""")
+    List<TblWorkAllocation> findAllocationsByDistrictAndAgriYear(
+            @Param("districtId") Integer districtId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
+
+
+    @Query("""
+    SELECT wa
+    FROM TblWorkAllocation wa
+    JOIN FETCH wa.zone z
+    JOIN FETCH z.desTalukMaster t
+    WHERE wa.isActive = true
+      AND wa.agriStart = :agriStart
+      AND wa.agriEnd = :agriEnd
+      AND t.desTalukId = :talukId
+""")
+    List<TblWorkAllocation> findAllocationsByTalukAndAgriYear(
+            @Param("talukId") Integer talukId,
+            @Param("agriStart") LocalDate agriStart,
+            @Param("agriEnd") LocalDate agriEnd
+    );
+
 //to connect with form based on toatal wet cluster
     @Query(value = """
         SELECT *

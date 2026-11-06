@@ -1088,6 +1088,7 @@ public class ClusterService {
                       cm.setKeyPlot(keyPlot);
                       cm.setZone(keyPlot.getZone());
                       cm.setStatus("On Going");
+                      cm.setIs_editable(true);
                       cm.setIsReject(false);
                       cm.setIs_active(true);
                       cm.setCreatedAt(LocalDateTime.now());
@@ -1375,7 +1376,7 @@ public class ClusterService {
 
 
     if (isAlreadyRejected) {
-      return new CropReplaceClusterResponse(null, null, "Cluster already rejected by user.");
+      return new CropReplaceClusterResponse(null, null,null,null, "Cluster already rejected by user.");
     }
 
     // 4. Find the CURRENT assignment for this crop (the one we're replacing)
@@ -1403,7 +1404,7 @@ public class ClusterService {
       }
 
       return new CropReplaceClusterResponse(
-              null, null, "No next cluster found with land type: " + landType);
+              null, null, null,null,"No next cluster found with land type: " + landType);
     }
 
     ClusterMaster nextCluster = nextClusters.get(0);
@@ -1454,7 +1455,9 @@ public class ClusterService {
 
     // 8. Return new assignment info to Form-Service
     return new CropReplaceClusterResponse(
-            nextCluster.getCluMasterId(), nextCluster.getKeyPlot().getId(), "Success");
+            nextCluster.getCluMasterId(), nextCluster.getKeyPlot().getId(),
+            nextCluster.getKeyPlot().getBtrData().getLbcode(),
+            nextCluster.getKeyPlot().getBtrData().getId(),"Success");
   }
 
     @Transactional
@@ -1558,6 +1561,8 @@ public class ClusterService {
         return new CropReplaceClusterResponse(
                 selectedCluster.getCluMasterId(),
                 selectedCluster.getKeyPlot().getId(),
+                selectedCluster.getKeyPlot().getBtrData().getLbcode(),
+                selectedCluster.getKeyPlot().getBtrData().getId(),
                 "Success");
     }
 
@@ -1968,7 +1973,6 @@ public class ClusterService {
 
     public ClusterTourResponse getClusterDetails(Long clusterId) {
 
-        System.out.println("cluster " + clusterId);
 
         ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
                 .orElseThrow(() -> new RuntimeException("Cluster not found"));
@@ -2059,5 +2063,19 @@ public class ClusterService {
                 agriStart,
                 agriEnd
         );
+    }
+
+    @Transactional
+    public void setClusterOngoing(Long clusterId) {
+
+        ClusterMaster cluster = clusterMasterRepository.findById(clusterId)
+                .orElseThrow(() ->
+                        new RuntimeException("Cluster not found: " + clusterId));
+
+        cluster.setStatus("On Going");
+        cluster.setIs_editable(true);
+        cluster.setUpdatedAt(LocalDateTime.now());
+
+        clusterMasterRepository.save(cluster);
     }
 }

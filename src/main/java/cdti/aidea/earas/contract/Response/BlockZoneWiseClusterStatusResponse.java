@@ -29,4 +29,6 @@ public class BlockZoneWiseClusterStatusResponse {
     private Long dryNotStarted;
 
     private Long dryUnderView;
+
+    private Long totalCluster;
 }

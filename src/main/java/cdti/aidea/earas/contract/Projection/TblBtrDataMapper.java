@@ -4,6 +4,7 @@ import cdti.aidea.earas.contract.Response.TblBtrDataDTO;
 import cdti.aidea.earas.model.Btr_models.TblBtrData;
 import cdti.aidea.earas.model.Btr_models.TblNonBtr;
 import cdti.aidea.earas.repository.Btr_repo.TblNonBtrRepository;
+import cdti.aidea.earas.utils.AgriYearUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ import java.util.Optional;
 public class TblBtrDataMapper {
 
     private final TblNonBtrRepository tblNonBtrRepository;
+    private final AgriYearUtil agriYearUtil;
 
     public TblBtrData mapToEntity(TblBtrDataDTO dto) {
         TblBtrData entity = new TblBtrData();
@@ -85,9 +87,10 @@ public class TblBtrDataMapper {
         entity.setInsertionTime(LocalDateTime.now());
         entity.setUpdationTime(LocalDateTime.now());
 
+
         // Agreement year logic
-        LocalDate agreStart = LocalDate.of(now.getYear(), 7, 1); // July 1 of current year
-        LocalDate agreEnd = LocalDate.of(now.getYear() + 1, 6, 30); // June 30 of next year
+        LocalDate agreStart = AgriYearUtil.getAgriYearStart(dto.getAgriYear());// July 1 of current year
+        LocalDate agreEnd = AgriYearUtil.getAgriYearEnd(dto.getAgriYear()); // June 30 of next year
         entity.setAgreStartYear(agreStart);
         entity.setAgreEndYear(agreEnd);
         return entity;

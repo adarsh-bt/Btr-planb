@@ -3,6 +3,7 @@ package cdti.aidea.earas.repository.Btr_repo;
 import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.model.Btr_models.TblBtrData;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -23,24 +24,26 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
 
 //  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndResvno(
 //          Integer dcode, Integer tcode, String lbcode, Integer vcode, String bcode, Integer resvno);
-  boolean existsByDcodeAndLbcodeAndWardnumberAndHouseno(
-          Integer dcode,
-          String lbcode,
-          Integer wardNumber,
-//          Integer houseno
-          String houseno
-  );
+//  boolean existsByDcodeAndLbcodeAndWardnumberAndHouseno(
+//          Integer dcode,
+//          String lbcode,
+//          Integer wardNumber,
+////          Integer houseno
+//          String houseno
+//  );
 
-  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
-          Integer dcode,
-          Integer tcode,
-          String lbcode,
-          Integer vcode,
-          String bcode,
-          String ownername,
-          String address,
-          Double totCent
-  );
+
+
+//  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCent(
+//          Integer dcode,
+//          Integer tcode,
+//          String lbcode,
+//          Integer vcode,
+//          String bcode,
+//          String ownername,
+//          String address,
+//          Double totCent
+//  );
 
 
 //  Optional<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndResvnoAndResbdno(
@@ -49,8 +52,83 @@ public interface TblBtrDataRepository extends JpaRepository<TblBtrData, Long> {
   List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,Integer resvno, String resbdno);
 
+
+  // Match exact subdivision within the agricultural year
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode,
+          Integer tcode,
+          Integer vcode,
+          String bcode,
+          String lbcode,
+          Integer resvno,
+          String resbdno,
+          LocalDate agreStartYear,
+          LocalDate agreEndYear
+  );
+
+  // Match all subdivisions under survey number within the agricultural year
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode,
+          Integer tcode,
+          Integer vcode,
+          String bcode,
+          String lbcode,
+          Integer resvno,
+          LocalDate agreStartYear,
+          LocalDate agreEndYear
+  );
+
+  @Query("""
+    SELECT b FROM TblBtrData b
+    WHERE b.dcode = :dcode
+      AND b.tcode = :tcode
+      AND b.vcode = :vcode
+      AND TRIM(b.bcode) = TRIM(:bcode)
+      AND TRIM(b.lbcode) = TRIM(:lbcode)
+      AND b.resvno = :resvno
+      AND b.agreStartYear = :agreStartYear
+      AND b.agreEndYear = :agreEndYear
+      AND (
+          (:resbdno IS NULL AND (b.resbdno IS NULL OR TRIM(b.resbdno) = ''))
+          OR (b.resbdno = :resbdno)
+      )
+""")
+  List<TblBtrData> findPlots(
+          @Param("dcode") Integer dcode,
+          @Param("tcode") Integer tcode,
+          @Param("vcode") Integer vcode,
+          @Param("bcode") String bcode,
+          @Param("lbcode") String lbcode,
+          @Param("resvno") Integer resvno,
+          @Param("resbdno") String resbdno,
+          @Param("agreStartYear") LocalDate agreStartYear,
+          @Param("agreEndYear") LocalDate agreEndYear
+  );
+
+  @Query("""
+    SELECT b FROM TblBtrData b
+    WHERE b.dcode = :dcode
+      AND b.tcode = :tcode
+      AND b.vcode = :vcode
+      AND TRIM(b.bcode) = TRIM(:bcode)
+      AND TRIM(b.lbcode) = TRIM(:lbcode)
+      AND b.resvno = :resvno
+      AND b.agreStartYear = :agreStartYear
+      AND b.agreEndYear = :agreEndYear
+""")
+  List<TblBtrData> findAllPlotsBySurveyNo(
+          @Param("dcode") Integer dcode,
+          @Param("tcode") Integer tcode,
+          @Param("vcode") Integer vcode,
+          @Param("bcode") String bcode,
+          @Param("lbcode") String lbcode,
+          @Param("resvno") Integer resvno,
+          @Param("agreStartYear") LocalDate agreStartYear,
+          @Param("agreEndYear") LocalDate agreEndYear
+  );
+
   // Find records by a list of lsgcodes (pageable)
-  Page<TblBtrData> findByLsgcodeIn(List<Integer> lsgcodes, Pageable pageable);
+//  Page<TblBtrData> findByLsgcodeIn(List<Integer> lsgcodes, Pageable pageable);
 
   // Find all records by a list of lsgcodes
   List<TblBtrData> findAllByLsgcodeIn(List<Integer> lsgcodes);
@@ -185,23 +263,61 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
 //          Integer dcode, Integer tcode, String lbcode, Integer wardNumber, String houseno);
 
   // For BTR type 3 - Cultivators List
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno, String resbdno);
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno);
+//  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno, String resbdno);
+//  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode, Integer resvno);
+//
+//  // For BTR type 4 - Thandaper Number
+//  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
+//          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, String tbsubdivisionno);
+//
+//  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
+//          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);
+//
+//  // For BTR type 5 - Old Survey Number
+//  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndOldsubno(
+//          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,Integer oldsvno, String oldsubno);
+//
+//  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvno(
+//          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,Integer oldsvno);
+// Common resvno checks
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndResbdnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,
+          Integer resvno, String resbdno, LocalDate agreStartYear, LocalDate agreEndYear);
 
-  // For BTR type 4 - Thandaper Number
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno, String tbsubdivisionno);
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,
+          Integer resvno, LocalDate agreStartYear, LocalDate agreEndYear);
 
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, Integer tpno);
+  // Type 2
+  boolean existsByDcodeAndLbcodeAndWardnumberAndHousenoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, String lbcode, Integer wardnumber, String houseno,
+          LocalDate agreStartYear, LocalDate agreEndYear);
 
-  // For BTR type 5 - Old Survey Number
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndOldsubno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,Integer oldsvno, String oldsubno);
+  // Type 3
+  boolean existsByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCentAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, String lbcode, Integer vcode,
+          String bcode, String ownername, String address, Double totCent,
+          LocalDate agreStartYear, LocalDate agreEndYear);
 
-  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvno(
-          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,Integer oldsvno);
+  // Type 4
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode,
+          String bcode, Integer tpno, String tbsubdivisionno,
+          LocalDate agreStartYear, LocalDate agreEndYear);
 
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode,
+          String bcode, Integer tpno,
+          LocalDate agreStartYear, LocalDate agreEndYear);
+
+  // Type 5
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndOldsubnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,
+          Integer oldsvno, String oldsubno, LocalDate agreStartYear, LocalDate agreEndYear);
+
+  boolean existsByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndOldsvnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode, String bcode, String lbcode,
+          Integer oldsvno, LocalDate agreStartYear, LocalDate agreEndYear);
   // Query methods to get actual data for remaining area calculation
   List<TblBtrData> findByDcodeAndTcodeAndLbcodeAndWardnumberAndHouseno(
           Integer dcode, Integer tcode, String lbcode, Integer wardNumber, String houseno);
@@ -221,6 +337,36 @@ List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndLbcodeAndResvno(
 
   List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvno(
           Integer dcode, Integer tcode, Integer vcode, String bcode, Integer oldsvno);
+
+
+  // House List
+  List<TblBtrData> findByDcodeAndTcodeAndLbcodeAndWardnumberAndHousenoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, String lbcode, Integer wardnumber, String houseno,
+          LocalDate agreStartYear, LocalDate agreEndYear);
+
+  // Cultivators List
+  List<TblBtrData> findByDcodeAndTcodeAndLbcodeAndVcodeAndBcodeAndOwnernameAndAddressAndTotCentAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, String lbcode, Integer vcode,
+          String bcode, String ownername, String address, Double totCent,
+          LocalDate agreStartYear, LocalDate agreEndYear);
+
+  // Thandaper
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndTpnoAndTbsubdivisionnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode, String bcode,
+          Integer tpno, String tbsubdivisionno,
+          LocalDate agreStartYear, LocalDate agreEndYear);
+
+  // Old Survey
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndOldsubnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode, String bcode,
+          Integer oldsvno, String oldsubno,
+          LocalDate agreStartYear, LocalDate agreEndYear);
+
+  List<TblBtrData> findByDcodeAndTcodeAndVcodeAndBcodeAndOldsvnoAndAgreStartYearAndAgreEndYear(
+          Integer dcode, Integer tcode, Integer vcode, String bcode,
+          Integer oldsvno,
+          LocalDate agreStartYear, LocalDate agreEndYear);
+
 
   @Modifying
   @Query("UPDATE TblBtrData b SET b.totCent = :totCent, b.updationTime = :updationTime, b.updated_by = :updatedBy WHERE b.id = :btrId")

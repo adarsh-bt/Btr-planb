@@ -31,9 +31,7 @@ import java.util.stream.Collectors;
 public class AdminManage {
 
   private final KeyplotsLimitLogRepository repository;
-
   private final ClusterLimitLogRepository clusterLimitLogRepository;
-
   private final TblMasterZoneRepository tblMasterZoneRepository;
   private final DesTalukRepository desTalukRepository;
   private final DistrictMasterRepository districtMasterRepository;
@@ -57,6 +55,7 @@ public class AdminManage {
   private final LocalBodyTypeRepository localBodyTypeRepository;
   private final TblWorkAllocationRepository tblWorkAllocationRepository;
   private final TblWorkAllocationApprovalRepository tblWorkAllocationApprovalRepository;
+  private final KeyplotsLimitLogRepository keyplotsLimitLogRepository;
   private AgriYearUtil agriYearUtil;
   private final FormEntryClient formEntryClient;
 
@@ -78,6 +77,13 @@ public class AdminManage {
             ))
             .collect(Collectors.toList());
   }
+
+    public Long getActiveKeyplotsLimit() {
+      return keyplotsLimitLogRepository
+              .findFirstByIsActiveTrueOrderByIdDesc()
+              .map(KeyplotsLimitLog::getKeyplotsLimit)
+              .orElse(0L);
+    }
 
   public List<ZoneListResponse> AdminViewZonesByType(String type, Integer idValue) {
 

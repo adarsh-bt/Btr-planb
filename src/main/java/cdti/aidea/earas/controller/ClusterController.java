@@ -133,17 +133,7 @@ public class ClusterController {
       @RequestParam(required = false) Integer resvnoStart,
       @RequestParam(required = false) Integer resvnoEnd) {
 
-    System.out.println(
-            "resvnoStart: "
-                    + resvnoStart
-                    + ", resvnoEnd: "
-                    + resvnoEnd
-                    + " "
-                    + kpId
-                    + " "
-                    + villageId
-                    + " "
-                    + blockCode);
+
 
     ResbdnoListReponse response =
         clusterService.getResbdnoAreaList(kpId, villageId, blockCode, resvnoStart, resvnoEnd);
@@ -194,7 +184,7 @@ public class ClusterController {
 
   @DeleteMapping("/delete-sideplot/{id}")
   public ResponseEntity<?> deleteClusterFormData(@PathVariable Long id) {
-    System.out.println("delete");
+
     try {
       clusterService.deleteClusterFormDataById(id);
       return ResponseEntity.ok("ClusterFormData entry deleted successfully.");
@@ -291,6 +281,15 @@ public class ClusterController {
     return ResponseEntity.ok(
             clusterService.getClusters(zoneId, agriYear)
     );
+  }
+
+  @PutMapping("/{clusterId}/status/ongoing")
+  public ResponseEntity<String> setClusterOngoing(
+          @PathVariable Long clusterId) {
+
+    clusterService.setClusterOngoing(clusterId);
+
+    return ResponseEntity.ok("Cluster status updated to On Going");
   }
 
 }

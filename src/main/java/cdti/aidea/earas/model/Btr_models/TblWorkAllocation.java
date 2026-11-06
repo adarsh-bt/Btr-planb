@@ -62,11 +62,11 @@ public class TblWorkAllocation {
     @Column(precision = 18, scale = 2, name = "other_exclude_f_wet")
     private BigDecimal otherExcludeFWet;
 
-    @Column(precision = 18, scale = 2, name = "other_excluded_f_dry")
-    private BigDecimal otherExcludedFDry;
+    @Column(precision = 18, scale = 2, name = "total_wet_cluster")
+    private BigDecimal totalWetCluster;
 
-    @Column(precision = 18, scale = 2, name = "other_exclude_f_total")
-    private BigDecimal otherExcludeFTotal;
+    @Column(precision = 18, scale = 2, name = "total_drycluster")
+    private BigDecimal totalDryCluster;
 
     @Column(precision = 18, scale = 2)
     private BigDecimal noOfPlotsWet;

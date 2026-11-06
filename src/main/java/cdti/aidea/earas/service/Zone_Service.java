@@ -134,7 +134,7 @@ public class Zone_Service {
     try {
       // 🔁 Convert Integer to Long
       Long zoneId = request.getZoneId().longValue();
-      System.out.println("request "+request);
+
       // 1. Fetch the current assignment to update
       Optional<UserZoneAssignment> existingAssignment =
               userZoneAssignmentRepositoty.findByUserIdAndTblMasterZone_ZoneIdAndIsActiveTrue(request.getUser_id(), zoneId);
@@ -176,13 +176,7 @@ public class Zone_Service {
   }
 
   public UserZoneAssignment ZoneAssignedService(ZoneAssignedRequset request) {
-    System.out.println(
-            "ZoneAssignedService "
-                    + request.getAssigner_id()
-                    + " "
-                    + request.getZoneId()
-                    + " "
-                    + request.getUser_id());
+
 
     try {
       // 1. Validate zone exists
@@ -227,10 +221,10 @@ public class Zone_Service {
       return userZoneAssignmentRepositoty.save(newAssignment);
 
     } catch (IllegalArgumentException e) {
-      System.out.println(e.getMessage());
+
       throw e;
     } catch (Exception e) {
-      System.out.println(e.getMessage());
+
       throw new IllegalArgumentException("Something went wrong during zone assignment");
     }
   }

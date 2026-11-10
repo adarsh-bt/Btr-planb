@@ -133,7 +133,7 @@ public class ReportService {
 
             districtNames.putIfAbsent(
                     districtId,
-                    district.getDist_name_en()
+                    district.getDistNameEn()
             );
 
             long[] expected = expectedByDistrict.computeIfAbsent(
@@ -195,7 +195,7 @@ public class ReportService {
 
             districtNames.putIfAbsent(
                     districtId,
-                    district.getDist_name_en()
+                    district.getDistNameEn()
             );
 
             // Verify this getter against your KeyPlot entity.
@@ -1405,7 +1405,7 @@ public class ReportService {
             var districtMaster =
                     allocation.getZone().getDistrictMaster();
 
-            String districtName = districtMaster.getDist_name_en();
+            String districtName = districtMaster.getDistNameEn();
             Long districtId = districtMaster.getDist_id().longValue();
 
             long wetCount = includeWet
@@ -1531,6 +1531,7 @@ public class ReportService {
     //zone wise details while passing taluk-id needs to connect with form
     @Transactional(readOnly = true)
     public ClusterCompletedProgressResponse getZoneWiseCompletedClusters(
+
             Integer talukId,
             String landType,
             String agriYear,
@@ -1822,7 +1823,7 @@ public class ReportService {
                     WorkAllocationProgressResponse.LocationDetails
                             .builder()
                             .id(district.getDist_id())
-                            .name(district.getDist_name_en())
+                            .name(district.getDistNameEn())
                             .villageRecords(villageRecords)
                             .excludedArea(excludedArea)
                             .areaAvailableForEstimation(

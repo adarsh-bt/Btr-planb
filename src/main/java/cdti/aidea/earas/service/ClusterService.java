@@ -1996,7 +1996,7 @@ public class ClusterService {
         response.setAddress(cluster.getKeyPlot().getAddress());
         response.setNumber(cluster.getKeyPlot().getPhone_number());
         response.setTalukName(cluster.getKeyPlot().getZone().getDesTalukMaster().getDesTalukNameEn());
-        response.setDistrictName(cluster.getKeyPlot().getZone().getDistrictMaster().getDist_name_en());
+        response.setDistrictName(cluster.getKeyPlot().getZone().getDistrictMaster().getDistNameEn());
 
         // Add labels in display order
         List<ClusterFormData> formDataList =

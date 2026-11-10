@@ -3,7 +3,7 @@ package cdti.aidea.earas.service;
 import cdti.aidea.earas.contract.Projection.BtrStatsProjection;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.WorkAllocationVerificationRequest;
-import cdti.aidea.earas.contract.Response.KeyPlotResponse;
+import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.Masters.*;
 import cdti.aidea.earas.model.Btr_models.TblWorkAllocation;
 import cdti.aidea.earas.model.Btr_models.TblWorkAllocationApproval;
@@ -119,7 +119,7 @@ public class WorkallocationService {
 
         String districtName = districtMasterRepository
                 .findById(Long.valueOf(zone.getDistId()))
-                .map(DistrictMaster::getDist_name_en)
+                .map(DistrictMaster::getDistNameEn)
                 .orElse("");
 
         String talukName = desTalukRepository
@@ -965,4 +965,96 @@ public class WorkallocationService {
 //
 //        return dtos;
 //    }
+
+    //to connect with form service based on total wet cluster
+    public List<WetClusterLbcodeResponse> getWetClusterLbcodes(
+            Long zoneId,
+            String agriYear) {
+
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        List<TblWorkAllocation> workAllocations =
+                tblWorkAllocationRepository.getWetClusterLbcodes(
+                        zoneId, agriStart, agriEnd);
+
+        return workAllocations.stream()
+                .map(TblWorkAllocation::getLbcode)
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(WetClusterLbcodeResponse::new)
+                .toList();
+    }
+
+    //connect with form zone wisee wetlbcode ->talukid
+    public List<WetClusterZoneSummaryResponse> getWetClusterLbcodesByTaluk(
+            Long talukId,
+            String agriYear) {
+
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        List<Object[]> results =
+                tblWorkAllocationRepository.getWetClusterLbcodesByTaluk(
+                        talukId, agriStart, agriEnd);
+
+        return results.stream()
+                .map(row -> new WetClusterZoneSummaryResponse(
+                        ((Number) row[0]).longValue(),
+                        (String) row[1],
+                        ((Number) row[2]).longValue()
+                ))
+                .toList();
+    }
+    //to connect with form districtid->taluk wetlbcode
+    public List<WetTalukLbcodeSummaryResponse> getWetClusterLbcodesByDistrict(
+            Long districtId,
+            String agriYear) {
+
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        List<Object[]> results =
+                tblWorkAllocationRepository.getWetClusterLbcodesByDistrict(
+                        districtId, agriStart, agriEnd);
+
+        return results.stream()
+                .map(row -> new WetTalukLbcodeSummaryResponse(
+                        ((Number) row[0]).longValue(),
+                        (String) row[1],
+                        ((Number) row[2]).longValue()
+                ))
+                .toList();
+    }
+    //district wise while passing agri year wetlbcode
+    public List<DistrictWetLbcodeSummaryResponse> getDistrictWiseWetLbcodeCount(
+            String agriYear) {
+
+        LocalDate agriStart =
+                AgriYearUtil.getAgriYearStart(agriYear);
+
+        LocalDate agriEnd =
+                AgriYearUtil.getAgriYearEnd(agriYear);
+
+        List<Object[]> results =
+                tblWorkAllocationRepository.getDistrictWiseWetLbcodeCount(
+                        agriStart, agriEnd);
+
+        return results.stream()
+                .map(row -> new DistrictWetLbcodeSummaryResponse(
+                        ((Number) row[0]).longValue(),
+                        (String) row[1],
+                        ((Number) row[2]).longValue()
+                ))
+                .toList();
+    }
 }

@@ -4,6 +4,10 @@ import cdti.aidea.earas.contract.FormEntryDto.Response;
 import cdti.aidea.earas.contract.RequestsDTOs.RevokeRequest;
 import cdti.aidea.earas.contract.RequestsDTOs.TblWorkAllocationDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.WorkAllocationVerificationRequest;
+import cdti.aidea.earas.contract.Response.DistrictWetLbcodeSummaryResponse;
+import cdti.aidea.earas.contract.Response.WetClusterLbcodeResponse;
+import cdti.aidea.earas.contract.Response.WetClusterZoneSummaryResponse;
+import cdti.aidea.earas.contract.Response.WetTalukLbcodeSummaryResponse;
 import cdti.aidea.earas.service.WorkallocationService;
 import cdti.aidea.earas.service.Zone_Service;
 import jakarta.validation.Valid;
@@ -14,6 +18,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Validated
 @RestController
@@ -78,5 +83,47 @@ public class WorkallocationController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error revoking: " + e.getMessage());
         }
+    }
+
+    //to connect with form based on total wet cluster
+    @GetMapping("/wet-cluster-lbcodes/zoneId/agriYear")
+    public ResponseEntity<List<WetClusterLbcodeResponse>> getWetClusterLbcodes(
+            @RequestParam Long zoneId,
+            @RequestParam String agriYear) {
+
+        return ResponseEntity.ok(
+                workallocationService.getWetClusterLbcodes(
+                        zoneId, agriYear));
+    }
+
+    //connect with form to get zone wise wetlbcode->talukid
+    @GetMapping("/wet-cluster-lbcodes/taluk")
+    public ResponseEntity<List<WetClusterZoneSummaryResponse>>
+    getWetClusterLbcodesByTaluk(
+            @RequestParam("talukId") Long talukId,
+            @RequestParam("agriYear") String agriYear) {
+        List<WetClusterZoneSummaryResponse> response =
+                workallocationService.getWetClusterLbcodesByTaluk(
+                        talukId, agriYear);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/wet-cluster-lbcodes/district")
+    public ResponseEntity<List<WetTalukLbcodeSummaryResponse>>
+    getWetClusterLbcodesByDistrict(
+            @RequestParam Long districtId,
+            @RequestParam String agriYear) {
+
+        return ResponseEntity.ok(
+                workallocationService.getWetClusterLbcodesByDistrict(
+                        districtId, agriYear));
+    }
+    @GetMapping("/wet-cluster-lbcodes/districts")
+    public ResponseEntity<List<DistrictWetLbcodeSummaryResponse>>
+    getDistrictWiseWetLbcodeCount(
+            @RequestParam String agriYear) {
+
+        return ResponseEntity.ok(
+                workallocationService.getDistrictWiseWetLbcodeCount(agriYear));
     }
 }

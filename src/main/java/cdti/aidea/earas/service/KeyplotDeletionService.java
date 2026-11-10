@@ -204,7 +204,7 @@ public class KeyplotDeletionService {
             if (zone.getDistId() != null) {
                 districtId = zone.getDistId();
                 districtMasterRepository.findById(Long.valueOf(districtId))
-                        .ifPresent(d -> districtName.set(d.getDist_name_en()));
+                        .ifPresent(d -> districtName.set(d.getDistNameEn()));
             }
         }
 

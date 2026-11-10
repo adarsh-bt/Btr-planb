@@ -18,6 +18,9 @@ public class WorkAllocationProgressResponse {
 
     private AreaAvailable areaAvailableForEstimation;
 
+    // Added: cluster totals for included locations.
+    private EstimationPlots noOfClusters;
+
     private List<LocationDetails> locations;
 
     @Data
@@ -33,6 +36,10 @@ public class WorkAllocationProgressResponse {
         private Integer blockId;
 
         private String blockName;
+
+        private Integer panchayathId;
+
+        private String panchayathName;
 
         private VillageRecords villageRecords;
 
@@ -84,10 +91,26 @@ public class WorkAllocationProgressResponse {
     @AllArgsConstructor
     public static class ExcludedArea {
 
-        private BigDecimal forestArea;
-        private BigDecimal plantationArea;
-        private BigDecimal areaOfWaterBodies;
-        private BigDecimal others;
+        // Changed: previous combined field retained for reference.
+        // private BigDecimal forestArea;
+        // Added: separate wet/dry exclusions.
+        private BigDecimal forestAreaWet;
+        private BigDecimal forestAreaDry;
+        // Changed: previous combined field retained for reference.
+        // private BigDecimal plantationArea;
+        // Added: separate wet/dry exclusions.
+        private BigDecimal plantationAreaWet;
+        private BigDecimal plantationAreaDry;
+        // Changed: previous combined field retained for reference.
+        // private BigDecimal areaOfWaterBodies;
+        // Added: separate wet/dry exclusions.
+        private BigDecimal areaOfWaterBodiesWet;
+        private BigDecimal areaOfWaterBodiesDry;
+        // Changed: previous combined field retained for reference.
+        // private BigDecimal others;
+        // Added: separate wet/dry exclusions.
+        private BigDecimal othersWet;
+        private BigDecimal othersDry;
     }
 
 
@@ -100,5 +123,8 @@ public class WorkAllocationProgressResponse {
         private EstimationPlots noOfPlots;
 
         private AreaAvailable areaInCents;
+
+        // Added: cluster counts per location.
+        private EstimationPlots noOfClusters;
     }
 }

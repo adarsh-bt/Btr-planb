@@ -1709,31 +1709,44 @@ public class ReportService {
             // EXCLUDED AREA
             // ======================================
 
-            BigDecimal forestArea =
-                    sum(districtAllocations,
-                            TblWorkAllocation::getForestAreaA);
-
-            BigDecimal plantationArea =
-                    sum(districtAllocations,
-                            TblWorkAllocation::getAreaUnderPlant);
-
-            BigDecimal waterBodies =
-                    sum(districtAllocations,
-                            TblWorkAllocation::
-                                    getForestExcludeUnclutivate);
-
-            BigDecimal others =
-                    sum(districtAllocations,
-                            TblWorkAllocation::getKayalExcludeArea);
-
-            WorkAllocationProgressResponse.ExcludedArea
-                    excludedArea =
-                    WorkAllocationProgressResponse.ExcludedArea
-                            .builder()
-                            .forestArea(forestArea)
-                            .plantationArea(plantationArea)
-                            .areaOfWaterBodies(waterBodies)
-                            .others(others)
+            // Changed: previous combined exclusion calculations retained below.
+            // BigDecimal forestArea =
+            // sum(districtAllocations,
+            // TblWorkAllocation::getForestAreaA);
+            //
+            // BigDecimal plantationArea =
+            // sum(districtAllocations,
+            // TblWorkAllocation::getAreaUnderPlant);
+            //
+            // BigDecimal waterBodies =
+            // sum(districtAllocations,
+            // TblWorkAllocation::
+            // getForestExcludeUnclutivate);
+            //
+            // BigDecimal others =
+            // sum(districtAllocations,
+            // TblWorkAllocation::getKayalExcludeArea);
+            //
+            // WorkAllocationProgressResponse.ExcludedArea
+            // excludedArea =
+            // WorkAllocationProgressResponse.ExcludedArea
+            // .builder()
+            // .forestArea(forestArea)
+            // .plantationArea(plantationArea)
+            // .areaOfWaterBodies(waterBodies)
+            // .others(others)
+            // .build();
+            // Added: wet/dry mappings documented in WorkallocationService.
+            WorkAllocationProgressResponse.ExcludedArea excludedArea =
+                    WorkAllocationProgressResponse.ExcludedArea.builder()
+                            .forestAreaWet(sum(districtAllocations, TblWorkAllocation::getForestAreaB))
+                            .forestAreaDry(sum(districtAllocations, TblWorkAllocation::getForestAreaA))
+                            .plantationAreaWet(sum(districtAllocations, TblWorkAllocation::getForestAreaC))
+                            .plantationAreaDry(sum(districtAllocations, TblWorkAllocation::getAreaUnderPlant))
+                            .areaOfWaterBodiesWet(sum(districtAllocations, TblWorkAllocation::getOtherExcludeFWet))
+                            .areaOfWaterBodiesDry(sum(districtAllocations, TblWorkAllocation::getKayalExcludeArea))
+                            .othersWet(sum(districtAllocations, TblWorkAllocation::getForestExcludeNotUnclutivate))
+                            .othersDry(sum(districtAllocations, TblWorkAllocation::getForestExcludeUnclutivate))
                             .build();
 
             // ======================================
@@ -1797,6 +1810,8 @@ public class ReportService {
                             .builder()
                             .noOfPlots(estimationPlots)
                             .areaInCents(areaAvailable)
+                            // Added: cluster counts for this location.
+                            .noOfClusters(clusterCounts(districtAllocations))
                             .build();
 
             // ======================================
@@ -1872,6 +1887,8 @@ public class ReportService {
         return WorkAllocationProgressResponse.builder()
                 .noOfPlots(keralaPlots)
                 .areaAvailableForEstimation(keralaArea)
+                // Added: roll up the same locations as the existing totals.
+                .noOfClusters(totalClusterCounts(locationDetails))
                 .locations(locationDetails)
                 .build();
     }
@@ -2012,38 +2029,51 @@ public class ReportService {
             // EXCLUDED AREA
             // ==================================================
 
-            BigDecimal forestArea =
-                    sum(
-                            talukAllocations,
-                            TblWorkAllocation::getForestAreaA
-                    );
-
-            BigDecimal plantationArea =
-                    sum(
-                            talukAllocations,
-                            TblWorkAllocation::getAreaUnderPlant
-                    );
-
-            BigDecimal waterBodies =
-                    sum(
-                            talukAllocations,
-                            TblWorkAllocation::getForestExcludeUnclutivate
-                    );
-
-            BigDecimal others =
-                    sum(
-                            talukAllocations,
-                            TblWorkAllocation::getKayalExcludeArea
-                    );
-
-            WorkAllocationProgressResponse.ExcludedArea
-                    excludedArea =
-                    WorkAllocationProgressResponse.ExcludedArea
-                            .builder()
-                            .forestArea(forestArea)
-                            .plantationArea(plantationArea)
-                            .areaOfWaterBodies(waterBodies)
-                            .others(others)
+            // Changed: previous combined exclusion calculations retained below.
+            // BigDecimal forestArea =
+            // sum(
+            // talukAllocations,
+            // TblWorkAllocation::getForestAreaA
+            // );
+            //
+            // BigDecimal plantationArea =
+            // sum(
+            // talukAllocations,
+            // TblWorkAllocation::getAreaUnderPlant
+            // );
+            //
+            // BigDecimal waterBodies =
+            // sum(
+            // talukAllocations,
+            // TblWorkAllocation::getForestExcludeUnclutivate
+            // );
+            //
+            // BigDecimal others =
+            // sum(
+            // talukAllocations,
+            // TblWorkAllocation::getKayalExcludeArea
+            // );
+            //
+            // WorkAllocationProgressResponse.ExcludedArea
+            // excludedArea =
+            // WorkAllocationProgressResponse.ExcludedArea
+            // .builder()
+            // .forestArea(forestArea)
+            // .plantationArea(plantationArea)
+            // .areaOfWaterBodies(waterBodies)
+            // .others(others)
+            // .build();
+            // Added: wet/dry mappings documented in WorkallocationService.
+            WorkAllocationProgressResponse.ExcludedArea excludedArea =
+                    WorkAllocationProgressResponse.ExcludedArea.builder()
+                            .forestAreaWet(sum(talukAllocations, TblWorkAllocation::getForestAreaB))
+                            .forestAreaDry(sum(talukAllocations, TblWorkAllocation::getForestAreaA))
+                            .plantationAreaWet(sum(talukAllocations, TblWorkAllocation::getForestAreaC))
+                            .plantationAreaDry(sum(talukAllocations, TblWorkAllocation::getAreaUnderPlant))
+                            .areaOfWaterBodiesWet(sum(talukAllocations, TblWorkAllocation::getOtherExcludeFWet))
+                            .areaOfWaterBodiesDry(sum(talukAllocations, TblWorkAllocation::getKayalExcludeArea))
+                            .othersWet(sum(talukAllocations, TblWorkAllocation::getForestExcludeNotUnclutivate))
+                            .othersDry(sum(talukAllocations, TblWorkAllocation::getForestExcludeUnclutivate))
                             .build();
 
             // ==================================================
@@ -2118,6 +2148,8 @@ public class ReportService {
                             .builder()
                             .noOfPlots(estimationPlots)
                             .areaInCents(areaAvailable)
+                            // Added: cluster counts for this location.
+                            .noOfClusters(clusterCounts(talukAllocations))
                             .build();
 
             // ==================================================
@@ -2185,6 +2217,8 @@ public class ReportService {
         return WorkAllocationProgressResponse.builder()
                 .noOfPlots(districtPlots)
                 .areaAvailableForEstimation(districtArea)
+                // Added: roll up the same locations as the existing totals.
+                .noOfClusters(totalClusterCounts(locations))
                 .locations(locations)
                 .build();
     }
@@ -2341,39 +2375,52 @@ public class ReportService {
             // EXCLUDED AREA
             // ======================================================
 
-            BigDecimal forestArea =
-                    sum(
-                            zoneAllocations,
-                            TblWorkAllocation::getForestAreaA
-                    );
-
-            BigDecimal plantationArea =
-                    sum(
-                            zoneAllocations,
-                            TblWorkAllocation::getAreaUnderPlant
-                    );
-
-            BigDecimal waterBodies =
-                    sum(
-                            zoneAllocations,
-                            TblWorkAllocation::
-                                    getForestExcludeUnclutivate
-                    );
-
-            BigDecimal others =
-                    sum(
-                            zoneAllocations,
-                            TblWorkAllocation::getKayalExcludeArea
-                    );
-
-            WorkAllocationProgressResponse.ExcludedArea
-                    excludedArea =
-                    WorkAllocationProgressResponse.ExcludedArea
-                            .builder()
-                            .forestArea(forestArea)
-                            .plantationArea(plantationArea)
-                            .areaOfWaterBodies(waterBodies)
-                            .others(others)
+            // Changed: previous combined exclusion calculations retained below.
+            // BigDecimal forestArea =
+            // sum(
+            // zoneAllocations,
+            // TblWorkAllocation::getForestAreaA
+            // );
+            //
+            // BigDecimal plantationArea =
+            // sum(
+            // zoneAllocations,
+            // TblWorkAllocation::getAreaUnderPlant
+            // );
+            //
+            // BigDecimal waterBodies =
+            // sum(
+            // zoneAllocations,
+            // TblWorkAllocation::
+            // getForestExcludeUnclutivate
+            // );
+            //
+            // BigDecimal others =
+            // sum(
+            // zoneAllocations,
+            // TblWorkAllocation::getKayalExcludeArea
+            // );
+            //
+            // WorkAllocationProgressResponse.ExcludedArea
+            // excludedArea =
+            // WorkAllocationProgressResponse.ExcludedArea
+            // .builder()
+            // .forestArea(forestArea)
+            // .plantationArea(plantationArea)
+            // .areaOfWaterBodies(waterBodies)
+            // .others(others)
+            // .build();
+            // Added: wet/dry mappings documented in WorkallocationService.
+            WorkAllocationProgressResponse.ExcludedArea excludedArea =
+                    WorkAllocationProgressResponse.ExcludedArea.builder()
+                            .forestAreaWet(sum(zoneAllocations, TblWorkAllocation::getForestAreaB))
+                            .forestAreaDry(sum(zoneAllocations, TblWorkAllocation::getForestAreaA))
+                            .plantationAreaWet(sum(zoneAllocations, TblWorkAllocation::getForestAreaC))
+                            .plantationAreaDry(sum(zoneAllocations, TblWorkAllocation::getAreaUnderPlant))
+                            .areaOfWaterBodiesWet(sum(zoneAllocations, TblWorkAllocation::getOtherExcludeFWet))
+                            .areaOfWaterBodiesDry(sum(zoneAllocations, TblWorkAllocation::getKayalExcludeArea))
+                            .othersWet(sum(zoneAllocations, TblWorkAllocation::getForestExcludeNotUnclutivate))
+                            .othersDry(sum(zoneAllocations, TblWorkAllocation::getForestExcludeUnclutivate))
                             .build();
 
             // ======================================================
@@ -2449,6 +2496,8 @@ public class ReportService {
                             .builder()
                             .noOfPlots(estimationPlots)
                             .areaInCents(areaAvailable)
+                            // Added: cluster counts for this location.
+                            .noOfClusters(clusterCounts(zoneAllocations))
                             .build();
 
             // ======================================================
@@ -2457,69 +2506,9 @@ public class ReportService {
 
             Integer blockId = null;
             String blockName = null;
+            Integer panchayathId = null;
+            String panchayathName = null;
 
-//            Optional<ZoneLocalbodyBlockMapping> mapping =
-//
-//                    zoneLocalbodyBlockMappingRepository
-//                            .findByZoneAndIsValidTrue(zoneId);
-//
-//            if (mapping.isPresent()) {
-//
-//                ZoneLocalbodyBlockMapping zm =
-//                        mapping.get();
-//
-//                if (zm.getBlockPanchayatMunicipalArea() != null
-//                        && zm.getBlockDetails() != null) {
-//
-//                    // --------------------------------------------------
-//                    // 1 = BLOCK
-//                    // --------------------------------------------------
-//
-//                    if (zm.getBlockPanchayatMunicipalArea() == 1) {
-//
-//                        MasterBlock block =
-//                                tblMasterBlockRepository
-//                                        .findById(
-//                                                zm.getBlockDetails()
-//                                        )
-//                                        .orElse(null);
-//
-//                        if (block != null) {
-//
-//                            blockId =
-//                                    block.getBlockId();
-//
-//                            blockName =
-//                                    block.getBlockName();
-//                        }
-//                    }
-//
-//                    // --------------------------------------------------
-//                    // 2 = LOCAL BODY
-//                    // --------------------------------------------------
-//
-//                    else if (
-//                            zm.getBlockPanchayatMunicipalArea() == 2
-//                    ) {
-//
-//                        TblLocalBody localbody =
-//                                localBodyRepository
-//                                        .findById(
-//                                                zm.getBlockDetails()
-//                                        )
-//                                        .orElse(null);
-//
-//                        if (localbody != null) {
-//
-//                            blockId =
-//                                    localbody.getLocalbodyId();
-//
-//                            blockName =
-//                                    localbody.getLocalbodyNameEn();
-//                        }
-//                    }
-//                }
-//            }
             String lbcode = zoneAllocations.get(0).getLbcode();
 
             if (lbcode != null && !lbcode.isBlank()) {
@@ -2531,12 +2520,59 @@ public class ReportService {
 
                 if (localbody != null) {
 
-                    blockId =
+                    panchayathId =
                             localbody.getLocalbodyId();
 
-                    blockName =
+                    panchayathName =
                             localbody.getLocalbodyNameEn();
                 }
+            }
+
+            List<ZoneLocalbodyBlockMapping> mappings =
+                    zoneLocalbodyBlockMappingRepository.findByZone(zone.getZoneId());
+
+            if (mappings != null && !mappings.isEmpty()) {
+
+                ZoneLocalbodyBlockMapping mapping = mappings.get(0);
+
+                if (mapping.getBlockDetails() != null) {
+
+                    if (mapping.getBlockPanchayatMunicipalArea() == 1) {
+
+                        MasterBlock block =
+                                masterBlockRepository.findById(
+                                        mapping.getBlockDetails()
+                                ).orElse(null);
+
+                        if (block != null) {
+                            blockId = block.getBlockId();
+                            blockName = block.getBlockName();
+                        }
+
+                    } else if (mapping.getBlockPanchayatMunicipalArea() == 2) {
+
+                        TblLocalBody localBody =
+                                localBodyRepository.findById(
+                                        mapping.getBlockDetails()
+                                ).orElse(null);
+
+                        if (localBody != null) {
+                            blockId = localBody.getLocalbodyId();
+                            blockName = localBody.getLocalbodyNameEn();
+                            if (panchayathName == null) {
+                                panchayathId = localBody.getLocalbodyId();
+                                panchayathName = localBody.getLocalbodyNameEn();
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (blockName == null) {
+                blockName = panchayathName != null ? panchayathName : "General Block";
+            }
+            if (panchayathName == null) {
+                panchayathName = blockName;
             }
 
             // ======================================================
@@ -2550,6 +2586,8 @@ public class ReportService {
                             .name(zone.getZoneNameEn())
                             .blockId(blockId)
                             .blockName(blockName)
+                            .panchayathId(panchayathId)
+                            .panchayathName(panchayathName)
                             .villageRecords(villageRecords)
                             .excludedArea(excludedArea)
                             .areaAvailableForEstimation(estimation)
@@ -2590,12 +2628,38 @@ public class ReportService {
         return WorkAllocationProgressResponse.builder()
                 .noOfPlots(talukPlots)
                 .areaAvailableForEstimation(talukArea)
+                // Added: roll up the same locations as the existing totals.
+                .noOfClusters(totalClusterCounts(locations))
                 .locations(locations)
                 .build();
     }
 // ==========================================
 // COMMON SUM METHOD
 // ==========================================
+
+    // Added: null-safe cluster sums using existing allocation columns.
+    private WorkAllocationProgressResponse.EstimationPlots clusterCounts(
+            List<TblWorkAllocation> allocations) {
+        BigDecimal wet = sum(allocations, TblWorkAllocation::getTotalWetCluster);
+        BigDecimal dry = sum(allocations, TblWorkAllocation::getTotalDryCluster);
+        return WorkAllocationProgressResponse.EstimationPlots.builder()
+                .wet(wet).dry(dry).total(wet.add(dry)).build();
+    }
+
+    // Added: preserve the report scope by summing only included locations.
+    private WorkAllocationProgressResponse.EstimationPlots totalClusterCounts(
+            List<WorkAllocationProgressResponse.LocationDetails> locations) {
+        BigDecimal wet = BigDecimal.ZERO;
+        BigDecimal dry = BigDecimal.ZERO;
+        for (WorkAllocationProgressResponse.LocationDetails location : locations) {
+            WorkAllocationProgressResponse.EstimationPlots clusters =
+                    location.getAreaAvailableForEstimation().getNoOfClusters();
+            wet = wet.add(clusters.getWet());
+            dry = dry.add(clusters.getDry());
+        }
+        return WorkAllocationProgressResponse.EstimationPlots.builder()
+                .wet(wet).dry(dry).total(wet.add(dry)).build();
+    }
 
     private BigDecimal sum(
             List<TblWorkAllocation> allocations,

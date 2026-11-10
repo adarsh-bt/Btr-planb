@@ -24,7 +24,7 @@ public class DistrictMaster {
   private String census_code_2011;
   private String census_code_2001;
   private Integer des_dist_code;
-    @Column(name = "created_by")
+    @Column(name = "added_by")
     private UUID addedBy;
 
     @Column(name = "updated_by")

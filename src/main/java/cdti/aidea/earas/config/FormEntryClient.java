@@ -4,6 +4,8 @@ import cdti.aidea.earas.contract.FormEntryDto.*;
 
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +44,8 @@ public interface FormEntryClient {
           @RequestBody AvailableCcePlotRemoveRequest request
   );
 
+  @GetMapping("/earas-form1-entry/common-api/cluster-log/{clusterId}")
+  JsonNode getClusterLog(@PathVariable("clusterId") Long clusterId);
 //  @GetMapping("/earas-form1-entry/common-api/cluster-log/{clusterId}")
 //  ResponseEntity<Response<ClusterLogResponse>> getClusterLog(
 //          @PathVariable("clusterId") Long clusterId

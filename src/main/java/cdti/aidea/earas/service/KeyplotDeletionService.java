@@ -1,17 +1,16 @@
 package cdti.aidea.earas.service;
 
 
+import cdti.aidea.earas.config.FormEntryClient;
 import cdti.aidea.earas.config.TourClient;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotDeletionRequestResponseDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.KeyplotDeletionUserRequestDTO;
 import cdti.aidea.earas.contract.Response.KeyplotDeletionTableDTO;
 import cdti.aidea.earas.contract.Response.TourDiaryPurgeResponseDTO;
-import cdti.aidea.earas.model.Btr_models.ClusterFormData;
-import cdti.aidea.earas.model.Btr_models.ClusterMaster;
-import cdti.aidea.earas.model.Btr_models.KeyPlots;
-import cdti.aidea.earas.model.Btr_models.KeyplotDeletionRequest;
+import cdti.aidea.earas.model.Btr_models.*;
 import cdti.aidea.earas.model.Btr_models.Masters.TblMasterZone;
 import cdti.aidea.earas.repository.Btr_repo.*;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -38,7 +37,10 @@ public class KeyplotDeletionService {
     private final ClusterFormDataRepository clusterDetailsRepo;
     private final TblMasterZoneRepository zoneRepository;
     private final DesTalukRepository desTalukRepository;
+    private final FormEntryClient formEntryClient;
     private final DistrictMasterRepository districtMasterRepository;
+    private final KeyplotDeletionAuditRepository auditRepository;
+    private final KeyplotDeletionRequestRepository keyplotDeletionRequestRepository;
     private final TourClient tourClient;
     private static final List<String> ACTIVE_STATUSES = List.of(
             "PENDING",
@@ -100,15 +102,67 @@ public class KeyplotDeletionService {
         }
 
         // 6. Build impact snapshot
+        // 6. Build impact snapshot
         Map<String, Object> snapshot = new LinkedHashMap<>();
+
         snapshot.put("keyplotId", keyPlot.getId());
         snapshot.put("landType", keyPlot.getLandType());
         snapshot.put("ownerName", keyPlot.getOwner_name());
-        snapshot.put("isCustomNonBtrPlot", keyPlot.getBtrData().getNonBtrTypeId() != null);
+
+        snapshot.put(
+                "isCustomNonBtrPlot",
+                keyPlot.getBtrData().getNonBtrTypeId() != null
+        );
+
         snapshot.put("hasCluster", clusterOpt.isPresent());
         snapshot.put("clusterMasterId", clusterId);
-        snapshot.put("clusterNumber", clusterNo); // <--- INCLUDED IN SNAPSHOT
-        snapshot.put("totalClusterDetailsImpacted", details.size());
+        snapshot.put("clusterNumber", clusterNo);
+
+// Count existing BTR cluster details
+        snapshot.put("clusterDetailsFound", details.size());
+
+// Default Form-service counts
+        int nucCount = 0;
+        int cropCount = 0;
+        int landUtilizationCount = 0;
+        int irrigationCount = 0;
+        int availablePlotCount = 0;
+
+// Fetch actual Form-service records
+        if (clusterId != null) {
+
+            JsonNode clusterLog =
+                    formEntryClient .getClusterLog(clusterId);
+
+            if (clusterLog == null) {
+                throw new IllegalStateException(
+                        "Unable to retrieve cluster data for deletion preview"
+                );
+            }
+
+            nucCount = getArrayCount(clusterLog, "nucDetails");
+            cropCount = getArrayCount(clusterLog, "cropDetails");
+
+            landUtilizationCount =
+                    getArrayCount(clusterLog, "landUtilizationDetails");
+
+            irrigationCount =
+                    getArrayCount(clusterLog, "irrigationDetails");
+
+            availablePlotCount =
+                    getArrayCount(clusterLog, "availablePlotDetails");
+        }
+
+// Preserve original record counts
+        snapshot.put("nucRecordsFound", nucCount);
+        snapshot.put("cropRecordsFound", cropCount);
+        snapshot.put("landUtilizationRecordsFound", landUtilizationCount);
+        snapshot.put("irrigationRecordsFound", irrigationCount);
+        snapshot.put("availablePlotRecordsFound", availablePlotCount);
+
+// Tour Diary count must come from its actual data source.
+// Do not assume zero if it has not been checked.
+        snapshot.put("tourDiaryRecordsFound", "NOT_CHECKED");
 
         // 7. Persist entity
         KeyplotDeletionRequest entity = new KeyplotDeletionRequest();
@@ -130,7 +184,12 @@ public class KeyplotDeletionService {
 
         return KeyplotDeletionRequestResponseDTO.fromEntity(saved);
     }
+    private int getArrayCount(JsonNode response, String fieldName) {
 
+        JsonNode array = response.path(fieldName);
+
+        return array.isArray() ? array.size() : 0;
+    }
     @Transactional(readOnly = true)
     public KeyplotDeletionRequestResponseDTO getRequestStatus(UUID requestId) {
         return requestRepo.findById(requestId)
@@ -312,4 +371,134 @@ public class KeyplotDeletionService {
 
         return impact;
     }
+
+    @Transactional
+    public KeyplotDeletionAudit createAudit(
+            KeyplotDeletionRequest request,
+            UUID approvedBy,
+            String adminRemark,
+            Map<String, Object> impactAtApproval) {
+
+        if (auditRepository.existsByRequestId(request.getRequestId())) {
+            throw new IllegalStateException(
+                    "Deletion audit already exists for this request");
+        }
+
+        KeyplotDeletionAudit audit = new KeyplotDeletionAudit();
+
+        audit.setRequestId(request.getRequestId());
+        audit.setKeyplotId(request.getKeyplotId());
+        audit.setZoneId(request.getZoneId());
+        audit.setAgriYear(request.getAgriYear());
+        audit.setRequestedBy(request.getRequestedBy());
+        audit.setApprovedBy(approvedBy);
+        audit.setDeletionReason(request.getReason());
+        audit.setAdminRemark(adminRemark);
+        audit.setRequestedAt(request.getRequestedAt());
+
+        audit.setApprovedAt(OffsetDateTime.now());
+        audit.setExecutionStartedAt(null);
+
+        audit.setKeyplotsDeleted(0);
+        audit.setClusterMasterDeleted(0);
+        audit.setClusterDetailsDeleted(0);
+        audit.setTourDiaryDeleted(0);
+        audit.setFormDataDeleted(0);
+        audit.setNucDeleted(0);
+        audit.setCropRecordsDeleted(0);
+        audit.setBtrRecordsDeleted(0);
+
+        audit.setStatus("IN_PROGRESS");
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+
+        summary.put("impactAtRequest", request.getImpactSnapshot());
+        summary.put("impactAtApproval", impactAtApproval);
+        summary.put("actualDeleted", new LinkedHashMap<String, Integer>());
+
+        audit.setDeletionSummary(summary);
+        audit.setFailureDetails(new LinkedHashMap<>());
+
+        return auditRepository.save(audit);
+    }
+    @Transactional
+    public void approveDeletionRequest(
+            UUID requestId,
+            UUID adminId,
+            String adminRemark) {
+
+        KeyplotDeletionRequest request =
+                keyplotDeletionRequestRepository.findByRequestIdForUpdate(requestId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException("Request not found"));
+
+        if (!"PENDING".equals(request.getStatus())) {
+            throw new IllegalStateException(
+                    "Only pending requests can be approved");
+        }
+
+        if (auditRepository.existsByRequestId(requestId)) {
+            throw new IllegalStateException(
+                    "Deletion audit already exists for this request");
+        }
+
+        // Get cluster ID from request-time snapshot
+        Object clusterIdValue =
+                request.getImpactSnapshot().get("clusterMasterId");
+
+        Long clusterId = clusterIdValue != null
+                ? Long.valueOf(clusterIdValue.toString())
+                : null;
+
+        // Fetch latest Form-service impact at approval time
+        Map<String, Object> impactAtApproval =
+                getFormImpactSnapshot(clusterId);
+
+        // Create permanent audit
+        createAudit(
+                request,
+                adminId,
+                adminRemark,
+                impactAtApproval
+        );
+
+        request.setReviewedBy(adminId);
+        request.setReviewedAt(OffsetDateTime.now());
+        request.setAdminRemark(adminRemark);
+        request.setStatus("IN_PROGRESS");
+
+        keyplotDeletionRequestRepository.save(request);
+    }
+
+    private Map<String, Object> getFormImpactSnapshot(Long clusterId) {
+
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+
+        if (clusterId == null) {
+            snapshot.put("formDataStatus", "NOT_APPLICABLE");
+            return snapshot;
+        }
+
+        JsonNode response = formEntryClient.getClusterLog(clusterId);
+
+        snapshot.put("nucRecordsFound",
+                response.path("nucDetails").size());
+
+        snapshot.put("cropRecordsFound",
+                response.path("cropDetails").size());
+
+        snapshot.put("landUtilizationRecordsFound",
+                response.path("landUtilizationDetails").size());
+
+        snapshot.put("irrigationRecordsFound",
+                response.path("irrigationDetails").size());
+
+        snapshot.put("availablePlotRecordsFound",
+                response.path("availablePlotDetails").size());
+
+        snapshot.put("formDataStatus", "CHECKED");
+
+        return snapshot;
+    }
 }
+

@@ -10,4 +10,6 @@ public interface KeyplotDeletionAuditRepository
         extends JpaRepository<KeyplotDeletionAudit, UUID> {
 
     Optional<KeyplotDeletionAudit> findByRequestId(UUID requestId);
+
+    boolean existsByRequestId(UUID requestId);
 }

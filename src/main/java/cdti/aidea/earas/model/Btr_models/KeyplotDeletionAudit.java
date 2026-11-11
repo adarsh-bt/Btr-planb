@@ -87,6 +87,14 @@ public class KeyplotDeletionAudit {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "execution_started_at")
+    private OffsetDateTime executionStartedAt;
+
+    @Column(name = "btr_records_deleted", nullable = false)
+    private Integer btrRecordsDeleted = 0;
+
+    @Column(name = "keyplot_id")
+    private UUID keyplotId;
     @PrePersist
     void beforeInsert() {
         if (createdAt == null) {

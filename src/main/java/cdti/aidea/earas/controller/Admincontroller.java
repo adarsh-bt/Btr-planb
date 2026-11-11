@@ -1,5 +1,7 @@
 package cdti.aidea.earas.controller;
 
+import cdti.aidea.earas.common.exception.Response;
+import cdti.aidea.earas.contract.ApproveKeyplotDeletionDTO;
 import cdti.aidea.earas.contract.RequestsDTOs.*;
 import cdti.aidea.earas.contract.Response.*;
 import cdti.aidea.earas.model.Btr_models.ClusterEditAllowed;
@@ -567,4 +569,22 @@ public class Admincontroller {
                 adminManage.getAllRevTalukMaster()
         );
     }
+
+  @PostMapping("/{requestId}/approve")
+  public ResponseEntity<Response<Void>> approveDeletionRequest(
+          @PathVariable UUID requestId,
+          @RequestBody ApproveKeyplotDeletionDTO dto) {
+
+    keyplotDeletionService.approveDeletionRequest(
+            requestId,
+            dto.getAdminId(),
+            dto.getAdminRemark()
+    );
+
+    return ResponseEntity.ok(
+            Response.<Void>builder()
+                    .message("Keyplot deletion request approved. Audit created successfully.")
+                    .build()
+    );
+  }
 }
